@@ -63,15 +63,22 @@ document.getElementById('collectWaterButton').addEventListener('click', collectW
 document.getElementById('repairHullButton').addEventListener('click', repairHull);
 document.getElementById('newGameButton').addEventListener('click', newGame);
 
-// Загружает сохранение. Если его нет, создаёт новое состояние.
+// Загружает сохранение. Если его нет или оно повреждено, создаёт новое состояние.
 function loadGame() {
   const savedState = localStorage.getItem(saveKey);
 
-  if (savedState) {
-    return JSON.parse(savedState);
+  if (!savedState) {
+    return createNewState();
   }
 
-  return copyState(startState);
+  try {
+    // Смешиваем сохранение с базовым состоянием, чтобы новые поля не терялись
+    // после будущих обновлений прототипа.
+    return mergeState(createNewState(), JSON.parse(savedState));
+  } catch (error) {
+    localStorage.removeItem(saveKey);
+    return createNewState();
+  }
 }
 
 // Сохраняет текущее состояние, чтобы прогресс не пропал после перезагрузки.
@@ -79,9 +86,32 @@ function saveGame() {
   localStorage.setItem(saveKey, JSON.stringify(gameState));
 }
 
+// Создаёт чистое начальное состояние для новой игры.
+function createNewState() {
+  return copyState(startState);
+}
+
 // Делает простую глубокую копию объекта состояния.
 function copyState(state) {
   return JSON.parse(JSON.stringify(state));
+}
+
+// Аккуратно добавляет сохранённые значения поверх базового состояния.
+function mergeState(baseState, savedState) {
+  for (const key in savedState) {
+    if (isSimpleObject(baseState[key]) && isSimpleObject(savedState[key])) {
+      baseState[key] = mergeState(baseState[key], savedState[key]);
+    } else {
+      baseState[key] = savedState[key];
+    }
+  }
+
+  return baseState;
+}
+
+// Проверяет, что значение является обычным объектом, а не массивом.
+function isSimpleObject(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 // Действие: собрать металл на металлоломном участке.
@@ -130,7 +160,7 @@ function repairHull() {
 
 // Сбрасывает прогресс и начинает новую игру.
 function newGame() {
-  gameState = copyState(startState);
+  gameState = createNewState();
   saveGame();
   renderGame();
 }
