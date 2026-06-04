@@ -643,3 +643,392 @@ p {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Визуальная доработка экрана базы: карта места крушения и компактные панели. */
+.top-bar {
+  grid-template-columns: minmax(170px, 0.75fr) minmax(180px, 0.72fr) minmax(420px, 2.8fr);
+  background:
+    linear-gradient(135deg, rgba(8, 20, 35, 0.98), rgba(16, 39, 61, 0.94)),
+    repeating-linear-gradient(90deg, rgba(116, 215, 255, 0.05) 0 1px, transparent 1px 10px);
+}
+
+.brand-block,
+.location-block,
+.resource-card,
+.side-panel,
+.base-map-card,
+.action-panel,
+.event-panel,
+.log-panel,
+.result-panel {
+  backdrop-filter: blur(8px);
+}
+
+.resource-strip {
+  grid-template-columns: repeat(7, minmax(74px, 1fr));
+  align-content: stretch;
+}
+
+.resource-card {
+  min-height: 58px;
+  padding: 8px 9px;
+  border-color: rgba(116, 215, 255, 0.2);
+  background:
+    linear-gradient(180deg, rgba(22, 47, 73, 0.88), rgba(9, 21, 36, 0.9));
+}
+
+.resource-card span {
+  font-size: 1.1rem;
+}
+
+.resource-card small {
+  font-size: 0.72rem;
+}
+
+.resource-card strong {
+  color: #e9fbff;
+  font-size: 1.08rem;
+  letter-spacing: 0.04em;
+}
+
+.layout-grid {
+  grid-template-columns: 230px minmax(620px, 1fr) 330px;
+  align-items: start;
+}
+
+.nav-panel,
+.info-panel {
+  position: sticky;
+  top: 16px;
+}
+
+.nav-button {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(20, 44, 69, 0.92), rgba(12, 28, 47, 0.92));
+}
+
+.nav-button::before {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 10px;
+  border-radius: 999px;
+  background: rgba(116, 215, 255, 0.72);
+  content: '';
+  vertical-align: middle;
+}
+
+.base-map-card {
+  min-height: 700px;
+  background:
+    linear-gradient(180deg, rgba(11, 26, 43, 0.92), rgba(7, 16, 29, 0.98)),
+    var(--panel);
+}
+
+.map-subtitle {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.base-map {
+  min-height: 615px;
+  border-color: rgba(255, 190, 92, 0.45);
+  box-shadow: inset 0 0 70px rgba(50, 27, 15, 0.76), 0 18px 50px rgba(0, 0, 0, 0.28);
+  background:
+    radial-gradient(ellipse at center, rgba(255, 194, 92, 0.34) 0 14%, transparent 31%),
+    radial-gradient(ellipse at 47% 51%, rgba(28, 19, 15, 0.52) 0 19%, transparent 36%),
+    radial-gradient(circle at 19% 17%, rgba(248, 189, 92, 0.18), transparent 23%),
+    radial-gradient(circle at 83% 15%, rgba(255, 232, 152, 0.11), transparent 18%),
+    radial-gradient(circle at 76% 78%, rgba(70, 37, 20, 0.4), transparent 25%),
+    linear-gradient(140deg, #c17b35 0%, #8e5427 38%, #53301c 70%, #2c1c18 100%);
+}
+
+.base-map::after {
+  position: absolute;
+  inset: 18px;
+  pointer-events: none;
+  border: 1px dashed rgba(255, 218, 145, 0.18);
+  border-radius: 18px;
+  content: '';
+}
+
+.terrain-mark {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+.terrain-crater {
+  left: 37%;
+  top: 33%;
+  width: 26%;
+  height: 31%;
+  border: 2px solid rgba(58, 31, 20, 0.48);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(46, 28, 20, 0.18), rgba(255, 203, 111, 0.08) 58%, transparent 61%);
+}
+
+.terrain-ridge {
+  right: 13%;
+  top: 27%;
+  width: 150px;
+  height: 230px;
+  border-left: 3px solid rgba(255, 221, 155, 0.18);
+  border-radius: 50%;
+  transform: rotate(20deg);
+}
+
+.terrain-debris-a,
+.terrain-debris-b {
+  width: 120px;
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(29, 37, 43, 0.65), rgba(156, 132, 98, 0.3));
+}
+
+.terrain-debris-a {
+  left: 16%;
+  top: 31%;
+  transform: rotate(-16deg);
+}
+
+.terrain-debris-b {
+  right: 18%;
+  bottom: 26%;
+  transform: rotate(24deg);
+}
+
+.terrain-scan {
+  right: 7%;
+  top: 40%;
+  width: 84px;
+  height: 84px;
+  border: 1px solid rgba(116, 215, 255, 0.26);
+  border-radius: 50%;
+  box-shadow: 0 0 30px rgba(31, 199, 255, 0.16);
+}
+
+.map-line {
+  z-index: 1;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(116, 215, 255, 0.68), rgba(255, 218, 145, 0.18), transparent);
+}
+
+.zone-card {
+  width: 220px;
+  min-height: 120px;
+  border-color: rgba(255, 222, 156, 0.32);
+  background:
+    linear-gradient(145deg, rgba(66, 40, 24, 0.96), rgba(104, 62, 29, 0.88)),
+    repeating-linear-gradient(135deg, rgba(255, 227, 169, 0.06) 0 2px, transparent 2px 12px);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.zone-card::after {
+  width: fit-content;
+  padding: 3px 7px;
+  border: 1px solid rgba(116, 215, 255, 0.22);
+  border-radius: 999px;
+  color: rgba(217, 245, 255, 0.86);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  content: 'участок';
+}
+
+.zone-card.selected {
+  border-color: rgba(116, 215, 255, 0.96);
+  background:
+    linear-gradient(145deg, rgba(21, 75, 100, 0.96), rgba(118, 76, 35, 0.94));
+  box-shadow: 0 0 0 2px rgba(31, 199, 255, 0.28), 0 0 34px rgba(31, 199, 255, 0.18), 0 22px 42px rgba(0, 0, 0, 0.36);
+}
+
+.zone-water { left: 9%; top: 8%; }
+.zone-metal { left: 5%; top: 42%; }
+.zone-energy { right: 8%; top: 8%; }
+.zone-workshop { right: 10%; bottom: 8%; }
+.zone-repair { left: 17%; bottom: 8%; }
+.zone-scanner { right: 5%; top: 43%; }
+
+.command-node {
+  width: 270px;
+  min-height: 270px;
+  border-color: rgba(116, 215, 255, 0.38);
+  box-shadow: 0 0 0 8px rgba(9, 20, 32, 0.24), 0 0 70px rgba(31, 199, 255, 0.16), 0 24px 52px rgba(0, 0, 0, 0.36);
+}
+
+.command-node h3 {
+  max-width: 190px;
+  color: #f4fbff;
+}
+
+.info-panel {
+  padding: 0;
+  overflow: hidden;
+  border-color: rgba(116, 215, 255, 0.32);
+  background:
+    linear-gradient(180deg, rgba(19, 44, 69, 0.98), rgba(8, 19, 33, 0.96));
+}
+
+.info-panel > * {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+.object-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(116, 215, 255, 0.16);
+  background: rgba(116, 215, 255, 0.06);
+}
+
+.object-card-top .eyebrow {
+  margin-bottom: 0;
+}
+
+.object-status {
+  padding: 4px 8px;
+  border: 1px solid rgba(131, 255, 194, 0.32);
+  border-radius: 999px;
+  color: var(--ok);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.info-panel .description,
+.info-list dd {
+  line-height: 1.48;
+}
+
+.level-badge {
+  margin-top: 2px;
+  border: 1px solid rgba(116, 215, 255, 0.45);
+  background: linear-gradient(135deg, var(--accent), #bcefff);
+}
+
+.assignment-panel {
+  margin-bottom: 16px;
+}
+
+.bottom-bar {
+  gap: 16px;
+}
+
+.action-panel {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  background:
+    linear-gradient(135deg, rgba(13, 31, 50, 0.96), rgba(20, 45, 68, 0.9));
+}
+
+.action-panel h2 {
+  margin-bottom: 0;
+}
+
+.action-panel .button-row {
+  justify-content: flex-end;
+}
+
+.button-row button,
+.primary-action {
+  border: 1px solid rgba(225, 249, 255, 0.38);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+}
+
+.event-panel {
+  background: linear-gradient(145deg, rgba(52, 33, 22, 0.96), rgba(17, 31, 47, 0.92));
+}
+
+@media (max-width: 1220px) {
+  .top-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .resource-strip {
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  }
+
+  .nav-panel,
+  .info-panel {
+    position: static;
+  }
+
+  .layout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .action-panel .button-row {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .game-shell {
+    width: min(100% - 20px, 560px);
+  }
+
+  .resource-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .resource-card {
+    min-width: 0;
+  }
+
+  .nav-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .base-map {
+    padding: 12px;
+  }
+
+  .terrain-mark,
+  .base-map::after {
+    display: none;
+  }
+
+  .zone-card,
+  .command-node {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .command-node {
+    min-height: auto;
+  }
+
+  .ship-silhouette {
+    margin-top: 0;
+  }
+
+  .bottom-bar {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .button-row,
+  .action-panel .button-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
