@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Космическая колония</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="game">
+    <h1>Космическая колония</h1>
+
+    <section class="panel">
+      <h2>Состояние колонии</h2>
+      <p>Ход: <span id="turn">1</span> / 20</p>
+      <p>Металл: <span id="metal">0</span></p>
+      <p>Энергия: <span id="energy">0</span></p>
+      <p>Еда: <span id="food">0</span></p>
+      <p>Уровень цеха: <span id="workshop">1</span></p>
+    </section>
+
+    <section class="panel">
+      <h2>Дроны</h2>
+      <p>Шахтёр добывает металл.</p>
+      <p>Фермер добывает еду.</p>
+      <p>Энергетик добывает энергию.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Корабль</h2>
+      <p>Построено частей: <span id="shipParts">0</span> / 5</p>
+      <div id="shipStatus" class="ship-status"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Действия</h2>
+      <div class="buttons">
+        <button id="mineMetal">Добыть металл</button>
+        <button id="gatherFood">Добыть еду</button>
+        <button id="generateEnergy">Добыть энергию</button>
+        <button id="upgradeWorkshop">Улучшить цех</button>
+        <button id="buildShip">Построить часть корабля</button>
+      </div>
+    </section>
+
+    <section id="result" class="panel result hidden">
+      <h2 id="resultTitle"></h2>
+      <p id="resultText"></p>
+      <button id="restart">Начать заново</button>
+    </section>
+
+    <section class="panel">
+      <h2>Журнал событий</h2>
+      <ul id="log"></ul>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
