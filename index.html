@@ -13,17 +13,62 @@
     <section class="panel">
       <h2>Состояние колонии</h2>
       <p>Ход: <span id="turn">1</span> / 20</p>
+      <p>Вода: <span id="water">0</span></p>
       <p>Металл: <span id="metal">0</span></p>
       <p>Энергия: <span id="energy">0</span></p>
-      <p>Еда: <span id="food">0</span></p>
       <p>Уровень цеха: <span id="workshop">1</span></p>
     </section>
 
     <section class="panel">
       <h2>Дроны</h2>
-      <p>Шахтёр добывает металл.</p>
-      <p>Фермер добывает еду.</p>
-      <p>Энергетик добывает энергию.</p>
+      <p>Свободные дроны могут быть назначены на производственные участки и сняты обратно без траты хода.</p>
+      <p>Всего свободно: <span id="totalFreeDrones">0</span></p>
+      <p>Всего назначено: <span id="totalAssignedDrones">0</span></p>
+      <div class="drone-grid" id="droneStatus"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Производственные участки</h2>
+      <div class="site-grid">
+        <article class="site-card">
+          <h3>Водосборник</h3>
+          <p>Ресурс: <span id="waterSiteResource">вода</span></p>
+          <p>Уровень: <span id="waterSiteLevel">1</span></p>
+          <p>Базовый выход: <span id="waterSiteBaseOutput">2</span></p>
+          <p>Назначено дронов: <span id="waterSiteAssigned">0</span> / <span id="waterSiteDroneLimit">3</span></p>
+          <p>Выход за действие: <span id="waterSiteOutput">0</span></p>
+          <div class="buttons">
+            <button id="assignWaterDrone">Назначить дрона на водосборник</button>
+            <button id="removeWaterDrone">Снять дрона с водосборника</button>
+          </div>
+        </article>
+
+        <article class="site-card">
+          <h3>Металлоломный участок</h3>
+          <p>Ресурс: <span id="metalSiteResource">металл</span></p>
+          <p>Уровень: <span id="metalSiteLevel">1</span></p>
+          <p>Базовый выход: <span id="metalSiteBaseOutput">3</span></p>
+          <p>Назначено дронов: <span id="metalSiteAssigned">0</span> / <span id="metalSiteDroneLimit">3</span></p>
+          <p>Выход за действие: <span id="metalSiteOutput">0</span></p>
+          <div class="buttons">
+            <button id="assignMetalDrone">Назначить дрона на металлоломный участок</button>
+            <button id="removeMetalDrone">Снять дрона с металлоломного участка</button>
+          </div>
+        </article>
+
+        <article class="site-card">
+          <h3>Энергетический узел</h3>
+          <p>Ресурс: <span id="energySiteResource">энергия</span></p>
+          <p>Уровень: <span id="energySiteLevel">1</span></p>
+          <p>Базовый выход: <span id="energySiteBaseOutput">2</span></p>
+          <p>Назначено дронов: <span id="energySiteAssigned">0</span> / <span id="energySiteDroneLimit">3</span></p>
+          <p>Выход за действие: <span id="energySiteOutput">0</span></p>
+          <div class="buttons">
+            <button id="assignEnergyDrone">Назначить дрона на энергетический узел</button>
+            <button id="removeEnergyDrone">Снять дрона с энергетического узла</button>
+          </div>
+        </article>
+      </div>
     </section>
 
     <section class="panel">
@@ -35,8 +80,8 @@
     <section class="panel">
       <h2>Действия</h2>
       <div class="buttons">
+        <button id="gatherWater">Собрать воду</button>
         <button id="mineMetal">Добыть металл</button>
-        <button id="gatherFood">Добыть еду</button>
         <button id="generateEnergy">Добыть энергию</button>
         <button id="upgradeWorkshop">Улучшить цех</button>
         <button id="buildShip">Построить часть корабля</button>
