@@ -1,11 +1,11 @@
 // Базовое состояние игры и ресурсов.
-let credits = 120;
-let water = 0;
-let metal = 0;
-let energy = 0;
+let credits = 100;
+let water = 10;
+let metal = 15;
+let energy = 8;
 let ether = 0;
 let data = 0;
-let components = 2;
+let components = 3;
 let turn = 1;
 let shipParts = 0;
 let hullIntegrity = 45;
@@ -23,32 +23,32 @@ const maxLogMessages = 30;
 const droneTypes = {
   farmers: {
     name: 'Дроны-фермеры',
-    free: 2,
+    free: 1,
     assigned: 0
   },
   miners: {
     name: 'Дроны-шахтёры',
-    free: 2,
+    free: 1,
     assigned: 0
   },
   collectors: {
     name: 'Дроны-сборщики',
-    free: 2,
+    free: 1,
     assigned: 0
   },
   repairers: {
     name: 'Дроны-ремонтники',
-    free: 1,
+    free: 0,
     assigned: 0
   },
   helpers: {
     name: 'Дроны-помощники',
-    free: 1,
+    free: 0,
     assigned: 0
   },
   scouts: {
     name: 'Дроны-разведчики',
-    free: 1,
+    free: 0,
     assigned: 0
   }
 };
@@ -509,13 +509,13 @@ function restartGame() {
 
 // Возвращает игровые числа, дронов и участки к начальному состоянию.
 function resetState() {
-  credits = 120;
-  water = 0;
-  metal = 0;
-  energy = 0;
+  credits = 100;
+  water = 10;
+  metal = 15;
+  energy = 8;
   ether = 0;
   data = 0;
-  components = 2;
+  components = 3;
   turn = 1;
   shipParts = 0;
   hullIntegrity = 45;
@@ -531,17 +531,17 @@ function resetState() {
 }
 
 function resetDrones() {
-  droneTypes.farmers.free = 2;
+  droneTypes.farmers.free = 1;
   droneTypes.farmers.assigned = 0;
-  droneTypes.miners.free = 2;
+  droneTypes.miners.free = 1;
   droneTypes.miners.assigned = 0;
-  droneTypes.collectors.free = 2;
+  droneTypes.collectors.free = 1;
   droneTypes.collectors.assigned = 0;
-  droneTypes.repairers.free = 1;
+  droneTypes.repairers.free = 0;
   droneTypes.repairers.assigned = 0;
-  droneTypes.helpers.free = 1;
+  droneTypes.helpers.free = 0;
   droneTypes.helpers.assigned = 0;
-  droneTypes.scouts.free = 1;
+  droneTypes.scouts.free = 0;
   droneTypes.scouts.assigned = 0;
 }
 
@@ -773,13 +773,13 @@ function loadGame() {
 
   try {
     const savedState = JSON.parse(savedText);
-    credits = savedNumber(savedState.credits, 120);
-    water = savedNumber(savedState.water, 0);
-    metal = savedNumber(savedState.metal, 0);
-    energy = savedNumber(savedState.energy, 0);
+    credits = savedNumber(savedState.credits, 100);
+    water = savedNumber(savedState.water, 10);
+    metal = savedNumber(savedState.metal, 15);
+    energy = savedNumber(savedState.energy, 8);
     ether = savedNumber(savedState.ether, 0);
     data = savedNumber(savedState.data, 0);
-    components = savedNumber(savedState.components, 2);
+    components = savedNumber(savedState.components, 3);
     turn = savedNumber(savedState.turn, 1);
     shipParts = savedNumber(savedState.shipParts, 0);
     hullIntegrity = savedNumber(savedState.hullIntegrity, 45);
