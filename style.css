@@ -1,0 +1,137 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: #eef4ff;
+  background: #101827;
+}
+
+.game {
+  width: min(1100px, 94%);
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.hero-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #8fd3ff;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 8px;
+}
+
+.intro,
+.hint {
+  color: #c9d8ee;
+}
+
+.panel {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #2e4568;
+  border-radius: 12px;
+  background: #17233a;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 8px;
+  color: #101827;
+  font-weight: bold;
+  background: #8fd3ff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #b9e5ff;
+}
+
+.danger-button {
+  flex: 0 0 auto;
+  background: #ffd166;
+}
+
+.danger-button:hover {
+  background: #ffe199;
+}
+
+.stat-list {
+  display: grid;
+  gap: 8px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #263a59;
+}
+
+.stat-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.stat-name {
+  color: #c9d8ee;
+}
+
+.stat-value {
+  font-weight: bold;
+}
+
+.task-list {
+  min-height: 110px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.task-list li {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 620px) {
+  .hero-header {
+    display: block;
+  }
+
+  .danger-button {
+    margin-bottom: 16px;
+  }
+}

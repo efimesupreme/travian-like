@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Аурелия-18</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="game">
+    <header class="hero-header">
+      <div>
+        <p class="eyebrow">Первый технический прототип</p>
+        <h1>Аурелия-18</h1>
+        <p class="intro">Колония держится на герое, корабле, ресурсах и дронах. Пока доступны только базовые действия без таймеров.</p>
+      </div>
+      <button id="newGameButton" class="danger-button">Новая игра</button>
+    </header>
+
+    <section class="actions panel">
+      <h2>Действия</h2>
+      <div class="buttons">
+        <button id="collectMetalButton">Собрать металл</button>
+        <button id="collectWaterButton">Добыть воду</button>
+        <button id="repairHullButton">Отремонтировать корпус</button>
+      </div>
+      <p class="hint">Ремонт корпуса стоит 5 металла и восстанавливает 10 единиц корпуса.</p>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <h2>Герой</h2>
+        <div id="heroBlock" class="stat-list"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Корабль</h2>
+        <div id="shipBlock" class="stat-list"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Ресурсы</h2>
+        <div id="resourcesBlock" class="stat-list"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Дроны</h2>
+        <div id="dronesBlock" class="stat-list"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Производственные участки</h2>
+        <div id="sitesBlock" class="stat-list"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Текущие задачи</h2>
+        <ul id="tasksBlock" class="task-list"></ul>
+      </article>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
