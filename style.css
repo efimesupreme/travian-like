@@ -10,13 +10,14 @@ body {
 }
 
 .game {
-  width: min(900px, 94%);
+  width: min(1100px, 94%);
   margin: 0 auto;
   padding: 24px 0;
 }
 
 h1,
-h2 {
+h2,
+h3 {
   margin-top: 0;
 }
 
@@ -52,6 +53,37 @@ button:disabled {
   color: #6b7280;
   background: #cbd5e1;
   cursor: not-allowed;
+}
+
+.drone-grid,
+.site-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.drone-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.site-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.drone-card,
+.site-card {
+  padding: 12px;
+  border: 1px solid #3a547d;
+  border-radius: 8px;
+  background: #1f2f4c;
+}
+
+.drone-card p,
+.site-card p {
+  margin: 8px 0;
+}
+
+.site-card .buttons {
+  margin-top: 12px;
 }
 
 .ship-status {
