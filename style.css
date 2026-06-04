@@ -1,0 +1,91 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: #eef4ff;
+  background: #101827;
+}
+
+.game {
+  width: min(900px, 94%);
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+h1,
+h2 {
+  margin-top: 0;
+}
+
+.panel {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #2e4568;
+  border-radius: 10px;
+  background: #17233a;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+button {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 8px;
+  color: #101827;
+  font-weight: bold;
+  background: #8fd3ff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #b9e5ff;
+}
+
+button:disabled {
+  color: #6b7280;
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.ship-status {
+  display: flex;
+  gap: 8px;
+}
+
+.ship-part {
+  width: 36px;
+  height: 36px;
+  border: 2px solid #8fd3ff;
+  border-radius: 6px;
+  background: #243653;
+}
+
+.ship-part.ready {
+  background: #80ffb0;
+}
+
+.result {
+  text-align: center;
+  border-color: #ffd166;
+}
+
+.hidden {
+  display: none;
+}
+
+#log {
+  min-height: 120px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+#log li {
+  margin-bottom: 6px;
+}
