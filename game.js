@@ -1,17 +1,23 @@
-// Простые переменные состояния игры.
+// Базовое состояние игры и ресурсов.
+let credits = 120;
 let water = 0;
 let metal = 0;
 let energy = 0;
+let ether = 0;
+let data = 0;
+let components = 2;
 let turn = 1;
-let workshop = 1;
 let shipParts = 0;
+let hullIntegrity = 45;
 let gameOver = false;
+let selectedSiteKey = 'water';
 let logMessages = [];
 
-// Настройки игры вынесены в отдельные переменные, чтобы их легко было менять.
+// Настройки прототипа.
 const maxTurns = 20;
 const neededShipParts = 5;
-const saveKey = 'aurelia-18-save-v2';
+const saveKey = 'aurelia-18-save-v3';
+const legacySaveKey = 'aurelia-18-save-v2';
 const maxLogMessages = 30;
 
 const droneTypes = {
@@ -49,40 +55,120 @@ const droneTypes = {
 
 const productionSites = {
   water: {
-    name: 'водосборник',
+    name: 'Водосборник',
+    icon: '💧',
     resource: 'вода',
+    functionText: 'Собирает конденсат и фильтрует влагу из песка вокруг места крушения.',
+    description: 'Развёрнутые мембраны и резервуары дают базе стабильный источник воды.',
     level: 1,
     baseOutput: 2,
+    outputLabel: 'воды за действие',
     assignedDrones: 0,
     droneLimit: 3,
-    droneType: 'farmers'
+    droneType: 'farmers',
+    upgradeBaseCost: {
+      metal: 4,
+      energy: 2
+    }
   },
   metal: {
-    name: 'металлоломный участок',
+    name: 'Металлоломный участок',
+    icon: '⛓️',
     resource: 'металл',
+    functionText: 'Разбирает обломки корабля и фрагменты грузовых контейнеров.',
+    description: 'Главная зона для добычи металла из крушения и ближайших россыпей.',
     level: 1,
     baseOutput: 3,
+    outputLabel: 'металла за действие',
     assignedDrones: 0,
     droneLimit: 3,
-    droneType: 'miners'
+    droneType: 'miners',
+    upgradeBaseCost: {
+      water: 3,
+      energy: 2
+    }
   },
   energy: {
-    name: 'энергетический узел',
+    name: 'Энергетический узел',
+    icon: '⚡',
     resource: 'энергия',
+    functionText: 'Питает базу уцелевшими батареями и импровизированными солнечными стойками.',
+    description: 'Каждое улучшение увеличивает заряд, доступный для ремонта и производства.',
     level: 1,
     baseOutput: 2,
+    outputLabel: 'энергии за действие',
     assignedDrones: 0,
     droneLimit: 3,
-    droneType: 'collectors'
+    droneType: 'collectors',
+    upgradeBaseCost: {
+      metal: 4,
+      water: 2
+    }
+  },
+  workshop: {
+    name: 'Сборочный цех дронов',
+    icon: '🛠️',
+    resource: 'компоненты',
+    functionText: 'Готовит площадки для сборки и обслуживания вспомогательных дронов.',
+    description: 'Пока это декоративный модуль развития: уровень растёт, сложной сборки дронов ещё нет.',
+    level: 1,
+    baseOutput: 0,
+    outputLabel: 'развитие инфраструктуры',
+    assignedDrones: 0,
+    droneLimit: 0,
+    droneType: 'helpers',
+    upgradeBaseCost: {
+      metal: 5,
+      energy: 3,
+      components: 1
+    }
+  },
+  repair: {
+    name: 'Ремонтная площадка',
+    icon: '🚧',
+    resource: 'корпус',
+    functionText: 'Сваривает повреждённые секции корабля и укрепляет командный узел.',
+    description: 'Улучшение площадки снижает стоимость действия ремонта корпуса.',
+    level: 1,
+    baseOutput: 10,
+    outputLabel: 'прочности корпуса за ремонт',
+    assignedDrones: 0,
+    droneLimit: 0,
+    droneType: 'repairers',
+    upgradeBaseCost: {
+      metal: 6,
+      energy: 3
+    }
+  },
+  scanner: {
+    name: 'Сканерный модуль',
+    icon: '📡',
+    resource: 'данные',
+    functionText: 'Собирает телеметрию, строит сетку угроз и помечает безопасные маршруты.',
+    description: 'Пока это декоративный модуль развития: уровень растёт, полноценной разведки ещё нет.',
+    level: 1,
+    baseOutput: 0,
+    outputLabel: 'точность сканирования',
+    assignedDrones: 0,
+    droneLimit: 0,
+    droneType: 'scouts',
+    upgradeBaseCost: {
+      energy: 4,
+      metal: 3
+    }
   }
 };
 
-// Получаем элементы страницы, которые будем обновлять.
+// Элементы интерфейса.
 const turnText = document.getElementById('turn');
+const creditsText = document.getElementById('credits');
 const waterText = document.getElementById('water');
 const metalText = document.getElementById('metal');
 const energyText = document.getElementById('energy');
-const workshopText = document.getElementById('workshop');
+const etherText = document.getElementById('ether');
+const dataText = document.getElementById('data');
+const componentsText = document.getElementById('components');
+const hullIntegrityText = document.getElementById('hullIntegrity');
 const shipPartsText = document.getElementById('shipParts');
 const shipStatus = document.getElementById('shipStatus');
 const log = document.getElementById('log');
@@ -92,79 +178,63 @@ const resultText = document.getElementById('resultText');
 const droneStatus = document.getElementById('droneStatus');
 const totalFreeDronesText = document.getElementById('totalFreeDrones');
 const totalAssignedDronesText = document.getElementById('totalAssignedDrones');
+const selectedSiteName = document.getElementById('selectedSiteName');
+const selectedSiteLevel = document.getElementById('selectedSiteLevel');
+const selectedSiteDescription = document.getElementById('selectedSiteDescription');
+const selectedSiteFunction = document.getElementById('selectedSiteFunction');
+const selectedSiteEffect = document.getElementById('selectedSiteEffect');
+const selectedSiteCost = document.getElementById('selectedSiteCost');
+const selectedSiteDrones = document.getElementById('selectedSiteDrones');
+const upgradeMessage = document.getElementById('upgradeMessage');
+const upgradeSelectedSiteButton = document.getElementById('upgradeSelectedSite');
+const assignSelectedDroneButton = document.getElementById('assignSelectedDrone');
+const removeSelectedDroneButton = document.getElementById('removeSelectedDrone');
+const droneAssignment = document.getElementById('droneAssignment');
+const zoneButtons = document.querySelectorAll('[data-site]');
 
-const siteElements = {
-  water: {
-    resource: document.getElementById('waterSiteResource'),
-    level: document.getElementById('waterSiteLevel'),
-    baseOutput: document.getElementById('waterSiteBaseOutput'),
-    assigned: document.getElementById('waterSiteAssigned'),
-    droneLimit: document.getElementById('waterSiteDroneLimit'),
-    output: document.getElementById('waterSiteOutput')
-  },
-  metal: {
-    resource: document.getElementById('metalSiteResource'),
-    level: document.getElementById('metalSiteLevel'),
-    baseOutput: document.getElementById('metalSiteBaseOutput'),
-    assigned: document.getElementById('metalSiteAssigned'),
-    droneLimit: document.getElementById('metalSiteDroneLimit'),
-    output: document.getElementById('metalSiteOutput')
-  },
-  energy: {
-    resource: document.getElementById('energySiteResource'),
-    level: document.getElementById('energySiteLevel'),
-    baseOutput: document.getElementById('energySiteBaseOutput'),
-    assigned: document.getElementById('energySiteAssigned'),
-    droneLimit: document.getElementById('energySiteDroneLimit'),
-    output: document.getElementById('energySiteOutput')
-  }
-};
-
-const actionButtons = [
+const bottomActionButtons = [
   document.getElementById('gatherWater'),
   document.getElementById('mineMetal'),
   document.getElementById('generateEnergy'),
-  document.getElementById('upgradeWorkshop'),
-  document.getElementById('buildShip')
+  document.getElementById('repairHull')
 ];
 
-const assignmentButtons = [
-  document.getElementById('assignWaterDrone'),
-  document.getElementById('removeWaterDrone'),
-  document.getElementById('assignMetalDrone'),
-  document.getElementById('removeMetalDrone'),
-  document.getElementById('assignEnergyDrone'),
-  document.getElementById('removeEnergyDrone')
-];
+// Клики по карте и действиям.
+for (let i = 0; i < zoneButtons.length; i++) {
+  zoneButtons[i].addEventListener('click', function () {
+    selectSite(zoneButtons[i].dataset.site);
+  });
+}
 
-// Добавляем обработчики кликов на кнопки действий.
 document.getElementById('gatherWater').addEventListener('click', gatherWater);
 document.getElementById('mineMetal').addEventListener('click', mineMetal);
 document.getElementById('generateEnergy').addEventListener('click', generateEnergy);
-document.getElementById('upgradeWorkshop').addEventListener('click', upgradeWorkshop);
-document.getElementById('buildShip').addEventListener('click', buildShipPart);
-document.getElementById('restart').addEventListener('click', restartGame);
-document.getElementById('assignWaterDrone').addEventListener('click', function () {
-  assignDrone('water');
+document.getElementById('repairHull').addEventListener('click', repairHull);
+document.getElementById('newGame').addEventListener('click', restartGame);
+upgradeSelectedSiteButton.addEventListener('click', upgradeSelectedSite);
+assignSelectedDroneButton.addEventListener('click', function () {
+  assignDrone(selectedSiteKey);
 });
-document.getElementById('removeWaterDrone').addEventListener('click', function () {
-  removeDrone('water');
+removeSelectedDroneButton.addEventListener('click', function () {
+  removeDrone(selectedSiteKey);
 });
-document.getElementById('assignMetalDrone').addEventListener('click', function () {
-  assignDrone('metal');
-});
-document.getElementById('removeMetalDrone').addEventListener('click', function () {
-  removeDrone('metal');
-});
-document.getElementById('assignEnergyDrone').addEventListener('click', function () {
-  assignDrone('energy');
-});
-document.getElementById('removeEnergyDrone').addEventListener('click', function () {
-  removeDrone('energy');
-});
+
+// Выбор зоны на карте базы.
+function selectSite(siteKey) {
+  if (!productionSites[siteKey]) {
+    return;
+  }
+
+  selectedSiteKey = siteKey;
+  updateScreen();
+}
 
 // Водосборник добывает воду с учётом уровня и назначенных дронов.
 function gatherWater() {
+  if (gameOver) {
+    return;
+  }
+
   const output = getSiteOutput('water');
   water += output;
   finishTurn('Водосборник собрал ' + output + ' воды.');
@@ -172,6 +242,10 @@ function gatherWater() {
 
 // Металлоломный участок добывает металл с учётом уровня и назначенных дронов.
 function mineMetal() {
+  if (gameOver) {
+    return;
+  }
+
   const output = getSiteOutput('metal');
   metal += output;
   finishTurn('Металлоломный участок добыл ' + output + ' металла.');
@@ -179,56 +253,69 @@ function mineMetal() {
 
 // Энергетический узел добывает энергию с учётом уровня и назначенных дронов.
 function generateEnergy() {
+  if (gameOver) {
+    return;
+  }
+
   const output = getSiteOutput('energy');
   energy += output;
   finishTurn('Энергетический узел выработал ' + output + ' энергии.');
 }
 
-// Улучшение цеха стоит ресурсов, но повышает уровень производственных участков.
-function upgradeWorkshop() {
-  const metalCost = 5;
-  const energyCost = 3;
-
-  if (metal < metalCost || energy < energyCost) {
-    addLog('Не хватает ресурсов для улучшения цеха: нужно 5 металла и 3 энергии.');
+// Ремонт корпуса использует ресурсы и восстанавливает прочность корабля.
+function repairHull() {
+  if (gameOver) {
     return;
   }
 
-  metal -= metalCost;
-  energy -= energyCost;
-  workshop += 1;
-  productionSites.water.level += 1;
-  productionSites.metal.level += 1;
-  productionSites.energy.level += 1;
-  finishTurn('Цех улучшен. Уровни производственных участков выросли.');
+  const cost = getRepairCost();
+
+  if (!canPay(cost)) {
+    addLog('Не хватает ресурсов для ремонта корпуса: нужно ' + formatCost(cost) + '.');
+    updateScreen();
+    return;
+  }
+
+  if (hullIntegrity >= 100) {
+    addLog('Корпус уже стабилизирован на 100%.');
+    updateScreen();
+    return;
+  }
+
+  payCost(cost);
+  hullIntegrity = Math.min(100, hullIntegrity + getSiteOutput('repair'));
+  finishTurn('Ремонтная площадка восстановила корпус до ' + hullIntegrity + '%.');
 }
 
-// Одна часть корабля стоит металл, энергию и воду.
-function buildShipPart() {
-  const metalCost = 6;
-  const energyCost = 4;
-  const waterCost = 3;
-
-  if (metal < metalCost || energy < energyCost || water < waterCost) {
-    addLog('Не хватает ресурсов для части корабля: нужно 6 металла, 4 энергии и 3 воды.');
+// Улучшение выбранной зоны тратит ресурсы и повышает её уровень.
+function upgradeSelectedSite() {
+  if (gameOver) {
     return;
   }
 
-  metal -= metalCost;
-  energy -= energyCost;
-  water -= waterCost;
-  shipParts += 1;
-  finishTurn('Построена часть корабля.');
+  const site = productionSites[selectedSiteKey];
+  const cost = getUpgradeCost(selectedSiteKey);
+
+  if (!canPay(cost)) {
+    addLog('Не хватает ресурсов для улучшения зоны «' + site.name + '»: нужно ' + formatCost(cost) + '.');
+    updateScreen();
+    return;
+  }
+
+  payCost(cost);
+  site.level += 1;
+  finishTurn('Зона «' + site.name + '» улучшена до уровня ' + site.level + '.');
 }
 
 // Назначает свободного дрона подходящего типа на участок без траты хода.
 function assignDrone(siteKey) {
   const site = productionSites[siteKey];
-  const drone = droneTypes[site.droneType];
 
-  if (gameOver) {
+  if (gameOver || !site || site.droneLimit <= 0) {
     return;
   }
+
+  const drone = droneTypes[site.droneType];
 
   if (site.assignedDrones >= site.droneLimit) {
     addLog('Лимит дронов на участке «' + site.name + '» уже достигнут.');
@@ -250,11 +337,12 @@ function assignDrone(siteKey) {
 // Снимает назначенного дрона с участка без траты хода.
 function removeDrone(siteKey) {
   const site = productionSites[siteKey];
-  const drone = droneTypes[site.droneType];
 
-  if (gameOver) {
+  if (gameOver || !site || site.droneLimit <= 0) {
     return;
   }
+
+  const drone = droneTypes[site.droneType];
 
   if (site.assignedDrones <= 0) {
     addLog('На участке «' + site.name + '» нет назначенных дронов.');
@@ -268,15 +356,113 @@ function removeDrone(siteKey) {
   updateScreen();
 }
 
-// Считает текущий выход ресурса за одно действие на участке.
+// Считает текущий выход ресурса или эффект за одно действие.
 function getSiteOutput(siteKey) {
   const site = productionSites[siteKey];
+
+  if (!site || site.baseOutput === 0) {
+    return 0;
+  }
+
   return site.baseOutput * site.level + site.baseOutput * site.assignedDrones;
+}
+
+function getUpgradeCost(siteKey) {
+  const site = productionSites[siteKey];
+  const cost = {};
+  const keys = Object.keys(site.upgradeBaseCost);
+
+  for (let i = 0; i < keys.length; i++) {
+    const resource = keys[i];
+    cost[resource] = site.upgradeBaseCost[resource] + site.level * 2;
+  }
+
+  return cost;
+}
+
+function getRepairCost() {
+  const repairLevel = productionSites.repair.level;
+  return {
+    metal: Math.max(2, 5 - repairLevel),
+    energy: Math.max(1, 3 - Math.floor(repairLevel / 2)),
+    water: 1
+  };
+}
+
+function canPay(cost) {
+  const keys = Object.keys(cost);
+
+  for (let i = 0; i < keys.length; i++) {
+    const resource = keys[i];
+
+    if (getResource(resource) < cost[resource]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function payCost(cost) {
+  const keys = Object.keys(cost);
+
+  for (let i = 0; i < keys.length; i++) {
+    const resource = keys[i];
+    setResource(resource, getResource(resource) - cost[resource]);
+  }
+}
+
+function getResource(resource) {
+  if (resource === 'credits') return credits;
+  if (resource === 'metal') return metal;
+  if (resource === 'water') return water;
+  if (resource === 'energy') return energy;
+  if (resource === 'ether') return ether;
+  if (resource === 'data') return data;
+  if (resource === 'components') return components;
+  return 0;
+}
+
+function setResource(resource, value) {
+  if (resource === 'credits') credits = value;
+  if (resource === 'metal') metal = value;
+  if (resource === 'water') water = value;
+  if (resource === 'energy') energy = value;
+  if (resource === 'ether') ether = value;
+  if (resource === 'data') data = value;
+  if (resource === 'components') components = value;
+}
+
+function formatCost(cost) {
+  const labels = {
+    credits: 'кредитов',
+    metal: 'металла',
+    water: 'воды',
+    energy: 'энергии',
+    ether: 'эфира',
+    data: 'данных',
+    components: 'компонентов'
+  };
+  const parts = [];
+  const keys = Object.keys(cost);
+
+  for (let i = 0; i < keys.length; i++) {
+    const resource = keys[i];
+    parts.push(cost[resource] + ' ' + labels[resource]);
+  }
+
+  return parts.join(', ');
 }
 
 // Завершает ход после успешного действия.
 function finishTurn(message) {
-  addLog('Ход ' + turn + ': ' + message);
+  addLog('Цикл ' + turn + ': ' + message);
+
+  if (hullIntegrity >= 100 && shipParts < neededShipParts) {
+    shipParts += 1;
+    hullIntegrity = 65;
+    addLog('Стабилизирована секция корабля: ' + shipParts + ' / ' + neededShipParts + '.');
+  }
 
   if (shipParts >= neededShipParts) {
     endGame(true);
@@ -296,17 +482,16 @@ function finishTurn(message) {
 function endGame(isWin) {
   gameOver = true;
   updateScreen();
-
   result.classList.remove('hidden');
 
   if (isWin) {
     resultTitle.textContent = 'Победа!';
-    resultText.textContent = 'Корабль готов. Колонисты могут улететь с планеты.';
-    addLog('Итог: победа. Корабль построен вовремя.');
+    resultText.textContent = 'Командный узел стабилизирован, корабль готов к эвакуации с Аурелии-18.';
+    addLog('Итог: победа. Корабль восстановлен вовремя.');
   } else {
     resultTitle.textContent = 'Поражение';
-    resultText.textContent = 'Ходы закончились, а корабль не достроен.';
-    addLog('Итог: поражение. Нужно было построить 5 частей корабля за 20 ходов.');
+    resultText.textContent = 'Циклы закончились, а корабль всё ещё не готов.';
+    addLog('Итог: поражение. Нужно было стабилизировать 5 секций корабля за 20 циклов.');
   }
 
   saveGame();
@@ -317,19 +502,25 @@ function restartGame() {
   resetState();
   logMessages = [];
   localStorage.removeItem(saveKey);
-  addLog('Новая колония основана. Постройте 5 частей корабля за 20 ходов.');
+  localStorage.removeItem(legacySaveKey);
+  addLog('Новая база развёрнута у места крушения. Выберите зоны, добывайте ресурсы и ремонтируйте корпус.');
   updateScreen();
 }
 
 // Возвращает игровые числа, дронов и участки к начальному состоянию.
 function resetState() {
+  credits = 120;
   water = 0;
   metal = 0;
   energy = 0;
+  ether = 0;
+  data = 0;
+  components = 2;
   turn = 1;
-  workshop = 1;
   shipParts = 0;
+  hullIntegrity = 45;
   gameOver = false;
+  selectedSiteKey = 'water';
 
   resetDrones();
   resetSites();
@@ -355,12 +546,12 @@ function resetDrones() {
 }
 
 function resetSites() {
-  productionSites.water.level = 1;
-  productionSites.water.assignedDrones = 0;
-  productionSites.metal.level = 1;
-  productionSites.metal.assignedDrones = 0;
-  productionSites.energy.level = 1;
-  productionSites.energy.assignedDrones = 0;
+  const keys = Object.keys(productionSites);
+
+  for (let i = 0; i < keys.length; i++) {
+    productionSites[keys[i]].level = 1;
+    productionSites[keys[i]].assignedDrones = 0;
+  }
 }
 
 // Добавляет новую строку в журнал событий сверху списка.
@@ -388,22 +579,23 @@ function renderLog() {
 // Обновляет все числа и состояние кнопок на странице.
 function updateScreen() {
   turnText.textContent = turn;
+  creditsText.textContent = credits;
   waterText.textContent = water;
   metalText.textContent = metal;
   energyText.textContent = energy;
-  workshopText.textContent = workshop;
+  etherText.textContent = ether;
+  dataText.textContent = data;
+  componentsText.textContent = components;
+  hullIntegrityText.textContent = hullIntegrity;
   shipPartsText.textContent = shipParts;
 
   updateDroneStatus();
   updateSiteStatus();
+  updateSelectedSitePanel();
   updateShipStatus();
 
-  for (let i = 0; i < actionButtons.length; i++) {
-    actionButtons[i].disabled = gameOver;
-  }
-
-  for (let i = 0; i < assignmentButtons.length; i++) {
-    assignmentButtons[i].disabled = gameOver;
+  for (let i = 0; i < bottomActionButtons.length; i++) {
+    bottomActionButtons[i].disabled = gameOver;
   }
 
   saveGame();
@@ -419,6 +611,7 @@ function updateDroneStatus() {
     const drone = droneTypes[keys[i]];
     totalFree += drone.free;
     totalAssigned += drone.assigned;
+
     const card = document.createElement('article');
     const title = document.createElement('h3');
     const free = document.createElement('p');
@@ -443,20 +636,74 @@ function updateSiteStatus() {
   const keys = Object.keys(productionSites);
 
   for (let i = 0; i < keys.length; i++) {
-    const siteKey = keys[i];
-    const site = productionSites[siteKey];
-    const elements = siteElements[siteKey];
+    const key = keys[i];
+    const site = productionSites[key];
+    const levelLabels = document.querySelectorAll('[data-site-level="' + key + '"]');
+    const outputLabels = document.querySelectorAll('[data-site-output="' + key + '"]');
 
-    elements.resource.textContent = site.resource;
-    elements.level.textContent = site.level;
-    elements.baseOutput.textContent = site.baseOutput;
-    elements.assigned.textContent = site.assignedDrones;
-    elements.droneLimit.textContent = site.droneLimit;
-    elements.output.textContent = getSiteOutput(siteKey);
+    for (let levelIndex = 0; levelIndex < levelLabels.length; levelIndex++) {
+      levelLabels[levelIndex].textContent = site.level;
+    }
+
+    for (let outputIndex = 0; outputIndex < outputLabels.length; outputIndex++) {
+      outputLabels[outputIndex].textContent = getSiteOutput(key);
+    }
+  }
+
+  for (let buttonIndex = 0; buttonIndex < zoneButtons.length; buttonIndex++) {
+    const button = zoneButtons[buttonIndex];
+    button.classList.toggle('selected', button.dataset.site === selectedSiteKey);
   }
 }
 
-// Рисует 5 ячеек корабля и отмечает уже построенные части.
+function updateSelectedSitePanel() {
+  const site = productionSites[selectedSiteKey];
+  const cost = getUpgradeCost(selectedSiteKey);
+  const hasEnough = canPay(cost);
+
+  selectedSiteName.textContent = site.icon + ' ' + site.name;
+  selectedSiteLevel.textContent = site.level;
+  selectedSiteDescription.textContent = site.description;
+  selectedSiteFunction.textContent = site.functionText;
+  selectedSiteEffect.textContent = getSiteEffectText(selectedSiteKey);
+  selectedSiteCost.textContent = formatCost(cost);
+  upgradeMessage.textContent = hasEnough
+    ? 'Ресурсов хватает для улучшения.'
+    : 'Не хватает ресурсов: нужно ' + formatCost(cost) + '.';
+  upgradeSelectedSiteButton.disabled = gameOver || !hasEnough;
+
+  if (site.droneLimit > 0) {
+    const drone = droneTypes[site.droneType];
+    droneAssignment.classList.remove('hidden');
+    selectedSiteDrones.textContent = 'Назначено: ' + site.assignedDrones + ' / ' + site.droneLimit + '. Свободно подходящих: ' + drone.free + '.';
+    assignSelectedDroneButton.disabled = gameOver || site.assignedDrones >= site.droneLimit || drone.free <= 0;
+    removeSelectedDroneButton.disabled = gameOver || site.assignedDrones <= 0;
+  } else {
+    droneAssignment.classList.add('hidden');
+    assignSelectedDroneButton.disabled = true;
+    removeSelectedDroneButton.disabled = true;
+  }
+}
+
+function getSiteEffectText(siteKey) {
+  const site = productionSites[siteKey];
+
+  if (siteKey === 'water' || siteKey === 'metal' || siteKey === 'energy') {
+    return '+' + getSiteOutput(siteKey) + ' ' + site.outputLabel + '.';
+  }
+
+  if (siteKey === 'repair') {
+    return '+' + getSiteOutput(siteKey) + ' прочности за ремонт; текущая цена ремонта: ' + formatCost(getRepairCost()) + '.';
+  }
+
+  if (siteKey === 'workshop') {
+    return 'Уровень цеха ' + site.level + '; сборка новых дронов пока заглушка.';
+  }
+
+  return 'Уровень сканера ' + site.level + '; разведка и данные пока заглушка.';
+}
+
+// Рисует 5 ячеек корабля и отмечает уже стабилизированные секции.
 function updateShipStatus() {
   shipStatus.innerHTML = '';
 
@@ -472,16 +719,21 @@ function updateShipStatus() {
   }
 }
 
-// Сохраняет текущее состояние в localStorage после действий и назначения дронов.
+// Сохраняет текущее состояние в localStorage.
 function saveGame() {
   const savedState = {
+    credits: credits,
     water: water,
     metal: metal,
     energy: energy,
+    ether: ether,
+    data: data,
+    components: components,
     turn: turn,
-    workshop: workshop,
     shipParts: shipParts,
+    hullIntegrity: hullIntegrity,
     gameOver: gameOver,
+    selectedSiteKey: selectedSiteKey,
     logMessages: logMessages,
     drones: {},
     sites: {}
@@ -510,7 +762,7 @@ function saveGame() {
 
 // Загружает сохранение, если игрок уже начинал партию в этом браузере.
 function loadGame() {
-  const savedText = localStorage.getItem(saveKey);
+  const savedText = localStorage.getItem(saveKey) || localStorage.getItem(legacySaveKey);
 
   if (!savedText) {
     restartGame();
@@ -521,13 +773,18 @@ function loadGame() {
 
   try {
     const savedState = JSON.parse(savedText);
-    water = Number(savedState.water) || 0;
-    metal = Number(savedState.metal) || 0;
-    energy = Number(savedState.energy) || 0;
-    turn = Number(savedState.turn) || 1;
-    workshop = Number(savedState.workshop) || 1;
-    shipParts = Number(savedState.shipParts) || 0;
+    credits = savedNumber(savedState.credits, 120);
+    water = savedNumber(savedState.water, 0);
+    metal = savedNumber(savedState.metal, 0);
+    energy = savedNumber(savedState.energy, 0);
+    ether = savedNumber(savedState.ether, 0);
+    data = savedNumber(savedState.data, 0);
+    components = savedNumber(savedState.components, 2);
+    turn = savedNumber(savedState.turn, 1);
+    shipParts = savedNumber(savedState.shipParts, 0);
+    hullIntegrity = savedNumber(savedState.hullIntegrity, 45);
     gameOver = Boolean(savedState.gameOver);
+    selectedSiteKey = productionSites[savedState.selectedSiteKey] ? savedState.selectedSiteKey : 'water';
     logMessages = Array.isArray(savedState.logMessages) ? savedState.logMessages.slice(0, maxLogMessages) : [];
 
     loadSavedDrones(savedState.drones);
@@ -535,23 +792,28 @@ function loadGame() {
   } catch (error) {
     resetState();
     logMessages = [];
-    addLog('Сохранение повреждено. Начата новая колония.');
+    addLog('Сохранение повреждено. Начата новая база.');
   }
 
   if (logMessages.length === 0) {
-    logMessages.push('Сохранение загружено. Продолжайте развитие колонии.');
+    logMessages.push('Сохранение загружено. Продолжайте развитие базы.');
   }
 
   if (gameOver) {
     result.classList.remove('hidden');
     resultTitle.textContent = shipParts >= neededShipParts ? 'Победа!' : 'Поражение';
     resultText.textContent = shipParts >= neededShipParts
-      ? 'Корабль готов. Колонисты могут улететь с планеты.'
-      : 'Ходы закончились, а корабль не достроен.';
+      ? 'Командный узел стабилизирован, корабль готов к эвакуации с Аурелии-18.'
+      : 'Циклы закончились, а корабль всё ещё не готов.';
   }
 
   renderLog();
   updateScreen();
+}
+
+function savedNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
 function loadSavedDrones(savedDrones) {
@@ -567,8 +829,8 @@ function loadSavedDrones(savedDrones) {
       continue;
     }
 
-    droneTypes[key].free = Number(savedDrones[key].free) || 0;
-    droneTypes[key].assigned = Number(savedDrones[key].assigned) || 0;
+    droneTypes[key].free = savedNumber(savedDrones[key].free, droneTypes[key].free);
+    droneTypes[key].assigned = savedNumber(savedDrones[key].assigned, droneTypes[key].assigned);
   }
 }
 
@@ -585,8 +847,8 @@ function loadSavedSites(savedSites) {
       continue;
     }
 
-    productionSites[key].level = Number(savedSites[key].level) || 1;
-    productionSites[key].assignedDrones = Number(savedSites[key].assignedDrones) || 0;
+    productionSites[key].level = Math.max(1, savedNumber(savedSites[key].level, 1));
+    productionSites[key].assignedDrones = Math.max(0, savedNumber(savedSites[key].assignedDrones, 0));
   }
 }
 

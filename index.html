@@ -3,99 +3,185 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Космическая колония</title>
+  <title>Аурелия-18</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="game">
-    <h1>Космическая колония</h1>
-
-    <section class="panel">
-      <h2>Состояние колонии</h2>
-      <p>Ход: <span id="turn">1</span> / 20</p>
-      <p>Вода: <span id="water">0</span></p>
-      <p>Металл: <span id="metal">0</span></p>
-      <p>Энергия: <span id="energy">0</span></p>
-      <p>Уровень цеха: <span id="workshop">1</span></p>
-    </section>
-
-    <section class="panel">
-      <h2>Дроны</h2>
-      <p>Свободные дроны могут быть назначены на производственные участки и сняты обратно без траты хода.</p>
-      <p>Всего свободно: <span id="totalFreeDrones">0</span></p>
-      <p>Всего назначено: <span id="totalAssignedDrones">0</span></p>
-      <div class="drone-grid" id="droneStatus"></div>
-    </section>
-
-    <section class="panel">
-      <h2>Производственные участки</h2>
-      <div class="site-grid">
-        <article class="site-card">
-          <h3>Водосборник</h3>
-          <p>Ресурс: <span id="waterSiteResource">вода</span></p>
-          <p>Уровень: <span id="waterSiteLevel">1</span></p>
-          <p>Базовый выход: <span id="waterSiteBaseOutput">2</span></p>
-          <p>Назначено дронов: <span id="waterSiteAssigned">0</span> / <span id="waterSiteDroneLimit">3</span></p>
-          <p>Выход за действие: <span id="waterSiteOutput">0</span></p>
-          <div class="buttons">
-            <button id="assignWaterDrone">Назначить дрона на водосборник</button>
-            <button id="removeWaterDrone">Снять дрона с водосборника</button>
-          </div>
-        </article>
-
-        <article class="site-card">
-          <h3>Металлоломный участок</h3>
-          <p>Ресурс: <span id="metalSiteResource">металл</span></p>
-          <p>Уровень: <span id="metalSiteLevel">1</span></p>
-          <p>Базовый выход: <span id="metalSiteBaseOutput">3</span></p>
-          <p>Назначено дронов: <span id="metalSiteAssigned">0</span> / <span id="metalSiteDroneLimit">3</span></p>
-          <p>Выход за действие: <span id="metalSiteOutput">0</span></p>
-          <div class="buttons">
-            <button id="assignMetalDrone">Назначить дрона на металлоломный участок</button>
-            <button id="removeMetalDrone">Снять дрона с металлоломного участка</button>
-          </div>
-        </article>
-
-        <article class="site-card">
-          <h3>Энергетический узел</h3>
-          <p>Ресурс: <span id="energySiteResource">энергия</span></p>
-          <p>Уровень: <span id="energySiteLevel">1</span></p>
-          <p>Базовый выход: <span id="energySiteBaseOutput">2</span></p>
-          <p>Назначено дронов: <span id="energySiteAssigned">0</span> / <span id="energySiteDroneLimit">3</span></p>
-          <p>Выход за действие: <span id="energySiteOutput">0</span></p>
-          <div class="buttons">
-            <button id="assignEnergyDrone">Назначить дрона на энергетический узел</button>
-            <button id="removeEnergyDrone">Снять дрона с энергетического узла</button>
-          </div>
-        </article>
+  <main class="game-shell">
+    <header class="top-bar" aria-label="Верхняя панель ресурсов">
+      <div class="brand-block">
+        <p class="eyebrow">стратегия выживания</p>
+        <h1>Аурелия-18</h1>
       </div>
-    </section>
-
-    <section class="panel">
-      <h2>Корабль</h2>
-      <p>Построено частей: <span id="shipParts">0</span> / 5</p>
-      <div id="shipStatus" class="ship-status"></div>
-    </section>
-
-    <section class="panel">
-      <h2>Действия</h2>
-      <div class="buttons">
-        <button id="gatherWater">Собрать воду</button>
-        <button id="mineMetal">Добыть металл</button>
-        <button id="generateEnergy">Добыть энергию</button>
-        <button id="upgradeWorkshop">Улучшить цех</button>
-        <button id="buildShip">Построить часть корабля</button>
+      <div class="location-block">
+        <span class="label">Локация</span>
+        <strong>Место крушения</strong>
+        <span class="cycle">День / цикл: <span id="turn">1</span> / 20</span>
       </div>
+      <section class="resource-strip" aria-label="Ресурсы базы">
+        <article class="resource-card"><span>💳</span><small>Кредиты</small><strong id="credits">0</strong></article>
+        <article class="resource-card"><span>⛓️</span><small>Металл</small><strong id="metal">0</strong></article>
+        <article class="resource-card"><span>💧</span><small>Вода</small><strong id="water">0</strong></article>
+        <article class="resource-card"><span>⚡</span><small>Энергия</small><strong id="energy">0</strong></article>
+        <article class="resource-card"><span>🜁</span><small>Эфир</small><strong id="ether">0</strong></article>
+        <article class="resource-card"><span>📡</span><small>Данные</small><strong id="data">0</strong></article>
+        <article class="resource-card"><span>🔩</span><small>Компоненты</small><strong id="components">0</strong></article>
+      </section>
+    </header>
+
+    <div class="layout-grid">
+      <aside class="side-panel nav-panel" aria-label="Навигация">
+        <h2>Разделы</h2>
+        <button class="nav-button active" type="button">База</button>
+        <button class="nav-button" type="button">Дроны</button>
+        <button class="nav-button" type="button">Задачи</button>
+        <button class="nav-button" type="button">Исследования</button>
+        <button class="nav-button" type="button">Журнал</button>
+
+        <section class="mini-panel">
+          <h3>Дроны</h3>
+          <p>Свободно: <strong id="totalFreeDrones">0</strong></p>
+          <p>Назначено: <strong id="totalAssignedDrones">0</strong></p>
+          <div id="droneStatus" class="drone-list"></div>
+        </section>
+      </aside>
+
+      <section class="base-map-card" aria-label="Карта базы">
+        <div class="map-header">
+          <div>
+            <p class="eyebrow">экран базы</p>
+            <h2>Место крушения</h2>
+          </div>
+          <div class="ship-summary">
+            <span>Корпус: <strong id="hullIntegrity">45</strong>%</span>
+            <span>Секции: <strong id="shipParts">0</strong> / 5</span>
+          </div>
+        </div>
+
+        <div class="base-map">
+          <div class="map-line line-water"></div>
+          <div class="map-line line-metal"></div>
+          <div class="map-line line-energy"></div>
+          <div class="map-line line-workshop"></div>
+          <div class="map-line line-repair"></div>
+          <div class="map-line line-scanner"></div>
+
+          <button class="zone-card zone-water" data-site="water" type="button">
+            <span class="zone-icon">💧</span>
+            <strong>Водосборник</strong>
+            <small>Ур. <span data-site-level="water">1</span> · вода</small>
+            <em>+<span data-site-output="water">2</span> / действие</em>
+          </button>
+
+          <button class="zone-card zone-metal" data-site="metal" type="button">
+            <span class="zone-icon">⛓️</span>
+            <strong>Металлоломный участок</strong>
+            <small>Ур. <span data-site-level="metal">1</span> · металл</small>
+            <em>+<span data-site-output="metal">3</span> / действие</em>
+          </button>
+
+          <button class="zone-card zone-energy" data-site="energy" type="button">
+            <span class="zone-icon">⚡</span>
+            <strong>Энергетический узел</strong>
+            <small>Ур. <span data-site-level="energy">1</span> · энергия</small>
+            <em>+<span data-site-output="energy">2</span> / действие</em>
+          </button>
+
+          <button class="zone-card zone-workshop" data-site="workshop" type="button">
+            <span class="zone-icon">🛠️</span>
+            <strong>Сборочный цех дронов</strong>
+            <small>Ур. <span data-site-level="workshop">1</span> · дроны</small>
+            <em>заглушка развития</em>
+          </button>
+
+          <button class="zone-card zone-repair" data-site="repair" type="button">
+            <span class="zone-icon">🚧</span>
+            <strong>Ремонтная площадка</strong>
+            <small>Ур. <span data-site-level="repair">1</span> · корпус</small>
+            <em>ремонт дешевле</em>
+          </button>
+
+          <button class="zone-card zone-scanner" data-site="scanner" type="button">
+            <span class="zone-icon">📡</span>
+            <strong>Сканерный модуль</strong>
+            <small>Ур. <span data-site-level="scanner">1</span> · данные</small>
+            <em>заглушка разведки</em>
+          </button>
+
+          <section class="command-node" aria-label="Корабль и командный узел">
+            <div class="ship-silhouette">
+              <span class="ship-nose"></span>
+              <span class="ship-body"></span>
+              <span class="ship-tail"></span>
+            </div>
+            <h3>Корабль</h3>
+            <p>Командный узел</p>
+            <div id="shipStatus" class="ship-status" aria-label="Секции корабля"></div>
+          </section>
+        </div>
+      </section>
+
+      <aside class="side-panel info-panel" aria-label="Выбранная зона">
+        <p class="eyebrow">выбранная зона</p>
+        <h2 id="selectedSiteName">Водосборник</h2>
+        <p class="level-badge">Уровень <span id="selectedSiteLevel">1</span></p>
+        <p id="selectedSiteDescription" class="description"></p>
+
+        <dl class="info-list">
+          <div>
+            <dt>Функция</dt>
+            <dd id="selectedSiteFunction"></dd>
+          </div>
+          <div>
+            <dt>Выход / эффект</dt>
+            <dd id="selectedSiteEffect"></dd>
+          </div>
+          <div>
+            <dt>Стоимость улучшения</dt>
+            <dd id="selectedSiteCost"></dd>
+          </div>
+        </dl>
+
+        <p id="upgradeMessage" class="upgrade-message"></p>
+        <button id="upgradeSelectedSite" class="primary-action" type="button">Улучшить</button>
+
+        <section id="droneAssignment" class="mini-panel assignment-panel">
+          <h3>Назначение дронов</h3>
+          <p id="selectedSiteDrones"></p>
+          <div class="button-row">
+            <button id="assignSelectedDrone" type="button">Назначить дрона</button>
+            <button id="removeSelectedDrone" type="button">Снять дрона</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="bottom-bar" aria-label="Действия базы">
+      <div class="action-panel">
+        <h2>Действия</h2>
+        <div class="button-row">
+          <button id="mineMetal" type="button">Собрать металл</button>
+          <button id="gatherWater" type="button">Добыть воду</button>
+          <button id="generateEnergy" type="button">Получить энергию</button>
+          <button id="repairHull" type="button">Отремонтировать корпус</button>
+          <button id="newGame" class="danger-action" type="button">Новая игра</button>
+        </div>
+      </div>
+
+      <aside class="event-panel">
+        <h2>Активные события</h2>
+        <p><span>🌪️</span> Приближается песчаная буря</p>
+        <small>Заглушка: событие пока не влияет на механику.</small>
+      </aside>
     </section>
 
-    <section id="result" class="panel result hidden">
+    <section id="result" class="result-panel hidden" aria-live="polite">
       <h2 id="resultTitle"></h2>
       <p id="resultText"></p>
-      <button id="restart">Начать заново</button>
     </section>
 
-    <section class="panel">
-      <h2>Журнал событий</h2>
+    <section class="log-panel" aria-label="Журнал событий">
+      <h2>Журнал</h2>
       <ul id="log"></ul>
     </section>
   </main>
