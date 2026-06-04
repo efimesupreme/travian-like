@@ -6,16 +6,16 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   color: #eef4ff;
-  background: #101827;
+  background: #0f172a;
 }
 
-.game {
+.app {
   width: min(1100px, 94%);
   margin: 0 auto;
   padding: 24px 0;
 }
 
-.hero-header {
+.top-panel {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -23,12 +23,12 @@ body {
   margin-bottom: 16px;
 }
 
-.eyebrow {
+.label {
   margin: 0 0 6px;
-  color: #8fd3ff;
+  color: #93c5fd;
   font-size: 14px;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 h1,
@@ -41,26 +41,20 @@ h1 {
   margin-bottom: 8px;
 }
 
-.intro,
+.description,
 .hint {
-  color: #c9d8ee;
+  color: #cbd5e1;
 }
 
 .panel {
   margin-bottom: 16px;
   padding: 16px;
-  border: 1px solid #2e4568;
+  border: 1px solid #334155;
   border-radius: 12px;
-  background: #17233a;
+  background: #172033;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
-}
-
-.buttons {
+.actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -71,23 +65,29 @@ button {
   padding: 10px 14px;
   border: 0;
   border-radius: 8px;
-  color: #101827;
+  color: #0f172a;
   font-weight: bold;
-  background: #8fd3ff;
+  background: #93c5fd;
   cursor: pointer;
 }
 
 button:hover {
-  background: #b9e5ff;
+  background: #bfdbfe;
 }
 
-.danger-button {
+.secondary-button {
   flex: 0 0 auto;
-  background: #ffd166;
+  background: #facc15;
 }
 
-.danger-button:hover {
-  background: #ffe199;
+.secondary-button:hover {
+  background: #fde047;
+}
+
+.state-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
 }
 
 .stat-list {
@@ -100,7 +100,7 @@ button:hover {
   justify-content: space-between;
   gap: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #263a59;
+  border-bottom: 1px solid #334155;
 }
 
 .stat-row:last-child {
@@ -109,7 +109,7 @@ button:hover {
 }
 
 .stat-name {
-  color: #c9d8ee;
+  color: #cbd5e1;
 }
 
 .stat-value {
@@ -117,7 +117,7 @@ button:hover {
 }
 
 .task-list {
-  min-height: 110px;
+  min-height: 120px;
   margin: 0;
   padding-left: 22px;
 }
@@ -127,11 +127,11 @@ button:hover {
 }
 
 @media (max-width: 620px) {
-  .hero-header {
+  .top-panel {
     display: block;
   }
 
-  .danger-button {
+  .secondary-button {
     margin-bottom: 16px;
   }
 }

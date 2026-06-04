@@ -7,19 +7,19 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="game">
-    <header class="hero-header">
+  <main class="app">
+    <header class="top-panel">
       <div>
-        <p class="eyebrow">Первый технический прототип</p>
+        <p class="label">Технический прототип</p>
         <h1>Аурелия-18</h1>
-        <p class="intro">Колония держится на герое, корабле, ресурсах и дронах. Пока доступны только базовые действия без таймеров.</p>
+        <p class="description">Базовый экран состояния колонии без боёвки, карты, города и сложных квестов.</p>
       </div>
-      <button id="newGameButton" class="danger-button">Новая игра</button>
+      <button id="newGameButton" class="secondary-button">Новая игра</button>
     </header>
 
-    <section class="actions panel">
+    <section class="panel">
       <h2>Действия</h2>
-      <div class="buttons">
+      <div class="actions">
         <button id="collectMetalButton">Собрать металл</button>
         <button id="collectWaterButton">Добыть воду</button>
         <button id="repairHullButton">Отремонтировать корпус</button>
@@ -27,35 +27,35 @@
       <p class="hint">Ремонт корпуса стоит 5 металла и восстанавливает 10 единиц корпуса.</p>
     </section>
 
-    <section class="grid">
+    <section class="state-grid">
       <article class="panel">
         <h2>Герой</h2>
-        <div id="heroBlock" class="stat-list"></div>
+        <div id="heroState" class="stat-list"></div>
       </article>
 
       <article class="panel">
         <h2>Корабль</h2>
-        <div id="shipBlock" class="stat-list"></div>
+        <div id="shipState" class="stat-list"></div>
       </article>
 
       <article class="panel">
         <h2>Ресурсы</h2>
-        <div id="resourcesBlock" class="stat-list"></div>
+        <div id="resourcesState" class="stat-list"></div>
       </article>
 
       <article class="panel">
         <h2>Дроны</h2>
-        <div id="dronesBlock" class="stat-list"></div>
+        <div id="dronesState" class="stat-list"></div>
       </article>
 
       <article class="panel">
         <h2>Производственные участки</h2>
-        <div id="sitesBlock" class="stat-list"></div>
+        <div id="sitesState" class="stat-list"></div>
       </article>
 
       <article class="panel">
-        <h2>Текущие задачи</h2>
-        <ul id="tasksBlock" class="task-list"></ul>
+        <h2>Активные задачи</h2>
+        <ul id="tasksState" class="task-list"></ul>
       </article>
     </section>
   </main>

@@ -1,7 +1,7 @@
-// Ключ, по которому игра хранит прогресс в localStorage браузера.
+// Ключ для сохранения прогресса в браузере.
 const saveKey = 'aurelia18GameState';
 
-// Начальное состояние игры. Это главный каркас данных проекта.
+// Начальное состояние игры. Пока это весь основной каркас данных.
 const startState = {
   hero: {
     name: 'Капитан Рина',
@@ -41,62 +41,55 @@ const startState = {
     energyNode: 1
   },
   activeTasks: [
-    'Проверить состояние корабля',
+    'Осмотреть корабль',
     'Собрать металл для ремонта корпуса'
   ]
 };
 
-// Рабочая копия состояния. Она меняется во время игры.
+// Текущее состояние игры. Оно загружается из localStorage или создаётся заново.
 let gameState = loadGame();
 
-// Находим элементы страницы, куда будем выводить состояние.
-const heroBlock = document.getElementById('heroBlock');
-const shipBlock = document.getElementById('shipBlock');
-const resourcesBlock = document.getElementById('resourcesBlock');
-const dronesBlock = document.getElementById('dronesBlock');
-const sitesBlock = document.getElementById('sitesBlock');
-const tasksBlock = document.getElementById('tasksBlock');
+// Элементы страницы для вывода состояния.
+const heroState = document.getElementById('heroState');
+const shipState = document.getElementById('shipState');
+const resourcesState = document.getElementById('resourcesState');
+const dronesState = document.getElementById('dronesState');
+const sitesState = document.getElementById('sitesState');
+const tasksState = document.getElementById('tasksState');
 
-// Подключаем кнопки к простым действиям без таймеров.
+// Кнопки действий.
 document.getElementById('collectMetalButton').addEventListener('click', collectMetal);
 document.getElementById('collectWaterButton').addEventListener('click', collectWater);
 document.getElementById('repairHullButton').addEventListener('click', repairHull);
-document.getElementById('newGameButton').addEventListener('click', newGame);
+document.getElementById('newGameButton').addEventListener('click', startNewGame);
 
-// Загружает сохранение. Если его нет или оно повреждено, создаёт новое состояние.
+// Загружает игру. Если сохранение отсутствует или сломано, начинает новую игру.
 function loadGame() {
   const savedState = localStorage.getItem(saveKey);
 
   if (!savedState) {
-    return createNewState();
+    return createStartState();
   }
 
   try {
-    // Смешиваем сохранение с базовым состоянием, чтобы новые поля не терялись
-    // после будущих обновлений прототипа.
-    return mergeState(createNewState(), JSON.parse(savedState));
+    return mergeState(createStartState(), JSON.parse(savedState));
   } catch (error) {
     localStorage.removeItem(saveKey);
-    return createNewState();
+    return createStartState();
   }
 }
 
-// Сохраняет текущее состояние, чтобы прогресс не пропал после перезагрузки.
+// Сохраняет текущее состояние в браузере.
 function saveGame() {
   localStorage.setItem(saveKey, JSON.stringify(gameState));
 }
 
-// Создаёт чистое начальное состояние для новой игры.
-function createNewState() {
-  return copyState(startState);
+// Создаёт копию начального состояния, чтобы не менять startState напрямую.
+function createStartState() {
+  return JSON.parse(JSON.stringify(startState));
 }
 
-// Делает простую глубокую копию объекта состояния.
-function copyState(state) {
-  return JSON.parse(JSON.stringify(state));
-}
-
-// Аккуратно добавляет сохранённые значения поверх базового состояния.
+// Добавляет сохранённые значения поверх начального состояния.
 function mergeState(baseState, savedState) {
   for (const key in savedState) {
     if (isSimpleObject(baseState[key]) && isSimpleObject(savedState[key])) {
@@ -109,7 +102,7 @@ function mergeState(baseState, savedState) {
   return baseState;
 }
 
-// Проверяет, что значение является обычным объектом, а не массивом.
+// Проверяет, что значение является простым объектом, а не массивом.
 function isSimpleObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -119,7 +112,7 @@ function collectMetal() {
   const amount = 3 + gameState.sites.scrapYard + gameState.drones.miners;
   gameState.resources.metal += amount;
   addTask('Собрано металла: +' + amount);
-  updateAfterAction();
+  saveAndRender();
 }
 
 // Действие: добыть воду через водосборник.
@@ -127,7 +120,7 @@ function collectWater() {
   const amount = 2 + gameState.sites.waterCollector + gameState.drones.collectors;
   gameState.resources.water += amount;
   addTask('Добыто воды: +' + amount);
-  updateAfterAction();
+  saveAndRender();
 }
 
 // Действие: отремонтировать корпус корабля за металл.
@@ -137,13 +130,13 @@ function repairHull() {
 
   if (gameState.resources.metal < metalCost) {
     addTask('Не хватает металла для ремонта корпуса. Нужно 5 металла.');
-    updateAfterAction();
+    saveAndRender();
     return;
   }
 
   if (gameState.ship.hull >= 100) {
     addTask('Корпус уже полностью отремонтирован.');
-    updateAfterAction();
+    saveAndRender();
     return;
   }
 
@@ -155,17 +148,16 @@ function repairHull() {
   }
 
   addTask('Корпус отремонтирован: +10 прочности за 5 металла.');
-  updateAfterAction();
+  saveAndRender();
 }
 
-// Сбрасывает прогресс и начинает новую игру.
-function newGame() {
-  gameState = createNewState();
-  saveGame();
-  renderGame();
+// Действие: начать новую игру и сбросить сохранение.
+function startNewGame() {
+  gameState = createStartState();
+  saveAndRender();
 }
 
-// Добавляет запись в список текущих задач. Старые записи оставляем как простой журнал.
+// Добавляет запись в активные задачи. Последние события остаются сверху.
 function addTask(text) {
   gameState.activeTasks.unshift(text);
 
@@ -174,15 +166,15 @@ function addTask(text) {
   }
 }
 
-// После любого действия сохраняем состояние и перерисовываем экран.
-function updateAfterAction() {
+// Сохраняет игру и обновляет экран после действия.
+function saveAndRender() {
   saveGame();
   renderGame();
 }
 
-// Перерисовывает весь экран состояния.
+// Обновляет все блоки состояния на экране.
 function renderGame() {
-  renderStats(heroBlock, [
+  renderStats(heroState, [
     ['Имя', gameState.hero.name],
     ['Сила', gameState.hero.strength],
     ['Мудрость', gameState.hero.wisdom],
@@ -190,7 +182,7 @@ function renderGame() {
     ['Здоровье', gameState.hero.health]
   ]);
 
-  renderStats(shipBlock, [
+  renderStats(shipState, [
     ['Корпус', gameState.ship.hull + ' / 100'],
     ['Реактор', gameState.ship.reactor + ' / 100'],
     ['Кислородный контур', gameState.ship.oxygenLoop + ' / 100'],
@@ -199,7 +191,7 @@ function renderGame() {
     ['Двигатель', gameState.ship.engine + ' / 100']
   ]);
 
-  renderStats(resourcesBlock, [
+  renderStats(resourcesState, [
     ['Кредиты', gameState.resources.credits],
     ['Металл', gameState.resources.metal],
     ['Вода', gameState.resources.water],
@@ -209,7 +201,7 @@ function renderGame() {
     ['Компоненты', gameState.resources.components]
   ]);
 
-  renderStats(dronesBlock, [
+  renderStats(dronesState, [
     ['Фермеры', gameState.drones.farmers],
     ['Шахтёры', gameState.drones.miners],
     ['Сборщики', gameState.drones.collectors],
@@ -218,7 +210,7 @@ function renderGame() {
     ['Разведчики', gameState.drones.scouts]
   ]);
 
-  renderStats(sitesBlock, [
+  renderStats(sitesState, [
     ['Водосборник', 'уровень ' + gameState.sites.waterCollector],
     ['Металлоломный участок', 'уровень ' + gameState.sites.scrapYard],
     ['Энергетический узел', 'уровень ' + gameState.sites.energyNode]
@@ -227,9 +219,9 @@ function renderGame() {
   renderTasks();
 }
 
-// Выводит список характеристик в одинаковом формате.
-function renderStats(block, rows) {
-  block.innerHTML = '';
+// Рисует список характеристик внутри одного блока.
+function renderStats(container, rows) {
+  container.innerHTML = '';
 
   for (let i = 0; i < rows.length; i++) {
     const row = document.createElement('div');
@@ -245,20 +237,20 @@ function renderStats(block, rows) {
 
     row.appendChild(name);
     row.appendChild(value);
-    block.appendChild(row);
+    container.appendChild(row);
   }
 }
 
-// Выводит текущие задачи и последние результаты действий.
+// Рисует активные задачи и последние результаты действий.
 function renderTasks() {
-  tasksBlock.innerHTML = '';
+  tasksState.innerHTML = '';
 
   for (let i = 0; i < gameState.activeTasks.length; i++) {
     const task = document.createElement('li');
     task.textContent = gameState.activeTasks[i];
-    tasksBlock.appendChild(task);
+    tasksState.appendChild(task);
   }
 }
 
-// Первый вывод игры на экран.
+// Первый вывод состояния при открытии страницы.
 renderGame();
