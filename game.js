@@ -3,7 +3,8 @@ const saveKey = 'aurelia-18-save-v9';
 const legacySaveKeys = ['aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
-
+const typewriterDelay = 22;
+const typewriterCursor = '|';
 
 const initialHero = {
   name: 'Герой',
@@ -318,6 +319,16 @@ const elements = {
   selectedName: document.getElementById('selectedName'),
   selectedDescription: document.getElementById('selectedDescription'),
   selectedActions: document.getElementById('selectedActions')
+};
+
+const reducedMotionQuery = window.matchMedia
+  ? window.matchMedia('(prefers-reduced-motion: reduce)')
+  : { matches: false };
+const typewriterState = {
+  timerId: 0,
+  token: 0,
+  currentKey: '',
+  isTyping: false
 };
 
 function createInitialState() {
@@ -958,13 +969,95 @@ function renderSelectionPanel() {
 
   const selection = getCurrentSelection();
   if (!selection) {
+    stopTypewriter();
     renderEmptyHeroActions();
     return;
   }
 
+  const panelText = getSelectionPanelText(selection);
+  const panelKey = selection.id + ':' + panelText;
+
   elements.selectedName.textContent = selection.name;
-  elements.selectedDescription.textContent = selection.description;
-  renderObjectActionOptions(selection);
+
+  if (reducedMotionQuery.matches) {
+    stopTypewriter(panelKey);
+    elements.selectedDescription.textContent = panelText;
+    elements.selectedDescription.classList.remove('typing');
+    renderObjectActionOptions(selection);
+    return;
+  }
+
+  if (typewriterState.currentKey === panelKey) {
+    if (typewriterState.isTyping) {
+      return;
+    }
+
+    elements.selectedDescription.textContent = panelText;
+    elements.selectedDescription.classList.remove('typing');
+    renderObjectActionOptions(selection);
+    return;
+  }
+
+  startTypewriter(panelText, panelKey, function () {
+    const currentSelection = getCurrentSelection();
+    if (!currentSelection || currentSelection.id + ':' + getSelectionPanelText(currentSelection) !== panelKey) {
+      return;
+    }
+
+    elements.selectedActions.innerHTML = '';
+    renderObjectActionOptions(currentSelection);
+  });
+}
+
+function getSelectionPanelText(selection) {
+  if (state.narrativeObjectId === selection.id && state.narrativeMessage) {
+    return state.narrativeMessage;
+  }
+
+  return selection.description;
+}
+
+function startTypewriter(text, panelKey, onComplete) {
+  stopTypewriter(panelKey);
+
+  const token = typewriterState.token;
+  typewriterState.currentKey = panelKey;
+  typewriterState.isTyping = true;
+  elements.selectedDescription.classList.add('typing');
+  elements.selectedDescription.textContent = typewriterCursor;
+
+  let index = 0;
+  function typeNextCharacter() {
+    if (token !== typewriterState.token || typewriterState.currentKey !== panelKey) {
+      return;
+    }
+
+    index += 1;
+    elements.selectedDescription.textContent = text.slice(0, index) + (index < text.length ? typewriterCursor : '');
+
+    if (index >= text.length) {
+      typewriterState.isTyping = false;
+      elements.selectedDescription.classList.remove('typing');
+      onComplete();
+      return;
+    }
+
+    typewriterState.timerId = window.setTimeout(typeNextCharacter, typewriterDelay);
+  }
+
+  typewriterState.timerId = window.setTimeout(typeNextCharacter, typewriterDelay);
+}
+
+function stopTypewriter(nextKey) {
+  if (typewriterState.timerId) {
+    window.clearTimeout(typewriterState.timerId);
+  }
+
+  typewriterState.timerId = 0;
+  typewriterState.token += 1;
+  typewriterState.currentKey = nextKey || '';
+  typewriterState.isTyping = false;
+  elements.selectedDescription.classList.remove('typing');
 }
 
 function renderEmptyHeroActions() {
