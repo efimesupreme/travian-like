@@ -1,6 +1,6 @@
 // Аурелия-18: разделы «Корабль», «Пустоши», «Город» и «Разведка».
-const saveKey = 'aurelia-18-save-v5';
-const legacySaveKeys = ['aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
+const saveKey = 'aurelia-18-save-v6';
+const legacySaveKeys = ['aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
 
@@ -100,30 +100,35 @@ const territoryBlueprints = {
   },
   oldStorage: {
     name: 'Старый склад проекта',
+    openCost: 4,
     biome: 'Полузасыпанный контейнерный ряд с совместимыми деталями старой экспедиции.',
     resourceText: 'компоненты',
     baseOutput: { components: 2 }
   },
   commNode: {
     name: 'Узел связи',
+    openCost: 5,
     biome: 'Поваленная мачта связи периодически отдаёт фрагменты технической телеметрии.',
     resourceText: 'разведданные',
     baseOutput: { recon: 3 }
   },
   rustyFarm: {
     name: 'Ржавая ферма',
+    openCost: 6,
     biome: 'Старые гидропонные ванны сохранили влагу и немного обслуживающих деталей.',
     resourceText: 'вода и компоненты',
     baseOutput: { water: 3, components: 1 }
   },
   brokenDrill: {
     name: 'Разбитая буровая',
+    openCost: 7,
     biome: 'Сорванная буровая платформа оставила металл и пригодные к перепайке узлы.',
     resourceText: 'металл и компоненты',
     baseOutput: { metal: 4, components: 1 }
   },
   blackDune: {
     name: 'Чёрная дюна',
+    openCost: 9,
     biome: 'Магнитный песок скрывает случайные включения: металл, компоненты или разведданные.',
     resourceText: 'случайно: металл, компоненты или разведданные',
     baseOutput: { random: 4 },
@@ -206,6 +211,9 @@ const elements = {
   cityScreen: document.getElementById('cityScreen'),
   reconScreen: document.getElementById('reconScreen'),
   reconScreenAmount: document.getElementById('reconScreenAmount'),
+  reconOpenedCount: document.getElementById('reconOpenedCount'),
+  reconClosedCount: document.getElementById('reconClosedCount'),
+  reconClosedList: document.getElementById('reconClosedList'),
   shipSystemsGrid: document.getElementById('shipSystemsGrid'),
   territoriesGrid: document.getElementById('territoriesGrid'),
   cityGrid: document.getElementById('cityGrid'),
@@ -262,6 +270,7 @@ function createTerritories() {
     const key = keys[i];
     territories[key] = {
       level: 1,
+      isOpen: !territoryBlueprints[key].openCost,
       assignedDrones: 0,
       droneLimit: 3
     };
@@ -372,6 +381,11 @@ function assignDrone(key) {
     return;
   }
 
+  if (!territory.isOpen) {
+    addLog('Нельзя назначить дрона для добычи: ' + blueprint.name + ' ещё не открыта.');
+    return;
+  }
+
   if (state.drones.free <= 0) {
     addLog('Свободных дронов нет: нельзя назначить дрона на ' + blueprint.name + '.');
     return;
@@ -415,6 +429,11 @@ function gatherTerritory(key) {
     return;
   }
 
+  if (!territory.isOpen) {
+    addLog(blueprint.name + ': закрытая зона недоступна для добычи.');
+    return;
+  }
+
   if (territory.assignedDrones <= 0) {
     addLog(blueprint.name + ': добыча невозможна без назначенных дронов.');
     return;
@@ -429,6 +448,76 @@ function gatherTerritory(key) {
   }
 
   addLog('Получено: ' + formatGain(gain) + '.');
+}
+
+function scoutTerritoryWithDrone(key) {
+  const territory = state.territories[key];
+  const blueprint = territoryBlueprints[key];
+
+  if (!territory || !blueprint || territory.isOpen) {
+    return;
+  }
+
+  if (state.drones.free <= 0) {
+    addLog('Нет свободных дронов для разведки.');
+    return;
+  }
+
+  if (state.resources.energy < 1) {
+    addLog('Недостаточно энергии для разведки дроном.');
+    return;
+  }
+
+  state.resources.energy -= 1;
+  state.resources.recon += 1;
+  addLog('Дрон исследовал зону: ' + blueprint.name + '. Получено: разведданные +1.');
+}
+
+function scoutTerritoryPersonally(key) {
+  const territory = state.territories[key];
+  const blueprint = territoryBlueprints[key];
+
+  if (!territory || !blueprint || territory.isOpen) {
+    return;
+  }
+
+  if (state.resources.water < 2 && state.resources.energy < 1) {
+    addLog('Недостаточно воды и энергии для личной разведки. Нужно: вода 2, энергия 1.');
+    return;
+  }
+
+  if (state.resources.water < 2) {
+    addLog('Недостаточно воды для личной разведки. Нужно: вода 2.');
+    return;
+  }
+
+  if (state.resources.energy < 1) {
+    addLog('Недостаточно энергии для личной разведки. Нужно: энергия 1.');
+    return;
+  }
+
+  state.resources.water -= 2;
+  state.resources.energy -= 1;
+  state.resources.recon += 2;
+  addLog('Вы лично исследовали зону: ' + blueprint.name + '. Получено: разведданные +2.');
+}
+
+function openTerritory(key) {
+  const territory = state.territories[key];
+  const blueprint = territoryBlueprints[key];
+
+  if (!territory || !blueprint || territory.isOpen) {
+    return;
+  }
+
+  if (state.resources.recon < blueprint.openCost) {
+    addLog('Недостаточно разведданных для открытия: ' + blueprint.name + '.');
+    return;
+  }
+
+  state.resources.recon -= blueprint.openCost;
+  territory.isOpen = true;
+  addLog('Открыта новая пустошь: ' + blueprint.name + '.');
 }
 
 function getTerritoryGain(key) {
@@ -515,6 +604,7 @@ function render() {
   renderShipSystems();
   renderTerritories();
   renderCity();
+  renderReconScreen();
   renderSelectionPanel();
   renderLog();
 }
@@ -528,6 +618,12 @@ function renderResources() {
   elements.recon.textContent = state.resources.recon;
   if (elements.reconScreenAmount) {
     elements.reconScreenAmount.textContent = state.resources.recon;
+  }
+  if (elements.reconOpenedCount) {
+    elements.reconOpenedCount.textContent = countOpenTerritories();
+  }
+  if (elements.reconClosedCount) {
+    elements.reconClosedCount.textContent = countClosedTerritories();
   }
   elements.headerFreeDrones.textContent = state.drones.free;
   elements.restoredSystems.textContent = countRestoredSystems();
@@ -628,22 +724,39 @@ function renderTerritories() {
     const key = keys[i];
     const blueprint = territoryBlueprints[key];
     const territory = state.territories[key];
+    const isOpen = territory.isOpen;
     const card = document.createElement('article');
     card.className = 'game-card territory-card territory-' + i;
+    card.classList.toggle('territory-closed', !isOpen);
     card.classList.toggle('selected', state.mode === 'territories' && state.selectedTerritoryKey === key);
+
+    let detailsHtml = '';
+    let actionsHtml = '';
+
+    if (isOpen) {
+      detailsHtml = '<small>Статус: открыта · дроны ' + territory.assignedDrones + ' / ' + territory.droneLimit + '</small>' +
+        '<p>' + blueprint.biome + '</p>' +
+        '<em>Ресурс: ' + blueprint.resourceText + '</em>' +
+        '<em>Выход: ' + getTerritoryOutputText(key) + '</em>';
+      actionsHtml = '<button type="button" data-assign-key="' + key + '">Назначить дрона</button>' +
+        '<button type="button" data-remove-key="' + key + '">Снять дрона</button>' +
+        '<button type="button" data-gather-key="' + key + '">Собрать ресурс</button>';
+    } else {
+      detailsHtml = '<small>Статус: неизвестная зона</small>' +
+        '<p>Контуры зоны видны на сканере, но точный ресурс и опасные участки ещё не подтверждены.</p>' +
+        '<em>Потенциальный ресурс неизвестен</em>' +
+        '<em>Открытие: разведданные ' + blueprint.openCost + '</em>';
+      actionsHtml = '<button type="button" data-scout-drone-key="' + key + '">Исследовать дроном</button>' +
+        '<button type="button" data-scout-person-key="' + key + '">Исследовать лично</button>' +
+        '<button type="button" data-open-territory-key="' + key + '">Открыть пустошь</button>';
+    }
+
     card.innerHTML = '<button class="card-select" type="button" data-territory-key="' + key + '">' +
       '<span class="card-kicker">пустошь</span>' +
       '<strong>' + blueprint.name + '</strong>' +
-      '<small>Ур. ' + territory.level + ' · дроны ' + territory.assignedDrones + ' / ' + territory.droneLimit + '</small>' +
-      '<p>' + blueprint.biome + '</p>' +
-      '<em>Ресурс: ' + blueprint.resourceText + '</em>' +
-      '<em>Выход: ' + getTerritoryOutputText(key) + '</em>' +
+      detailsHtml +
       '</button>' +
-      '<div class="compact-actions">' +
-      '<button type="button" data-assign-key="' + key + '">Назначить дрона</button>' +
-      '<button type="button" data-remove-key="' + key + '">Снять дрона</button>' +
-      '<button type="button" data-gather-key="' + key + '">Собрать ресурс</button>' +
-      '</div>';
+      '<div class="compact-actions">' + actionsHtml + '</div>';
     elements.territoriesGrid.appendChild(card);
   }
 }
@@ -690,6 +803,42 @@ function renderCity() {
       '<p>' + point.description + '</p>' +
       '</button>';
     elements.uniqueCityGrid.appendChild(card);
+  }
+}
+
+function renderReconScreen() {
+  if (!elements.reconClosedList) {
+    return;
+  }
+
+  elements.reconClosedList.innerHTML = '';
+  const closedKeys = Object.keys(territoryBlueprints).filter(function (key) {
+    return !state.territories[key].isOpen;
+  });
+
+  if (closedKeys.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'recon-empty';
+    empty.textContent = 'Все известные пустоши открыты. Новые цели появятся в будущих обновлениях.';
+    elements.reconClosedList.appendChild(empty);
+    return;
+  }
+
+  for (let i = 0; i < closedKeys.length; i++) {
+    const key = closedKeys[i];
+    const blueprint = territoryBlueprints[key];
+    const card = document.createElement('article');
+    card.className = 'recon-target-card';
+    card.innerHTML = '<div>' +
+      '<strong>' + blueprint.name + '</strong>' +
+      '<span>Стоимость открытия: разведданные ' + blueprint.openCost + '</span>' +
+      '</div>' +
+      '<div class="compact-actions recon-actions">' +
+      '<button type="button" data-scout-drone-key="' + key + '">Исследовать дроном</button>' +
+      '<button type="button" data-scout-person-key="' + key + '">Исследовать лично</button>' +
+      '<button type="button" data-open-territory-key="' + key + '">Открыть</button>' +
+      '</div>';
+    elements.reconClosedList.appendChild(card);
   }
 }
 
@@ -750,26 +899,42 @@ function renderTerritorySelection() {
     elements.selectedStatus.textContent = 'пустоши';
     elements.selectedName.textContent = 'Пустоши';
     elements.selectedBadge.textContent = 'Выберите пустошь';
-    elements.selectedDescription.textContent = 'Назначайте свободных дронов на пустоши вокруг места крушения. Сбор ресурса работает только вручную и только при назначенных дронах.';
-    addDetail('Дроны', 'Всего 3, лимит на пустошь — 3.');
-    addDetail('Добыча', '1 дрон даёт базовый выход, 2 — x2, 3 — x3.');
+    elements.selectedDescription.textContent = 'Открытые пустоши доступны для добычи, а неизвестные зоны сначала нужно исследовать и открыть за разведданные.';
+    addDetail('Открыто', countOpenTerritories() + ' / ' + Object.keys(territoryBlueprints).length);
+    addDetail('Разведка', 'Дрон: энергия 1 → разведданные +1. Лично: вода 2 и энергия 1 → разведданные +2.');
     return;
   }
 
   const blueprint = territoryBlueprints[key];
   const territory = state.territories[key];
   elements.selectedEyebrow.textContent = 'выбранная пустошь';
-  elements.selectedStatus.textContent = 'дроны ' + territory.assignedDrones + '/3';
   elements.selectedName.textContent = blueprint.name;
+
+  if (!territory.isOpen) {
+    elements.selectedStatus.textContent = 'неизвестная зона';
+    elements.selectedBadge.textContent = 'Открытие: разведданные ' + blueprint.openCost;
+    elements.selectedDescription.textContent = 'Неизвестная зона требует осторожной разведки. Точный ресурс и безопасные маршруты будут понятны только после открытия.';
+    addDetail('Статус', 'неизвестная зона');
+    addDetail('Стоимость открытия', 'разведданные ' + blueprint.openCost);
+    addDetail('Ваш запас разведданных', state.resources.recon);
+    addDetail('Потенциальный ресурс', 'неизвестен');
+    appendActionButton('Исследовать дроном', 'scoutDroneKey', key, state.drones.free <= 0 || state.resources.energy < 1);
+    appendActionButton('Исследовать лично', 'scoutPersonKey', key, state.resources.water < 2 || state.resources.energy < 1);
+    appendActionButton('Открыть пустошь', 'openTerritoryKey', key, state.resources.recon < blueprint.openCost);
+    return;
+  }
+
+  elements.selectedStatus.textContent = 'открыта';
   elements.selectedBadge.textContent = 'Уровень ' + territory.level;
   elements.selectedDescription.textContent = blueprint.biome;
+  addDetail('Статус', 'открыта');
   addDetail('Основной ресурс', blueprint.resourceText);
   addDetail('Назначенные дроны', territory.assignedDrones + ' / ' + territory.droneLimit);
   addDetail('Текущий выход', territory.assignedDrones === 0 ? 'Нет добычи без дронов.' : getTerritoryOutputText(key));
 
   appendActionButton('Назначить дрона', 'assignKey', key, state.drones.free <= 0 || territory.assignedDrones >= territory.droneLimit);
   appendActionButton('Снять дрона', 'removeKey', key, territory.assignedDrones <= 0);
-  appendActionButton('Собрать ресурс', 'gatherKey', key, false);
+  appendActionButton('Собрать ресурс', 'gatherKey', key, territory.assignedDrones <= 0);
 }
 
 
@@ -848,13 +1013,15 @@ function renderCitySelection() {
 
 function renderReconHelp() {
   elements.selectedEyebrow.textContent = 'справка';
-  elements.selectedStatus.textContent = 'заглушка';
+  elements.selectedStatus.textContent = 'разведка';
   elements.selectedName.textContent = 'Разведка';
   elements.selectedBadge.textContent = 'Разведданные: ' + state.resources.recon;
-  elements.selectedDescription.textContent = 'Разведка нужна для открытия новых пустошей. Механика будет добавлена следующим шагом.';
-  addDetail('Запас разведданных', state.resources.recon);
-  addDetail('Статус', 'заглушка');
+  elements.selectedDescription.textContent = 'Разведданные нужны для открытия новых пустошей. Их можно получить, исследуя неизвестные зоны дроном или лично.';
+  addDetail('Открыто пустошей', countOpenTerritories());
+  addDetail('Осталось открыть', countClosedTerritories());
+  addDetail('Действия', 'Выберите неизвестную зону на экране «Пустоши» или используйте список целей разведки в центре экрана.');
 }
+
 
 function migrateLogMessage(message) {
   return String(message)
@@ -888,6 +1055,23 @@ function renderLog() {
     item.textContent = state.logMessages[i];
     elements.log.appendChild(item);
   }
+}
+
+function countOpenTerritories() {
+  const keys = Object.keys(state.territories);
+  let opened = 0;
+
+  for (let i = 0; i < keys.length; i++) {
+    if (state.territories[keys[i]].isOpen) {
+      opened += 1;
+    }
+  }
+
+  return opened;
+}
+
+function countClosedTerritories() {
+  return Object.keys(territoryBlueprints).length - countOpenTerritories();
 }
 
 function countRestoredSystems() {
@@ -1032,6 +1216,9 @@ function mergeSavedState(saved) {
     const key = territoryKeys[i];
     if (savedTerritories[key]) {
       next.territories[key].level = Math.max(1, savedNumber(savedTerritories[key].level, 1));
+      if (typeof savedTerritories[key].isOpen === 'boolean') {
+        next.territories[key].isOpen = savedTerritories[key].isOpen;
+      }
       next.territories[key].assignedDrones = Math.max(0, Math.min(3, savedNumber(savedTerritories[key].assignedDrones, 0)));
       next.territories[key].droneLimit = 3;
     }
@@ -1050,6 +1237,9 @@ function normalizeDrones(next) {
   let assigned = 0;
 
   for (let i = 0; i < keys.length; i++) {
+    if (!next.territories[keys[i]].isOpen) {
+      next.territories[keys[i]].assignedDrones = 0;
+    }
     assigned += next.territories[keys[i]].assignedDrones;
   }
 
@@ -1102,6 +1292,12 @@ document.addEventListener('click', function (event) {
     removeDrone(target.dataset.removeKey);
   } else if (target.dataset.gatherKey) {
     gatherTerritory(target.dataset.gatherKey);
+  } else if (target.dataset.scoutDroneKey) {
+    scoutTerritoryWithDrone(target.dataset.scoutDroneKey);
+  } else if (target.dataset.scoutPersonKey) {
+    scoutTerritoryPersonally(target.dataset.scoutPersonKey);
+  } else if (target.dataset.openTerritoryKey) {
+    openTerritory(target.dataset.openTerritoryKey);
   }
 });
 

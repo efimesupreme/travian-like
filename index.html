@@ -103,11 +103,17 @@
         </section>
 
         <section id="reconScreen" class="screen recon-screen hidden">
-          <div class="placeholder-card">
+          <div class="recon-card">
             <p class="eyebrow">раздел разведки</p>
             <h2>Разведка</h2>
-            <p>Разведка нужна для открытия новых пустошей. Механика будет добавлена следующим шагом.</p>
-            <p>Текущий запас разведданных: <strong id="reconScreenAmount">0</strong>.</p>
+            <p>Разведданные нужны для открытия новых пустошей. Их можно получить, исследуя неизвестные зоны дроном или лично.</p>
+            <div class="recon-summary" aria-label="Сводка разведки">
+              <article><small>Разведданные</small><strong id="reconScreenAmount">0</strong></article>
+              <article><small>Открыто пустошей</small><strong id="reconOpenedCount">3</strong></article>
+              <article><small>Осталось открыть</small><strong id="reconClosedCount">5</strong></article>
+            </div>
+            <h3>Неизвестные зоны</h3>
+            <div id="reconClosedList" class="recon-target-list"></div>
           </div>
         </section>
       </section>
