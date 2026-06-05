@@ -406,11 +406,15 @@ p {
   background: linear-gradient(145deg, rgba(39, 43, 54, 0.94), rgba(45, 24, 28, 0.82));
 }
 
-.system-card.status-partial {
+.system-card.status-disabled {
+  background: linear-gradient(145deg, rgba(25, 28, 36, 0.96), rgba(35, 35, 45, 0.86));
+}
+
+.system-card.status-stabilized {
   background: linear-gradient(145deg, rgba(19, 49, 77, 0.94), rgba(24, 62, 77, 0.78));
 }
 
-.system-card.status-restored {
+.system-card.status-improved {
   background: linear-gradient(145deg, rgba(19, 72, 58, 0.94), rgba(12, 42, 41, 0.82));
 }
 

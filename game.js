@@ -1,6 +1,6 @@
 // Аурелия-18: единая оболочка сцен «Герой», «Пустоши», «Корабль» и «Город».
-const saveKey = 'aurelia-18-save-v18';
-const legacySaveKeys = ['aurelia-18-save-v17', 'aurelia-18-save-v16', 'aurelia-18-save-v15', 'aurelia-18-save-v14', 'aurelia-18-save-v13', 'aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
+const saveKey = 'aurelia-18-save-v19';
+const legacySaveKeys = ['aurelia-18-save-v18', 'aurelia-18-save-v17', 'aurelia-18-save-v16', 'aurelia-18-save-v15', 'aurelia-18-save-v14', 'aurelia-18-save-v13', 'aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
 const typewriterDelay = 8;
@@ -110,54 +110,98 @@ const territoryGatherActions = {
   food: 'Собрать еду'
 };
 
+const shipStatusLabels = {
+  disabled: 'Выведена из строя',
+  damaged: 'Повреждена',
+  stabilized: 'Стабилизирована',
+  improved: 'Улучшена'
+};
+
+
 const shipSystemBlueprints = {
-  hull: {
-    name: 'Обшивка',
-    description: 'Внешний слой корпуса держит давление и защищает командный узел от песчаных ударов.',
-    status: 'повреждено',
-    repairCost: { metal: 6, energy: 2, components: 1 }
-  },
   reactor: {
     name: 'Реакторный отсек',
-    description: 'Уцелевший реактор выдаёт нестабильное питание и требует калибровки контуров.',
-    status: 'частично работает',
-    repairCost: { metal: 5, energy: 4, components: 1 }
+    status: 'damaged',
+    description: 'Повреждённый реактор даёт базовое питание корабля, но работает нестабильно.',
+    role: 'Производство энергии'
+  },
+  solarPanels: {
+    name: 'Солнечные панели',
+    status: 'damaged',
+    description: 'Часть панелей уцелела после падения. Их можно восстановить для дополнительной генерации.',
+    role: 'Дополнительная генерация энергии'
   },
   lifeSupport: {
     name: 'Жизнеобеспечение',
-    description: 'Фильтры воздуха, теплообменники и аварийные пайки подключены к повреждённой магистрали.',
-    status: 'повреждено',
-    repairCost: { water: 4, energy: 3, components: 1 }
+    status: 'damaged',
+    description: 'Система поддерживает пригодную среду внутри корабля, но требует ремонта.',
+    role: 'Безопасность и пригодность корабля'
   },
   waterLoop: {
     name: 'Водный контур',
-    description: 'Замкнутая система очистки воды разгерметизирована и теряет большую часть ресурса.',
-    status: 'повреждено',
-    repairCost: { metal: 3, water: 3, components: 1 }
+    status: 'damaged',
+    description: 'Повреждённый контур отвечает за хранение, очистку и распределение воды.',
+    role: 'Вода и очистка'
   },
-  droneWorkshop: {
+  hydroponics: {
+    name: 'Гидропонный блок',
+    status: 'disabled',
+    description: 'Блок выращивания пищи выведен из строя и пока не может использоваться.',
+    role: 'Производство еды'
+  },
+  habitation: {
+    name: 'Жилой блок',
+    status: 'damaged',
+    description: 'Жилая зона частично доступна и может использоваться для отдыха.',
+    role: 'Отдых и восстановление'
+  },
+  medical: {
+    name: 'Медицинский блок',
+    status: 'disabled',
+    description: 'Медицинский блок не работает. Для полноценного лечения его нужно восстановить.',
+    role: 'Восстановление здоровья'
+  },
+  hull: {
+    name: 'Обшивка / корпус',
+    status: 'damaged',
+    description: 'Корпус выдержал падение, но повреждён и плохо защищает от бурь и внешних угроз.',
+    role: 'Защита корабля'
+  },
+  repairWorkshop: {
     name: 'Ремонтный цех',
-    description: 'Манипуляторы и станки аварийного обслуживания заблокированы после посадки.',
-    status: 'повреждено',
-    repairCost: { metal: 5, energy: 2, components: 2 }
+    status: 'disabled',
+    description: 'Цех выведен из строя. После восстановления поможет чинить сложные системы.',
+    role: 'Ремонт и переработка'
+  },
+  storage: {
+    name: 'Отсек хранения',
+    status: 'damaged',
+    description: 'Грузовой отсек повреждён, поэтому хранение ресурсов ограничено.',
+    role: 'Хранение металла и компонентов'
   },
   navigation: {
     name: 'Навигационный модуль',
-    description: 'Звёздные таблицы целы, но гироскопы и посадочный автопилот не отвечают.',
-    status: 'повреждено',
-    repairCost: { metal: 4, energy: 3, components: 1 }
+    status: 'disabled',
+    description: 'Навигация не работает. Без неё опасно уходить далеко от корабля.',
+    role: 'Маршруты и экспедиции'
   },
   scanner: {
     name: 'Сканерный модуль',
-    description: 'Сенсорная решётка видит только ближайшие песчаные выбросы и нуждается в новых платах.',
-    status: 'повреждено',
-    repairCost: { energy: 3, components: 2 }
+    status: 'disabled',
+    description: 'Сканер не работает. Его восстановление поможет искать сигналы, ресурсы и угрозы.',
+    role: 'Поиск и исследование'
   },
   server: {
     name: 'Серверный узел',
-    description: 'Бортовой архив хранит схемы ремонта, но часть кластеров отключена от питания.',
-    status: 'повреждено',
-    repairCost: { energy: 2, recon: 1, components: 1 }
+    status: 'disabled',
+    description: 'Серверный узел повреждён. В нём могут быть данные корабля и доступ к старым системам.',
+    role: 'Данные и взлом'
+  },
+  engine: {
+    name: 'Двигатель',
+    status: 'disabled',
+    description: 'Двигатель критически повреждён. Его ремонт — главная долгосрочная цель героя.',
+    role: 'Сюжетная цель'
   }
 };
 
@@ -656,7 +700,6 @@ function createSystems() {
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     systems[key] = {
-      level: 1,
       status: shipSystemBlueprints[key].status
     };
   }
@@ -861,65 +904,19 @@ function addResources(gain) {
 }
 
 function repairSystem(key) {
-  const system = state.shipSystems[key];
-  const blueprint = shipSystemBlueprints[key];
-
-  if (!system || !blueprint) {
+  if (!state.shipSystems[key]) {
     return;
   }
 
-  const selection = getCurrentSelection();
-
-  if (!hasEnoughStamina(selection)) {
-    return;
-  }
-
-  if (system.status !== 'повреждено') {
-    spendStamina();
-    if (selection) {
-      setNarrativeMessage(selection, 'Герой проверяет запасные контуры и останавливается: улучшение этой системы пока отмечено как будущая заглушка.');
-    }
-    addLog(blueprint.name + ' уже частично работает. Улучшение будет добавлено позже.');
-    return;
-  }
-
-  const missing = getMissingResources(blueprint.repairCost);
-  if (missing.length > 0) {
-    if (selection) {
-      setNarrativeMessage(selection, 'Герой прикладывает ладонь к панели, но аварийный список расходников краснеет. Ремонт придётся отложить до сбора ресурсов.');
-    }
-    addLog('Недостаточно ' + missing[0] + ' для ремонта ' + getGenitiveName(blueprint.name) + '. Нужно: ' + formatCost(blueprint.repairCost) + '.');
-    return;
-  }
-
-  spendStamina();
-  payCost(blueprint.repairCost);
-  system.status = 'частично работает';
-  if (selection) {
-    setNarrativeMessage(selection, 'Герой запускает аварийный протокол ремонта. Панель отвечает не сразу; затем индикатор меняет цвет, и вибрация системы становится ровнее.');
-  }
-  addLog(blueprint.name + ' переведено в состояние: частично работает.');
+  addLog('Действия с системой будут добавлены позже.');
 }
 
 function diagnoseSystem(key) {
-  const system = state.shipSystems[key];
-  const blueprint = shipSystemBlueprints[key];
-
-  if (!system || !blueprint) {
+  if (!state.shipSystems[key]) {
     return;
   }
 
-  const selection = getCurrentSelection();
-
-  if (!hasEnoughStamina(selection)) {
-    return;
-  }
-
-  spendStamina();
-  if (selection) {
-    setNarrativeMessage(selection, 'Герой запускает короткую диагностику. Экран выдаёт рваный список ошибок, но без новых решений: подробная диагностика пока остаётся заглушкой.');
-  }
-  addLog(blueprint.name + ': диагностика выполнена. Новых действий пока нет.');
+  addLog('Действия с системой будут добавлены позже.');
 }
 
 function returnToSelectedPanel() {
@@ -1505,9 +1502,9 @@ function renderShipSystems() {
     card.innerHTML = '<button class="card-select" type="button" data-system-key="' + key + '">' +
       '<span class="card-kicker">система корабля</span>' +
       '<strong>' + blueprint.name + '</strong>' +
-      '<small>Ур. ' + system.level + ' · ' + system.status + '</small>' +
+      '<small>Статус: ' + getShipStatusLabel(system.status) + '</small>' +
+      '<em>Роль: ' + blueprint.role + '</em>' +
       '<p>' + blueprint.description + '</p>' +
-      '<em>Ремонт: ' + formatCost(blueprint.repairCost) + '</em>' +
       '</button>';
     elements.shipSystemsGrid.appendChild(card);
   }
@@ -1718,8 +1715,8 @@ function getCurrentSelection() {
       key,
       name: blueprint.name,
       type: 'система корабля',
-      description: getShipNarrative(key, false),
-      inspectDescription: getShipNarrative(key, true) + ' Текущее состояние: ' + system.status + '. Стоимость ремонта: ' + formatCost(blueprint.repairCost) + '.'
+      description: 'Статус: ' + getShipStatusLabel(system.status) + '.\n' + blueprint.description,
+      inspectDescription: 'Статус: ' + getShipStatusLabel(system.status) + '. ' + blueprint.description
     };
   }
 
@@ -1790,36 +1787,10 @@ function getCitySelection() {
 }
 
 
-function getShipNarrative(key, inspected) {
-  const narratives = {
-    hull: inspected
-      ? 'Герой проводит фонарём вдоль обшивки. Вмятины уходят в темноту, а на стыках ещё виден песок, забившийся после посадки.'
-      : 'Обшивка держит остаточное давление и защищает командный узел от песчаных ударов, но каждый внешний лист напоминает о жёсткой посадке.',
-    reactor: inspected
-      ? 'Герой проводит ладонью по панели реакторного отсека. Металл вибрирует неровно: питание есть, но контур явно работает на пределе.'
-      : 'Реакторный отсек отдаёт нестабильное питание в аварийную сеть корабля. Свет здесь дрожит чаще, чем должен.',
-    lifeSupport: inspected
-      ? 'Герой прислушивается к кашлю фильтров и сухому шороху аварийных пайков. Контур жив, но повреждённая магистраль тянет ресурс слишком жадно.'
-      : 'Система жизнеобеспечения. Воздушные фильтры, теплообменники и аварийные пайки подключены к повреждённой магистрали. Без этого контура Герой не продержался бы в открытом космосе и нескольких часов.',
-    waterLoop: inspected
-      ? 'На полу под водным контуром темнеют кристаллические следы утечки. Герой отмечает клапаны, которые придётся закрывать вручную.'
-      : 'Водный контур пытается гонять очистку по замкнутому циклу, но разгерметизация превращает каждую каплю в стратегический риск.',
-    droneWorkshop: inspected
-      ? 'Манипуляторы ремонтного цеха застыли над пустыми креплениями. Герой видит, где можно вернуть аварийному обслуживанию нормальную работу.'
-      : 'Ремонтный цех хранит заблокированные станки, манипуляторы и крепления для будущего восстановления.',
-    navigation: inspected
-      ? 'Герой сверяет звёздные таблицы с дрожащими показаниями гироскопов. Карты целы, но корабль пока не доверяет собственному курсу.'
-      : 'Навигационный модуль помнит маршруты между звёздами, хотя посадочный автопилот и гироскопы всё ещё молчат.',
-    scanner: inspected
-      ? 'Сенсорная решётка ловит песчаные выбросы и обрывает дальние сигналы. Несколько плат явно просят замены.'
-      : 'Сканерный модуль видит ближайшую пыль, обломки и помехи, но дальняя картина Аурелии-18 остаётся рваной.',
-    server: inspected
-      ? 'В серверном узле щёлкают холодные реле. Архив схем доступен кусками, будто корабль вспоминает себя через боль.'
-      : 'Серверный узел хранит ремонтные схемы и фрагменты бортового архива, но часть кластеров отключена от питания.'
-  };
-
-  return narratives[key] || shipSystemBlueprints[key].description;
+function getShipStatusLabel(status) {
+  return shipStatusLabels[status] || shipStatusLabels.damaged;
 }
+
 
 function getTerritoryPanelDescription(territory) {
   if (territory.status === 'hidden') {
@@ -1867,15 +1838,7 @@ function renderObjectActionOptions(selection) {
   }
 
   if (selection.kind === 'system') {
-    const system = state.shipSystems[selection.key];
-    const repairTitle = system.status === 'повреждено' ? 'Починить систему' : 'Улучшить систему';
-    const repairCost = system.status === 'повреждено' ? shipSystemBlueprints[selection.key].repairCost : {};
-    const repairNote = system.status === 'повреждено'
-      ? ''
-      : 'Улучшения будут добавлены позже';
-    appendActionOption('🔧', formatActionTitle(repairTitle, repairCost), repairNote, 'repairKey', selection.key, false);
-    appendActionOption('📟', formatActionTitle('Провести диагностику', {}), '', 'diagnosticKey', selection.key, false);
-    appendBackOption();
+    addActionLead('Действия с системой будут добавлены позже');
     return;
   }
 
@@ -2234,15 +2197,31 @@ function countClosedTerritories() {
 
 function countRestoredSystems() {
   const keys = Object.keys(state.shipSystems);
-  let restored = 0;
+  let active = 0;
 
   for (let i = 0; i < keys.length; i++) {
-    if (state.shipSystems[keys[i]].status !== 'повреждено') {
-      restored += 1;
+    if (state.shipSystems[keys[i]].status !== 'disabled') {
+      active += 1;
     }
   }
 
-  return restored;
+  return active;
+}
+
+function slugStatus(status) {
+  if (status === 'disabled') {
+    return 'disabled';
+  }
+
+  if (status === 'stabilized') {
+    return 'stabilized';
+  }
+
+  if (status === 'improved') {
+    return 'improved';
+  }
+
+  return 'damaged';
 }
 
 function formatCost(cost) {
@@ -2284,17 +2263,6 @@ function getGenitiveName(name) {
   return names[name] || name;
 }
 
-function slugStatus(status) {
-  if (status === 'частично работает') {
-    return 'partial';
-  }
-
-  if (status === 'восстановлено') {
-    return 'restored';
-  }
-
-  return 'damaged';
-}
 
 function saveGame() {
   localStorage.setItem(saveKey, JSON.stringify(state));
@@ -2378,8 +2346,7 @@ function mergeSavedState(saved) {
   for (let i = 0; i < systemKeys.length; i++) {
     const key = systemKeys[i];
     if (savedSystems[key]) {
-      next.shipSystems[key].level = Math.max(1, savedNumber(savedSystems[key].level, 1));
-      next.shipSystems[key].status = ['повреждено', 'частично работает', 'восстановлено'].includes(savedSystems[key].status)
+      next.shipSystems[key].status = shipStatusLabels[savedSystems[key].status]
         ? savedSystems[key].status
         : next.shipSystems[key].status;
     }
