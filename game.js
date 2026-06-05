@@ -315,16 +315,9 @@ const elements = {
   territoriesGrid: document.getElementById('territoriesGrid'),
   cityGrid: document.getElementById('cityGrid'),
   uniqueCityGrid: document.getElementById('uniqueCityGrid'),
-  selectedEyebrow: document.getElementById('selectedEyebrow'),
-  selectedStatus: document.getElementById('selectedStatus'),
   selectedName: document.getElementById('selectedName'),
-  selectedBadge: document.getElementById('selectedBadge'),
   selectedDescription: document.getElementById('selectedDescription'),
-  selectedNarrative: document.getElementById('selectedNarrative'),
-  selectedDetails: document.getElementById('selectedDetails'),
-  selectedActions: document.getElementById('selectedActions'),
-  inspectSelected: document.getElementById('inspectSelected'),
-  showObjectActions: document.getElementById('showObjectActions')
+  selectedActions: document.getElementById('selectedActions')
 };
 
 function createInitialState() {
@@ -336,7 +329,7 @@ function createInitialState() {
     selectedTerritoryKey: '',
     selectedCityKey: '',
     selectedCityType: '',
-    actionPanelMode: 'selected',
+    actionPanelMode: 'actions',
     inspectedObjectId: '',
     narrativeObjectId: '',
     narrativeMessage: '',
@@ -387,7 +380,7 @@ function switchMode(mode) {
   }
 
   state.mode = mode;
-  state.actionPanelMode = 'selected';
+  state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
   clearNarrativeMessage();
   saveGame();
@@ -401,7 +394,7 @@ function selectSystem(key) {
 
   state.mode = 'ship';
   state.selectedSystemKey = key;
-  state.actionPanelMode = 'selected';
+  state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
   clearNarrativeMessage();
   render();
@@ -415,7 +408,7 @@ function selectTerritory(key) {
 
   state.mode = 'territories';
   state.selectedTerritoryKey = key;
-  state.actionPanelMode = 'selected';
+  state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
   clearNarrativeMessage();
   render();
@@ -431,7 +424,7 @@ function selectCityDistrict(key) {
   state.mode = 'city';
   state.selectedCityKey = key;
   state.selectedCityType = 'district';
-  state.actionPanelMode = 'selected';
+  state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
   clearNarrativeMessage();
   render();
@@ -451,7 +444,7 @@ function selectCityActivity(districtKey, activityKey) {
   state.mode = 'city';
   state.selectedCityKey = districtKey + ':' + activityKey;
   state.selectedCityType = 'activity';
-  state.actionPanelMode = 'selected';
+  state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
   clearNarrativeMessage();
   render();
@@ -466,7 +459,7 @@ function selectCityUnique(key) {
   state.mode = 'city';
   state.selectedCityKey = key;
   state.selectedCityType = 'unique';
-  state.actionPanelMode = 'selected';
+  state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
   clearNarrativeMessage();
   render();
@@ -584,8 +577,7 @@ function diagnoseSystem(key) {
 function returnToSelectedPanel() {
   const selection = getCurrentSelection();
   if (!selection) return;
-  state.actionPanelMode = 'selected';
-  setNarrativeMessage(selection, 'Герой отступает от списка решений и снова смотрит на выбранный объект.');
+  addLog('Герой отступил от объекта: ' + selection.name + '.');
   saveGame();
   render();
 }
@@ -962,10 +954,7 @@ function renderCity() {
 }
 
 function renderSelectionPanel() {
-  elements.selectedDetails.innerHTML = '';
   elements.selectedActions.innerHTML = '';
-  elements.inspectSelected.disabled = false;
-  elements.showObjectActions.disabled = false;
 
   const selection = getCurrentSelection();
   if (!selection) {
@@ -973,36 +962,15 @@ function renderSelectionPanel() {
     return;
   }
 
-  elements.selectedEyebrow.textContent = state.actionPanelMode === 'actions' ? 'варианты действия' : 'выбранный объект';
-  elements.selectedStatus.textContent = selection.type;
   elements.selectedName.textContent = selection.name;
-  elements.selectedBadge.textContent = 'Тип: ' + selection.type;
   elements.selectedDescription.textContent = selection.description;
-  const narrative = state.narrativeObjectId === selection.id && state.narrativeMessage
-    ? state.narrativeMessage
-    : getDefaultNarrative(selection);
-  elements.selectedNarrative.textContent = narrative;
-
-  for (let i = 0; i < selection.details.length; i++) {
-    addDetail(selection.details[i][0], selection.details[i][1]);
-  }
-
-  if (state.actionPanelMode === 'actions') {
-    renderObjectActionOptions(selection);
-  } else {
-    addDetail('Подсказка', 'Нажмите «Осмотреть» для описания или «Действовать» для выбора действия Героя.');
-  }
+  renderObjectActionOptions(selection);
 }
 
 function renderEmptyHeroActions() {
-  elements.selectedEyebrow.textContent = 'нет выбора';
-  elements.selectedStatus.textContent = 'ожидание';
   elements.selectedName.textContent = 'Объект не выбран';
-  elements.selectedBadge.textContent = 'Выберите объект на сцене';
-  elements.selectedDescription.textContent = 'Выберите объект на сцене, чтобы Герой мог его осмотреть или использовать.';
-  elements.selectedNarrative.textContent = 'Лента ждёт выбора: сначала укажите объект в центральной сцене, затем выберите строку действия здесь.';
-  elements.inspectSelected.disabled = true;
-  elements.showObjectActions.disabled = true;
+  elements.selectedDescription.textContent = 'Выберите объект в центральной сцене, чтобы увидеть описание и доступные действия.';
+  addActionLead('Твои действия:');
 }
 
 function getCurrentSelection() {
@@ -1014,8 +982,7 @@ function getCurrentSelection() {
       name: hero.name,
       type: hero.type,
       description: 'Герой стоит у аварийного интерфейса и сверяет маршрут между кораблём, пустошами и городом. Личные показатели пока служат ориентиром, а не отдельной механикой.',
-      inspectDescription: 'Герой проверяет снаряжение и дыхание. Тело держится. Паника отступила, но усталость пока просто некуда записать в протокол.',
-      details: [['Статус', hero.status], ['Сила', hero.stats.strength], ['Мудрость', hero.stats.wisdom], ['Ловкость', hero.stats.agility]]
+      inspectDescription: 'Герой проверяет снаряжение и дыхание. Тело держится. Паника отступила, но усталость пока просто некуда записать в протокол.'
     };
   }
 
@@ -1031,8 +998,7 @@ function getCurrentSelection() {
       name: blueprint.name,
       type: 'система корабля',
       description: getShipNarrative(key, false),
-      inspectDescription: getShipNarrative(key, true) + ' Текущее состояние: ' + system.status + '. Стоимость ремонта: ' + formatCost(blueprint.repairCost) + '.',
-      details: [['Статус', system.status], ['Уровень', system.level], ['Ремонт', formatCost(blueprint.repairCost)]]
+      inspectDescription: getShipNarrative(key, true) + ' Текущее состояние: ' + system.status + '. Стоимость ремонта: ' + formatCost(blueprint.repairCost) + '.'
     };
   }
 
@@ -1049,10 +1015,7 @@ function getCurrentSelection() {
       name: blueprint.name,
       type: isOpen ? 'открытая пустошь' : 'неизвестная пустошь',
       description: isOpen ? getTerritoryNarrative(key, false) : 'Контуры зоны проступают на сканере серой дугой. Точный ресурс и опасные участки ещё не подтверждены.',
-      inspectDescription: isOpen ? getTerritoryNarrative(key, true) + ' Основной ресурс: ' + blueprint.resourceText + '.' : 'Песок лежит неровными дугами вокруг места крушения. В нескольких местах из него торчат фрагменты обшивки, кабели и посадочные опоры.',
-      details: isOpen
-        ? [['Статус', 'открыта'], ['Ресурс', blueprint.resourceText], ['Выход', getTerritoryOutputText(key)]]
-        : [['Статус', 'неизвестная зона'], ['Открытие', 'разведданные ' + blueprint.openCost], ['Подсказка', 'Разведайте или откройте пустошь через действия Героя.']]
+      inspectDescription: isOpen ? getTerritoryNarrative(key, true) + ' Основной ресурс: ' + blueprint.resourceText + '.' : 'Песок лежит неровными дугами вокруг места крушения. В нескольких местах из него торчат фрагменты обшивки, кабели и посадочные опоры.'
     };
   }
 
@@ -1074,8 +1037,7 @@ function getCitySelection() {
       name: district.name,
       type: 'район',
       description: district.description,
-      inspectDescription: 'Герой задерживается у входа в район: шум воды в трубах, ремонтные запахи и старые указатели складываются в карту возможностей. Доступны активности: ' + cityActivities.map(function (activity) { return activity.name; }).join(', ') + '.',
-      details: [['Город', 'Ашхаб-18'], ['Активности', cityActivities.length + ' вариантов']]
+      inspectDescription: 'Герой задерживается у входа в район: шум воды в трубах, ремонтные запахи и старые указатели складываются в карту возможностей. Доступны активности: ' + cityActivities.map(function (activity) { return activity.name; }).join(', ') + '.'
     };
   }
 
@@ -1091,8 +1053,7 @@ function getCitySelection() {
       name: activity.name,
       type: 'городская активность',
       description: activity.description,
-      inspectDescription: 'Герой оценивает место внимательнее: ' + activity.description + ' Район: ' + district.name + '. Стоимость: ' + formatMaybeCost(activity.cost) + '. Результат: ' + formatCityResult(activity) + '.',
-      details: [['Район', district.name], ['Стоимость', formatMaybeCost(activity.cost)], ['Результат', formatCityResult(activity)]]
+      inspectDescription: 'Герой оценивает место внимательнее: ' + activity.description + ' Район: ' + district.name + '. Стоимость: ' + formatMaybeCost(activity.cost) + '. Результат: ' + formatCityResult(activity) + '.'
     };
   }
 
@@ -1105,8 +1066,7 @@ function getCitySelection() {
     name: point.name,
     type: 'уникальная точка',
     description: point.description,
-    inspectDescription: 'Герой осматривает точку отдельно от шума инфраструктуры: ' + point.description + ' Стоимость: ' + formatMaybeCost(point.cost) + '. Результат: ' + formatCityResult(point) + '.',
-    details: [['Город', 'Ашхаб-18'], ['Стоимость', formatMaybeCost(point.cost)], ['Результат', formatCityResult(point)]]
+    inspectDescription: 'Герой осматривает точку отдельно от шума инфраструктуры: ' + point.description + ' Стоимость: ' + formatMaybeCost(point.cost) + '. Результат: ' + formatCityResult(point) + '.'
   };
 }
 
@@ -1174,7 +1134,7 @@ function getTerritoryNarrative(key, inspected) {
 }
 
 function renderObjectActionOptions(selection) {
-  addActionLead('Как действовать?');
+  addActionLead('Твои действия:');
 
   if (selection.kind === 'hero') {
     appendActionOption('🛌', 'Отдохнуть', 'Без расхода ресурсов · короткая передышка', 'heroAction', 'rest', false);
@@ -1190,9 +1150,9 @@ function renderObjectActionOptions(selection) {
     const repairTitle = system.status === 'повреждено' ? 'Починить систему' : 'Улучшить систему';
     const repairNote = system.status === 'повреждено'
       ? 'Расход: ' + formatCost(shipSystemBlueprints[selection.key].repairCost)
-      : 'Заглушка · улучшения будут добавлены позже';
+      : 'Без расхода ресурсов · улучшения будут добавлены позже';
     appendActionOption('🔧', repairTitle, repairNote, 'repairKey', selection.key, false);
-    appendActionOption('🔍', 'Провести диагностику', 'Без расхода ресурсов · только запись и краткое описание', 'diagnosticKey', selection.key, false);
+    appendActionOption('🔍', 'Провести диагностику', 'Без расхода ресурсов', 'diagnosticKey', selection.key, false);
     appendBackOption();
     return;
   }
@@ -1212,7 +1172,7 @@ function renderObjectActionOptions(selection) {
   if (selection.kind === 'district') {
     for (let i = 0; i < cityActivities.length; i++) {
       const activity = cityActivities[i];
-      appendActionOption('▸', activity.name, 'Открыть описание активности без выполнения', 'cityActivitySelectKey', selection.key + ':' + activity.key, false);
+      appendActionOption('⚙️', activity.action, formatActionCost(activity.cost) + ' · результат: ' + formatCityResult(activity), 'cityActionKey', selection.key + ':' + activity.key, false);
     }
     appendBackOption();
     return;
@@ -1220,43 +1180,16 @@ function renderObjectActionOptions(selection) {
 
   if (selection.kind === 'activity') {
     const activity = getCityActivity(selection.key.split(':')[1]);
-    appendActionOption('⚙️', activity.action, 'Стоимость: ' + formatMaybeCost(activity.cost) + ' · результат: ' + formatCityResult(activity), 'cityActionKey', selection.key, false);
+    appendActionOption('⚙️', activity.action, formatActionCost(activity.cost) + ' · результат: ' + formatCityResult(activity), 'cityActionKey', selection.key, false);
     appendBackOption();
     return;
   }
 
   if (selection.kind === 'unique') {
     const point = cityUniquePoints[selection.key];
-    appendActionOption('⚙️', point.action, 'Стоимость: ' + formatMaybeCost(point.cost) + ' · результат: ' + formatCityResult(point), 'cityUniqueActionKey', selection.key, false);
+    appendActionOption('⚙️', point.action, formatActionCost(point.cost) + ' · результат: ' + formatCityResult(point), 'cityUniqueActionKey', selection.key, false);
     appendBackOption();
   }
-}
-
-function inspectCurrentSelection() {
-  const selection = getCurrentSelection();
-  if (!selection) return;
-  state.actionPanelMode = 'selected';
-  state.inspectedObjectId = selection.id;
-  setNarrativeMessage(selection, selection.inspectDescription);
-  addLog('Герой осмотрел: ' + selection.name + '.');
-}
-
-function getInspectLogType(selection) {
-  if (selection.kind === 'system') return 'систему';
-  if (selection.kind === 'territory') return 'пустошь';
-  if (selection.kind === 'district') return 'район';
-  if (selection.kind === 'unique') return 'точку';
-  if (selection.kind === 'activity') return 'активность';
-  return 'состояние';
-}
-
-function showCurrentActions() {
-  const selection = getCurrentSelection();
-  if (!selection) return;
-  state.actionPanelMode = 'actions';
-  setNarrativeMessage(selection, 'Герой переводит взгляд с объекта на возможные решения. Лента оставляет только те варианты, которые можно выбрать прямо сейчас.');
-  saveGame();
-  render();
 }
 
 function performHeroAction(action) {
@@ -1297,6 +1230,14 @@ function formatMaybeCost(cost) {
   return formatCost(cost);
 }
 
+function formatActionCost(cost) {
+  if (!cost || Object.keys(cost).length === 0) {
+    return 'Без расхода ресурсов';
+  }
+
+  return 'Расход: ' + formatCost(cost);
+}
+
 function formatCityResult(entry) {
   if (entry.result) {
     return formatGain(entry.result);
@@ -1321,12 +1262,6 @@ function migrateLogMessage(message) {
     .replace(/данные/g, 'разведданные');
 }
 
-function addDetail(term, value) {
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = '<dt>' + term + '</dt><dd>' + value + '</dd>';
-  elements.selectedDetails.appendChild(wrapper);
-}
-
 function addActionLead(text) {
   const lead = document.createElement('p');
   lead.className = 'action-lead';
@@ -1335,7 +1270,14 @@ function addActionLead(text) {
 }
 
 function appendBackOption() {
-  appendActionOption('↩️', 'Отступить', 'Вернуться к описанию объекта', 'backSelected', 'true', false);
+  appendActionOption('↩️', 'Отступить', getRetreatNote(), 'backSelected', 'true', false);
+}
+
+function getRetreatNote() {
+  if (state.mode === 'ship') return 'Вернуться к системам корабля';
+  if (state.mode === 'territories') return 'Вернуться к пустошам';
+  if (state.mode === 'city') return 'Вернуться к районам города';
+  return 'Вернуться к обзору героя';
 }
 
 function appendActionOption(icon, title, note, datasetKey, key, disabled) {
@@ -1356,14 +1298,6 @@ function setNarrativeMessage(selection, message) {
 function clearNarrativeMessage() {
   state.narrativeObjectId = '';
   state.narrativeMessage = '';
-}
-
-function getDefaultNarrative(selection) {
-  if (state.actionPanelMode === 'actions') {
-    return 'Как действовать? Выберите строку ниже: действие выполнится только после отдельного клика по конкретному варианту.';
-  }
-
-  return 'Герой фиксирует объект в поле зрения. Можно осмотреть его подробнее или раскрыть доступные действия.';
 }
 
 function renderLog() {
@@ -1510,7 +1444,7 @@ function mergeSavedState(saved) {
   next.selectedTerritoryKey = territoryBlueprints[saved.selectedTerritoryKey] ? saved.selectedTerritoryKey : '';
   next.selectedCityKey = saved.selectedCityKey || '';
   next.selectedCityType = saved.selectedCityType || '';
-  next.actionPanelMode = saved.actionPanelMode === 'actions' ? 'actions' : 'selected';
+  next.actionPanelMode = 'actions';
   next.inspectedObjectId = typeof saved.inspectedObjectId === 'string' ? saved.inspectedObjectId : '';
   next.narrativeObjectId = typeof saved.narrativeObjectId === 'string' ? saved.narrativeObjectId : '';
   next.narrativeMessage = typeof saved.narrativeMessage === 'string' ? saved.narrativeMessage : '';
@@ -1599,10 +1533,6 @@ document.addEventListener('click', function (event) {
     switchMode(target.dataset.mode);
   } else if (target.dataset.heroSelect) {
     switchMode('hero');
-  } else if (target.dataset.inspectSelected) {
-    inspectCurrentSelection();
-  } else if (target.dataset.showObjectActions) {
-    showCurrentActions();
   } else if (target.dataset.heroAction) {
     performHeroAction(target.dataset.heroAction);
   } else if (target.dataset.backSelected) {
