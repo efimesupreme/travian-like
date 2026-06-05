@@ -876,19 +876,19 @@ function renderScreens() {
 
   if (isHero) {
     elements.screenTitle.textContent = 'Герой';
-    elements.screenSubtitle.textContent = 'Карточка Героя: состояние, роль и временные параметры без полноценной системы здоровья.';
+    elements.screenSubtitle.textContent = 'Состояние, характеристики и личные слоты героя.';
   } else if (isShip) {
     elements.screenTitle.textContent = 'Корабль';
-    elements.screenSubtitle.textContent = 'Выберите систему корабля. Ремонт выполняется только через панель «Действия героя».';
+    elements.screenSubtitle.textContent = 'Внутренние системы аварийной базы.';
   } else if (isTerritories) {
     elements.screenTitle.textContent = 'Пустоши';
-    elements.screenSubtitle.textContent = 'Выберите пустошь. Дроны, сбор и разведка запускаются только справа.';
+    elements.screenSubtitle.textContent = 'Открытые и неизвестные зоны вокруг места крушения.';
   } else if (isCity) {
     elements.screenTitle.textContent = 'Город';
-    elements.screenSubtitle.textContent = 'Выберите район, активность или уникальную точку Ашхаб-18.';
+    elements.screenSubtitle.textContent = 'Ашхаб-18: районы, активности и уникальные точки.';
   } else {
     elements.screenTitle.textContent = 'Разведка';
-    elements.screenSubtitle.textContent = 'Выберите неизвестную пустошь, чтобы отправить Героя или дрона на разведку.';
+    elements.screenSubtitle.textContent = 'Сводка по разведданным и неизвестным пустошам.';
   }
 }
 
