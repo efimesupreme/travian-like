@@ -28,6 +28,10 @@
           <p>Назначено: <strong id="totalAssignedDrones">0</strong></p>
           <div id="droneStatus" class="drone-list"></div>
         </section>
+
+        <div class="nav-footer">
+          <button id="newGame" class="secondary-reset" type="button">Новая игра</button>
+        </div>
       </aside>
 
       <div class="center-column">
@@ -168,32 +172,36 @@
       <aside class="side-panel info-panel" aria-label="Действия героя">
         <h2>Действия героя</h2>
 
-        <section class="hero-resources" aria-label="Ресурсы героя">
-          <h3>Ресурсы героя</h3>
-          <div class="resource-strip">
-            <article class="resource-card"><span>⚡</span><small>Энергия</small><strong id="energy">8</strong></article>
-            <article class="resource-card"><span>💧</span><small>Вода</small><strong id="water">10</strong></article>
-            <article class="resource-card"><span>🔩</span><small>Компоненты</small><strong id="components">3</strong></article>
-            <article class="resource-card"><span>⛓️</span><small>Металл</small><strong id="metal">15</strong></article>
-            <article class="resource-card"><span>📡</span><small>Разведданные</small><strong id="recon">0</strong></article>
+        <div class="hero-topline" aria-label="Состояние, ресурсы и портрет героя">
+          <div class="hero-briefing">
+            <section class="hero-condition" aria-label="Состояние героя">
+              <h3>Состояние героя</h3>
+              <dl>
+                <div><dt>Здоровье</dt><dd>100 / 100</dd></div>
+                <div><dt>Выносливость</dt><dd>80 / 100</dd></div>
+                <div><dt>Кредиты</dt><dd>5000</dd></div>
+              </dl>
+            </section>
+
+            <section class="hero-resources" aria-label="Ресурсы героя">
+              <h3>Ресурсы героя</h3>
+              <div class="resource-list">
+                <p><span>⚡ Энергия:</span> <strong id="energy">8 / 10</strong></p>
+                <p><span>💧 Вода:</span> <strong id="water">10 / 20</strong></p>
+                <p><span>🔩 Компоненты:</span> <strong id="components">3 / 20</strong></p>
+                <p><span>⛓️ Металл:</span> <strong id="metal">15 / 20</strong></p>
+                <p><span>📡 Разведданные:</span> <strong id="recon">0</strong></p>
+              </div>
+            </section>
           </div>
-        </section>
 
-        <section class="hero-condition" aria-label="Состояние героя">
-          <h3>Состояние героя</h3>
-          <dl>
-            <div><dt>Статус</dt><dd>стабилен</dd></div>
-            <div><dt>Здоровье</dt><dd>не учитывается</dd></div>
-            <div><dt>Усталость</dt><dd>не учитывается</dd></div>
-          </dl>
-        </section>
-
-        <div class="hero-portrait" aria-label="Портрет героя">
-          <div class="hero-silhouette"><span></span></div>
-          <strong>Портрет героя</strong>
+          <div class="hero-portrait" aria-label="Портрет героя">
+            <div class="hero-silhouette"><span></span></div>
+            <strong>Портрет героя</strong>
+          </div>
         </div>
 
-        <section class="selected-object" aria-label="Выбранный объект">
+        <section class="selected-object narrative-feed" aria-label="Повествовательная лента">
           <div class="object-card-top">
             <p id="selectedEyebrow" class="eyebrow">справка</p>
             <span id="selectedStatus" class="object-status">режим</span>
@@ -211,7 +219,6 @@
 
         <div class="panel-footer">
           <p>Все действия выполняются вручную; таймеров и автоматической добычи нет.</p>
-          <button id="newGame" class="danger-action" type="button">Новая игра</button>
         </div>
       </aside>
     </div>
