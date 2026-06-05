@@ -185,8 +185,11 @@ const territoryBlueprints = {
     status: 'open',
     description: 'Центральная зона вокруг корабля, где начинается игра.',
     resource: 'metal',
+    yieldMin: 2,
+    yieldMax: 3,
     baseGain: { metal: 2 },
-    remaining: 18,
+    remaining: 24,
+    action: 'Собрать металл',
     progress: 1,
     requiredProgress: 1
   },
@@ -196,8 +199,11 @@ const territoryBlueprints = {
     status: 'open',
     description: 'Россыпь обшивки, посадочных опор и грузовых рам.',
     resource: 'metal',
-    baseGain: { metal: 4 },
-    remaining: 24,
+    yieldMin: 2,
+    yieldMax: 4,
+    baseGain: { metal: 2 },
+    remaining: 28,
+    action: 'Разобрать обломки',
     progress: 1,
     requiredProgress: 1
   },
@@ -207,20 +213,27 @@ const territoryBlueprints = {
     status: 'open',
     description: 'Складка рельефа, где ночью собирается конденсат.',
     resource: 'water',
-    baseGain: { water: 3 },
+    yieldMin: 1,
+    yieldMax: 3,
+    baseGain: { water: 1 },
     remaining: 20,
+    action: 'Собрать воду',
     progress: 1,
     requiredProgress: 1
   },
   sandRidge: {
     id: 'sandRidge',
     name: 'Песчаная гряда',
-    status: 'discovered',
+    status: 'open',
     description: 'На горизонте видна каменная кромка и следы старого ветра.',
-    resource: '',
-    baseGain: {},
-    progress: 0,
-    requiredProgress: 3
+    resource: 'metal',
+    yieldMin: 1,
+    yieldMax: 3,
+    baseGain: { metal: 1 },
+    remaining: 18,
+    action: 'Просеять песок',
+    progress: 1,
+    requiredProgress: 1
   },
   weakSignal: {
     id: 'weakSignal',
@@ -1026,6 +1039,10 @@ function getTerritoryOutputText(key) {
     return 'ресурс скрыт';
   }
 
+  if (territory.yieldMin !== undefined && territory.yieldMax !== undefined) {
+    return getTerritoryYieldText(territory) + ' ' + resourceGenitiveLabels[territory.resource];
+  }
+
   return 'проверка 2d6 за ' + resourceLabels[territory.resource];
 }
 
@@ -1035,6 +1052,25 @@ function getTerritoryResourceText(territory) {
   }
 
   return resourceLabels[territory.resource] || territory.resource;
+}
+
+function getTerritoryYieldText(territory) {
+  const min = savedNumber(territory.yieldMin, NaN);
+  const max = savedNumber(territory.yieldMax, NaN);
+
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    return 'добыча скрыта';
+  }
+
+  return min === max ? String(min) : min + '–' + max;
+}
+
+function getTerritoryOpenSummaryLines(territory) {
+  return [
+    'Ресурс: ' + getTerritoryResourceText(territory),
+    'Добыча: ' + getTerritoryYieldText(territory),
+    getTerritoryStockText(territory)
+  ];
 }
 
 function getTerritoryRemaining(territory) {
@@ -1245,7 +1281,7 @@ function renderTerritories() {
     if (territory.status === 'open' || territory.status === 'depleted') {
       detailsHtml += '<p>' + territory.description + '</p>' +
         '<em>Ресурс: ' + getTerritoryResourceText(territory) + '</em>' +
-        '<em>Выход: ' + getTerritoryOutputText(key) + '</em>' +
+        '<em>Добыча: ' + getTerritoryYieldText(territory) + '</em>' +
         '<em>' + getTerritoryStockText(territory) + '</em>';
     } else if (territory.status === 'discovered') {
       detailsHtml += '<p>' + territory.description + '</p>' +
@@ -1555,15 +1591,15 @@ function getTerritoryPanelDescription(territory) {
   }
 
   if (territory.status === 'depleted') {
-    return territory.description + ' ' + getTerritoryStockText(territory) + '.';
+    return territory.description + '\n' + getTerritoryOpenSummaryLines(territory).join('\n');
   }
 
-  return territory.description + ' ' + getTerritoryStockText(territory) + '.';
+  return territory.description + '\n' + getTerritoryOpenSummaryLines(territory).join('\n');
 }
 
 function getTerritoryInspectDescription(territory) {
   if (territory.status === 'open' || territory.status === 'depleted') {
-    return territory.description + ' Основной ресурс: ' + getTerritoryResourceText(territory) + '. ' + getTerritoryStockText(territory) + '.';
+    return territory.description + '\n' + getTerritoryOpenSummaryLines(territory).join('\n');
   }
 
   if (territory.status === 'discovered') {
@@ -1722,7 +1758,7 @@ function getGatherActionTitle(key) {
     return 'Собрать ресурс';
   }
 
-  return territoryGatherActions[territory.resource] || 'Собрать ресурс';
+  return territory.action || territoryGatherActions[territory.resource] || 'Собрать ресурс';
 }
 
 function formatActionTitle(title, cost) {
@@ -2007,11 +2043,40 @@ function mergeSavedState(saved) {
     }
   }
 
+  applyStarterTerritoryConcept(next.territories);
+  if (next.activeResearchEvent && next.territories[next.activeResearchEvent.territoryKey].status !== 'discovered') {
+    next.activeResearchEvent = null;
+  }
+
   next.logMessages = Array.isArray(saved.logMessages) && saved.logMessages.length > 0
     ? saved.logMessages.slice(0, maxLogMessages).map(migrateLogMessage)
     : ['Сохранение загружено. Продолжайте развитие базы.'];
 
   return next;
+}
+
+function applyStarterTerritoryConcept(territories) {
+  const keys = ['crashSite', 'nearDebris', 'wetLowland', 'sandRidge'];
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const territory = territories[key];
+    const blueprint = territoryBlueprints[key];
+
+    if (!territory || !blueprint) {
+      continue;
+    }
+
+    territory.status = blueprint.status;
+    territory.resource = blueprint.resource;
+    territory.yieldMin = blueprint.yieldMin;
+    territory.yieldMax = blueprint.yieldMax;
+    territory.baseGain = { ...blueprint.baseGain };
+    territory.remaining = blueprint.remaining;
+    territory.action = blueprint.action;
+    territory.progress = blueprint.progress;
+    territory.requiredProgress = blueprint.requiredProgress;
+  }
 }
 
 function mergeSavedHero(savedHero) {
