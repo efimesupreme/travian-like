@@ -848,7 +848,7 @@ function gatherTerritory(key) {
   }
 }
 
-function exploreHiddenTerritory(key) {
+function exploreHiddenTerritory(key, approachKey) {
   const territory = state.territories[key];
 
   if (!territory || territory.status !== 'hidden') {
@@ -856,6 +856,7 @@ function exploreHiddenTerritory(key) {
   }
 
   const selection = getCurrentSelection();
+  const approach = getResearchApproach(approachKey);
 
   if (!hasEnoughStamina(selection)) {
     return;
@@ -867,7 +868,7 @@ function exploreHiddenTerritory(key) {
   territory.discoverProgress = currentProgress;
 
   spendStamina();
-  const check = resolveDiscoverCheck();
+  const check = resolveDiscoverCheck(approach, territory);
   const progressGain = getDiscoverProgressGain(check);
   territory.discoverProgress = Math.min(requiredProgress, territory.discoverProgress + progressGain);
   const discovered = territory.discoverProgress >= requiredProgress;
@@ -881,10 +882,10 @@ function exploreHiddenTerritory(key) {
   const currentSelection = getCurrentSelection();
   state.actionPanelMode = 'actions';
   if (currentSelection) {
-    setNarrativeMessage(currentSelection, buildDiscoverResultPanel(territory, check, progressGain, discovered));
+    setNarrativeMessage(currentSelection, buildDiscoverResultPanel(territory, check, progressGain, discovered, approach));
   }
 
-  addLog('Исследование неизвестной зоны выполнено. Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Результат: ' + check.resultLabel + '. Добавленный прогресс обнаружения: +' + progressGain + '. Потрачена 1 выносливость.');
+  addLog('Исследование неизвестной зоны выполнено. Подход: ' + approach.title + '. Характеристика: ' + check.statLabel + ' ' + check.statValue + '. Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Итог: ' + check.total + '. Сложность: ' + check.difficulty + '. Результат: ' + check.resultLabel + '. Исследование до обнаружения: ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired + '. Потрачена 1 выносливость.');
 
   if (discovered) {
     addLog('Зона обнаружена: ' + territory.name + '.');
@@ -1035,23 +1036,33 @@ function getResearchCheckResult(naturalTotal, total, difficulty) {
   return { label: 'Успех', progressGain: 1 };
 }
 
-function resolveDiscoverCheck() {
+function resolveDiscoverCheck(approach, territory) {
   const roll = roll2d6();
-  const result = getDiscoverCheckResult(roll.total);
+  const statKey = approach.statKey || 'strength';
+  const statLabel = heroStatLabels[statKey] || 'Характеристика';
+  const statValue = getHeroStatValue(statKey);
+  const total = roll.total + statValue;
+  const difficulty = Math.max(1, savedNumber(territory && territory.difficulty, 8));
+  const result = getDiscoverCheckResult(roll.total, total, difficulty);
 
   return {
     roll,
+    statKey,
+    statLabel,
+    statValue,
+    total,
+    difficulty,
     resultLabel: result.label,
     progressGain: result.progressGain
   };
 }
 
-function getDiscoverCheckResult(total) {
-  if (total === 2) return { label: 'Критический провал', progressGain: 0 };
-  if (total <= 5) return { label: 'Провал', progressGain: 0 };
-  if (total <= 8) return { label: 'Частичный успех', progressGain: 1 };
-  if (total <= 11) return { label: 'Успех', progressGain: 1 };
-  return { label: 'Критический успех', progressGain: 1 };
+function getDiscoverCheckResult(naturalTotal, total, difficulty) {
+  if (naturalTotal === 2) return { label: 'Критический провал', progressGain: 0 };
+  if (naturalTotal === 12) return { label: 'Критический успех', progressGain: 1 };
+  if (total < difficulty) return { label: 'Провал', progressGain: 0 };
+  if (total === difficulty) return { label: 'Частичный успех', progressGain: 1 };
+  return { label: 'Успех', progressGain: 1 };
 }
 
 function getResearchProgressGain(check) {
@@ -1109,15 +1120,16 @@ function buildResearchResultPanel(territory, check, progressGain, opened, approa
   return approach.resultText + '\n\n' + approachLine + '\n' + resultLine + ' ' + progressLine;
 }
 
-function buildDiscoverResultPanel(territory, check, progressGain, discovered) {
-  const resultLine = 'Бросок 2d6: ' + check.roll.total + '. ' + check.resultLabel + '. Прогресс обнаружения: ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired + '.';
+function buildDiscoverResultPanel(territory, check, progressGain, discovered, approach) {
+  const approachLine = 'Подход: ' + approach.title + '.';
+  const resultLine = buildResearchRollLine(check) + ' ' + check.resultLabel + '. Исследование до обнаружения: ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired + '.';
   const progressLine = 'Прогресс: +' + progressGain + '.';
 
   if (discovered) {
-    return resultLine + '\n' + progressLine + '\n\nЗона обнаружена: ' + territory.name + '.';
+    return approach.resultText + '\n\n' + approachLine + '\n' + resultLine + '\n' + progressLine + '\n\nЗона обнаружена: ' + territory.name + '.';
   }
 
-  return resultLine + ' ' + progressLine;
+  return approach.resultText + '\n\n' + approachLine + '\n' + resultLine + ' ' + progressLine;
 }
 
 function getResearchApproach(approachKey) {
@@ -1762,7 +1774,7 @@ function renderObjectActionOptions(selection) {
       appendResearchApproachOptions(selection.key, territory);
       appendActionOption('🔎', formatActionTitle('Осмотреть сигнал', {}), '', 'inspectTerritoryKey', selection.key, false);
     } else if (territory.status === 'hidden') {
-      appendActionOption('🔍', 'Исследовать неизвестную зону (-1 выносливость)', 'Бросок 2d6 · до обнаружения: ' + getTerritoryDiscoverProgressRemaining(territory), 'discoverTerritoryKey', selection.key, false);
+      appendDiscoverApproachOptions(selection.key, territory);
     }
     appendBackOption();
     return;
@@ -1798,6 +1810,17 @@ function appendResearchApproachOptions(key, territory) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
     appendActionOption('🔍', formatActionTitle(approach.title, {}), 'Бросок 2d6 · исследование: ' + territory.progress + ' / ' + territory.requiredProgress, 'researchApproachKey', key + ':' + approachKey, false);
+  }
+}
+
+function appendDiscoverApproachOptions(key, territory) {
+  const approachKeys = Object.keys(researchApproaches);
+
+  for (let i = 0; i < approachKeys.length; i++) {
+    const approachKey = approachKeys[i];
+    const approach = researchApproaches[approachKey];
+    const statLabel = heroStatLabels[approach.statKey] || 'Характеристика';
+    appendActionOption('🔍', formatActionTitle(approach.title, {}), 'Бросок 2d6 + ' + statLabel + ' · до обнаружения: ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired, 'discoverApproachKey', key + ':' + approachKey, false);
   }
 }
 
@@ -2268,8 +2291,11 @@ document.addEventListener('click', function (event) {
   } else if (target.dataset.researchApproachKey) {
     const parts = target.dataset.researchApproachKey.split(':');
     performResearchApproach(parts[0], parts[1]);
+  } else if (target.dataset.discoverApproachKey) {
+    const parts = target.dataset.discoverApproachKey.split(':');
+    exploreHiddenTerritory(parts[0], parts[1]);
   } else if (target.dataset.discoverTerritoryKey) {
-    exploreHiddenTerritory(target.dataset.discoverTerritoryKey);
+    exploreHiddenTerritory(target.dataset.discoverTerritoryKey, 'direct');
   } else if (target.dataset.inspectTerritoryKey) {
     const territory = state.territories[target.dataset.inspectTerritoryKey];
     inspectTerritory(target.dataset.inspectTerritoryKey, getTerritoryInspectDescription(territory));
