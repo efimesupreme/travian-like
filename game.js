@@ -132,6 +132,7 @@ const territoryStatusLabels = {
   open: 'открыта',
   settled: 'освоена'
 };
+const territoryStatusKeys = Object.keys(territoryStatusLabels);
 
 const territoryBlueprints = {
   crashSite: {
@@ -413,10 +414,29 @@ function createTerritories() {
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    territories[key] = { ...territoryBlueprints[key] };
+    territories[key] = {
+      ...territoryBlueprints[key],
+      baseGain: { ...territoryBlueprints[key].baseGain }
+    };
   }
 
   return territories;
+}
+
+function normalizeTerritoryProgress(territory) {
+  territory.requiredProgress = Math.max(1, savedNumber(territory.requiredProgress, 1));
+
+  if (territory.status === 'open' || territory.status === 'settled') {
+    territory.progress = territory.requiredProgress;
+    return;
+  }
+
+  if (territory.status === 'hidden' || territory.status === 'discovered') {
+    territory.progress = 0;
+    return;
+  }
+
+  territory.progress = clampSavedNumber(territory.progress, 0, 0, territory.requiredProgress);
 }
 
 function switchMode(mode) {
@@ -1677,16 +1697,14 @@ function mergeSavedState(saved) {
     if (savedTerritory) {
       const nextTerritory = next.territories[key];
       const savedStatus = savedTerritory.status;
-      if (['hidden', 'discovered', 'researching', 'open', 'settled'].includes(savedStatus)) {
+      if (territoryStatusKeys.includes(savedStatus)) {
         nextTerritory.status = savedStatus;
       } else if (typeof savedTerritory.isOpen === 'boolean') {
         nextTerritory.status = savedTerritory.isOpen ? 'open' : nextTerritory.status;
       }
-      nextTerritory.requiredProgress = Math.max(1, savedNumber(savedTerritory.requiredProgress, nextTerritory.requiredProgress));
-      nextTerritory.progress = clampSavedNumber(savedTerritory.progress, nextTerritory.progress, 0, nextTerritory.requiredProgress);
-      if (nextTerritory.status === 'open' || nextTerritory.status === 'settled') {
-        nextTerritory.progress = nextTerritory.requiredProgress;
-      }
+      nextTerritory.requiredProgress = savedNumber(savedTerritory.requiredProgress, nextTerritory.requiredProgress);
+      nextTerritory.progress = savedNumber(savedTerritory.progress, nextTerritory.progress);
+      normalizeTerritoryProgress(nextTerritory);
     }
   }
 
