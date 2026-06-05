@@ -1,11 +1,47 @@
 // Аурелия-18: единая оболочка сцен «Герой», «Пустоши», «Корабль» и «Город».
-const saveKey = 'aurelia-18-save-v14';
-const legacySaveKeys = ['aurelia-18-save-v13', 'aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
+const saveKey = 'aurelia-18-save-v16';
+const legacySaveKeys = ['aurelia-18-save-v15', 'aurelia-18-save-v14', 'aurelia-18-save-v13', 'aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
 const typewriterDelay = 22;
 const typewriterCursor = '|';
 const staminaActionCost = 1;
+
+const researchApproaches = {
+  strength: {
+    stat: 'strength',
+    baseDifficulty: 7,
+    requiredStat: 1,
+    title: 'Через Силу',
+    successText: 'Герой берёт участок прямым усилием: сдвигает песок, проверяет твёрдые края и находит опорную линию, по которой зона перестаёт быть случайным пятном на карте.',
+    failureText: 'Песок сопротивляется каждому движению. Герой успевает отметить несколько признаков, но контур зоны снова распадается на тяжёлую пыль и неровные тени.'
+  },
+  wisdom: {
+    stat: 'wisdom',
+    baseDifficulty: 7,
+    requiredStat: 1,
+    title: 'Через Мудрость',
+    successText: 'Сканер отвечает не сразу. Сначала только шум, затем тонкая зелёная линия проходит по контуру объекта, и фрагмент старой системы перестаёт быть просто пятном под песком.',
+    failureText: 'Сигнал распадается на шум раньше, чем Герой успевает закрепить направление. Пустошь снова становится плоской и молчаливой, будто ничего здесь и не было.'
+  },
+  agility: {
+    stat: 'agility',
+    baseDifficulty: 7,
+    requiredStat: 1,
+    title: 'Через Ловкость',
+    successText: 'Герой меняет угол, ловит короткое окно между порывами ветра и успевает пройти по кромке следа. Карта получает чистую отметку вместо дрожащей догадки.',
+    failureText: 'Порыв срывает ритм движения. Герой отступает на безопасную линию, а нужный след растворяется в песке быстрее, чем его удаётся закрепить.'
+  }
+};
+
+const rollResultTypes = {
+  criticalFailure: 'критический провал',
+  majorFailure: 'крупная неудача',
+  mixed: 'посредственный результат',
+  excellent: 'отличный результат',
+  criticalSuccess: 'критический успех'
+};
+
 
 const initialHeroCondition = {
   health: 100,
@@ -382,6 +418,7 @@ function createInitialState() {
     inspectedObjectId: '',
     narrativeObjectId: '',
     narrativeMessage: '',
+    activeResearchEvent: null,
     hero: createHero(),
     shipSystems: createSystems(),
     territories: createTerritories(),
@@ -448,6 +485,7 @@ function switchMode(mode) {
   state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
   clearNarrativeMessage();
+  state.activeResearchEvent = null;
   saveGame();
   render();
 }
@@ -475,6 +513,7 @@ function selectTerritory(key) {
   state.selectedTerritoryKey = key;
   state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
+  ensureResearchEvent(key);
   clearNarrativeMessage();
   render();
   saveGame();
@@ -697,17 +736,12 @@ function startTerritoryResearch(key) {
     return;
   }
 
-  const selection = getCurrentSelection();
-
-  if (!hasEnoughStamina(selection)) {
-    return;
-  }
-
-  spendStamina();
   territory.status = 'researching';
   territory.progress = 0;
+  ensureResearchEvent(key);
+  const selection = getCurrentSelection();
   if (selection) {
-    setNarrativeMessage(selection, 'Герой отмечает границы зоны и начинает спокойную проверку без бросков и случайных событий.');
+    setNarrativeMessage(selection, 'Герой отмечает границы зоны. Дальше нужно выбрать подход: Сила, Мудрость или Ловкость.');
   }
   addLog('Герой начал исследование: ' + territory.name + '.');
 }
@@ -719,6 +753,21 @@ function continueTerritoryResearch(key) {
     return;
   }
 
+  state.actionPanelMode = 'actions';
+  clearNarrativeMessage();
+  ensureResearchEvent(key);
+  saveGame();
+  render();
+}
+
+function performResearchApproach(key, approachKey) {
+  const territory = state.territories[key];
+  const approach = researchApproaches[approachKey];
+
+  if (!territory || !approach || territory.status !== 'researching') {
+    return;
+  }
+
   const selection = getCurrentSelection();
 
   if (!hasEnoughStamina(selection)) {
@@ -726,15 +775,29 @@ function continueTerritoryResearch(key) {
   }
 
   spendStamina();
-  territory.progress = Math.min(territory.requiredProgress, territory.progress + 1);
-  if (selection) {
-    setNarrativeMessage(selection, 'Герой продвигается по отмеченным признакам и уточняет карту участка.');
-  }
-  addLog('Исследование продвинулось: ' + territory.name + ' ' + territory.progress + ' / ' + territory.requiredProgress + '.');
+  ensureResearchEvent(key);
+  const check = resolveResearchCheck(approach);
+  const progressGain = getResearchProgressGain(check);
+  territory.progress = Math.min(territory.requiredProgress, territory.progress + progressGain);
+  const opened = territory.progress >= territory.requiredProgress;
 
-  if (territory.progress >= territory.requiredProgress) {
+  if (opened) {
     territory.status = 'open';
     territory.progress = territory.requiredProgress;
+    state.activeResearchEvent = null;
+  }
+
+  const currentSelection = getCurrentSelection();
+  state.actionPanelMode = opened ? 'actions' : 'researchResult';
+  if (currentSelection) {
+    setNarrativeMessage(currentSelection, buildResearchResultPanel(territory, approach, check, progressGain, opened));
+  }
+
+  const outcome = check.success ? 'Успех.' : 'Провал.';
+  addLog('Проверка: ' + heroStatLabels[approach.stat] + '. Бросок ' + check.roll.total + ' против сложности ' + check.finalDifficulty + '. ' + outcome);
+  addLog('Исследование продвинулось: ' + territory.name + ' ' + territory.progress + ' / ' + territory.requiredProgress + '.');
+
+  if (opened) {
     addLog('Клетка открыта: ' + territory.name + '.');
   }
 }
@@ -758,6 +821,129 @@ function inspectTerritory(key, message) {
   }
   saveGame();
   render();
+}
+
+
+function ensureResearchEvent(key) {
+  const territory = state.territories[key];
+  if (!territory || (territory.status !== 'discovered' && territory.status !== 'researching')) {
+    return null;
+  }
+
+  if (!state.activeResearchEvent || state.activeResearchEvent.territoryKey !== key) {
+    state.activeResearchEvent = {
+      territoryKey: key,
+      approaches: Object.keys(researchApproaches)
+    };
+  }
+
+  return state.activeResearchEvent;
+}
+
+function roll2d6() {
+  const d6_1 = rollD6();
+  const d6_2 = rollD6();
+
+  return {
+    d6_1,
+    d6_2,
+    total: d6_1 + d6_2
+  };
+}
+
+function rollD6() {
+  return Math.floor(Math.random() * 6) + 1;
+}
+
+function resolveResearchCheck(approach) {
+  const heroStat = savedNumber((state.hero && state.hero.stats && state.hero.stats[approach.stat]), 0);
+  const modifier = getStatDifficultyModifier(heroStat, approach.requiredStat);
+  const finalDifficulty = approach.baseDifficulty + modifier;
+  const roll = roll2d6();
+  const resultType = getRollResultType(roll.total);
+  let success = roll.total >= finalDifficulty;
+
+  if (roll.total === 2) {
+    success = false;
+  } else if (roll.total === 12) {
+    success = true;
+  }
+
+  return {
+    heroStat,
+    modifier,
+    finalDifficulty,
+    roll,
+    resultType,
+    success
+  };
+}
+
+function getStatDifficultyModifier(currentStat, requiredStat) {
+  const difference = currentStat - requiredStat;
+
+  if (difference <= -3) return 2;
+  if (difference <= -1) return 1;
+  if (difference >= 3) return -2;
+  return 0;
+}
+
+function getRollResultType(total) {
+  if (total === 2) return rollResultTypes.criticalFailure;
+  if (total <= 5) return rollResultTypes.majorFailure;
+  if (total <= 8) return rollResultTypes.mixed;
+  if (total <= 11) return rollResultTypes.excellent;
+  return rollResultTypes.criticalSuccess;
+}
+
+function getResearchProgressGain(check) {
+  if (check.resultType === rollResultTypes.criticalFailure || check.resultType === rollResultTypes.majorFailure) {
+    return 0;
+  }
+
+  if (check.resultType === rollResultTypes.mixed) {
+    return check.success ? 1 : 0;
+  }
+
+  if (check.resultType === rollResultTypes.excellent) {
+    return check.success ? 2 : 1;
+  }
+
+  return 3;
+}
+
+function buildResearchResultPanel(territory, approach, check, progressGain, opened) {
+  if (opened) {
+    return 'Клетка открыта: ' + territory.name + '.\n\n' +
+      'Зона перестаёт быть набором помех: контуры сходятся, опасные пустоты отмечены, а маршрут по участку теперь можно читать без догадок.';
+  }
+
+  const statLabel = heroStatLabels[approach.stat];
+  const mechanical = [
+    'Проверка: ' + statLabel,
+    '',
+    'Кубики: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total,
+    'Базовая сложность: ' + approach.baseDifficulty,
+    'Требование: ' + statLabel + ' ' + approach.requiredStat,
+    statLabel + ' Героя: ' + check.heroStat,
+    'Модификатор: ' + formatSignedModifier(check.modifier),
+    'Итоговая сложность: ' + check.finalDifficulty,
+    '',
+    'Результат: ' + check.roll.total + ' против ' + check.finalDifficulty,
+    check.success ? 'Проверка успешна.' : 'Проверка провалена.',
+    '',
+    'Тип результата: ' + check.resultType + '.',
+    '',
+    'Прогресс исследования: +' + progressGain,
+    '',
+    check.success ? approach.successText : approach.failureText
+  ];
+
+  return mechanical.join('\n');
+}
+
+function formatSignedModifier(value) {
+  return value > 0 ? '+' + value : String(value);
 }
 
 function getTerritoryGain(key) {
@@ -1325,6 +1511,15 @@ function renderObjectActionOptions(selection) {
     return;
   }
 
+  if (state.actionPanelMode === 'researchResult' && state.narrativeObjectId === selection.id && selection.kind === 'territory') {
+    const territory = state.territories[selection.key];
+    if (territory && territory.status === 'researching') {
+      appendActionOption('🔍', formatActionTitle('Продолжить исследование', {}), 'Вернуться к выбору подхода', 'continueResearchKey', selection.key, false);
+      appendBackOption();
+      return;
+    }
+  }
+
   if (selection.kind === 'hero') {
     appendActionOption('🛌', formatActionTitle('Отдохнуть', {}), 'Короткая передышка', 'heroAction', 'rest', false);
     appendActionOption('🎒', formatActionTitle('Проверить экипировку', {}), 'Осмотреть личные слоты', 'heroAction', 'equipment', false);
@@ -1353,13 +1548,13 @@ function renderObjectActionOptions(selection) {
       appendActionOption('⛏️', formatActionTitle('Собрать ресурс', {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
       appendActionOption('🔎', formatActionTitle('Осмотреть внимательнее', {}), '', 'inspectTerritoryKey', selection.key, false);
     } else if (territory.status === 'discovered') {
-      appendActionOption('🔍', formatActionTitle('Начать исследование', {}), 'Прогресс: ' + territory.progress + ' / ' + territory.requiredProgress, 'startResearchKey', selection.key, false);
+      appendActionOption('🔍', 'Начать исследование', 'Выбор подхода откроется без броска', 'startResearchKey', selection.key, false);
       appendActionOption('🔎', formatActionTitle('Осмотреть сигнал', {}), '', 'inspectTerritoryKey', selection.key, false);
     } else if (territory.status === 'hidden') {
       appendActionOption('👣', formatActionTitle('Осторожно приблизиться', {}), '', 'inspectTerritoryKey', selection.key, false);
       appendActionOption('🔎', formatActionTitle('Осмотреть горизонт', {}), '', 'inspectTerritoryKey', selection.key, false);
     } else if (territory.status === 'researching') {
-      appendActionOption('🔍', formatActionTitle('Продолжить исследование', {}), 'Прогресс: ' + territory.progress + ' / ' + territory.requiredProgress, 'continueResearchKey', selection.key, false);
+      appendResearchApproachOptions(selection.key, territory);
     } else if (territory.status === 'settled') {
       appendActionOption('⛏️', formatActionTitle('Собрать ресурс', {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
       appendActionOption('🔎', formatActionTitle('Осмотреть участок', {}), '', 'inspectTerritoryKey', selection.key, false);
@@ -1388,6 +1583,17 @@ function renderObjectActionOptions(selection) {
     const point = cityUniquePoints[selection.key];
     appendActionOption('⚙️', formatActionTitle(point.action, point.cost), 'Результат: ' + formatCityResult(point), 'cityUniqueActionKey', selection.key, false);
     appendBackOption();
+  }
+}
+
+function appendResearchApproachOptions(key, territory) {
+  const approachKeys = Object.keys(researchApproaches);
+
+  for (let i = 0; i < approachKeys.length; i++) {
+    const approachKey = approachKeys[i];
+    const approach = researchApproaches[approachKey];
+    const statLabel = heroStatLabels[approach.stat];
+    appendActionOption('🎲', formatActionTitle(approach.title, {}), statLabel + ' ' + approach.requiredStat + ' · сложность ' + approach.baseDifficulty + ' · прогресс: ' + territory.progress + ' / ' + territory.requiredProgress, 'researchApproachKey', key + ':' + approachKey, false);
   }
 }
 
@@ -1674,6 +1880,12 @@ function mergeSavedState(saved) {
   next.inspectedObjectId = typeof saved.inspectedObjectId === 'string' ? saved.inspectedObjectId : '';
   next.narrativeObjectId = typeof saved.narrativeObjectId === 'string' ? saved.narrativeObjectId : '';
   next.narrativeMessage = typeof saved.narrativeMessage === 'string' ? saved.narrativeMessage : '';
+  if (saved.activeResearchEvent && territoryBlueprints[saved.activeResearchEvent.territoryKey]) {
+    next.activeResearchEvent = {
+      territoryKey: saved.activeResearchEvent.territoryKey,
+      approaches: Object.keys(researchApproaches)
+    };
+  }
   next.hero = mergeSavedHero(saved.hero);
 
 
@@ -1803,6 +2015,9 @@ document.addEventListener('click', function (event) {
     startTerritoryResearch(target.dataset.startResearchKey);
   } else if (target.dataset.continueResearchKey) {
     continueTerritoryResearch(target.dataset.continueResearchKey);
+  } else if (target.dataset.researchApproachKey) {
+    const parts = target.dataset.researchApproachKey.split(':');
+    performResearchApproach(parts[0], parts[1]);
   } else if (target.dataset.inspectTerritoryKey) {
     const territory = state.territories[target.dataset.inspectTerritoryKey];
     inspectTerritory(target.dataset.inspectTerritoryKey, getTerritoryInspectDescription(territory));
