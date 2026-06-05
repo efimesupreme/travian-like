@@ -10,14 +10,17 @@ const staminaActionCost = 1;
 const researchApproaches = {
   direct: {
     title: 'Пробиться напрямую',
+    statKey: 'strength',
     resultText: 'Герой действует грубо и быстро, расчищая путь через песок и обломки.'
   },
   signals: {
     title: 'Проанализировать сигналы',
+    statKey: 'wisdom',
     resultText: 'Герой сверяет показания приборов и ищет закономерность в помехах.'
   },
   careful: {
     title: 'Пройти осторожно',
+    statKey: 'agility',
     resultText: 'Герой медленно обходит опасные участки и проверяет зону без лишнего риска.'
   }
 };
@@ -822,7 +825,7 @@ function researchTerritory(key, approachKey) {
   territory.progress = currentProgress;
 
   spendStamina();
-  const check = resolveResearchCheck();
+  const check = resolveResearchCheck(approach);
   const progressGain = getResearchProgressGain(check);
   territory.progress = Math.min(requiredProgress, territory.progress + progressGain);
   const opened = territory.progress >= requiredProgress;
@@ -839,8 +842,8 @@ function researchTerritory(key, approachKey) {
     setNarrativeMessage(currentSelection, buildResearchResultPanel(territory, check, progressGain, opened, approach));
   }
 
-  addLog('Подход к исследованию зоны «' + territory.name + '»: ' + approach.title + '. Потрачена 1 выносливость.');
-  addLog('Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '.');
+  addLog('Подход к исследованию зоны «' + territory.name + '»: ' + approach.title + '. Использованная характеристика: ' + check.statLabel + ' ' + check.statValue + '. Потрачена 1 выносливость.');
+  addLog('Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Итог с бонусом: ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + '.');
   addLog('Результат исследования: ' + check.resultLabel + '.');
   addLog('Добавленный прогресс исследования: +' + progressGain + '. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.');
 
@@ -911,23 +914,37 @@ function rollD6() {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-function resolveResearchCheck() {
+function resolveResearchCheck(approach) {
   const roll = roll2d6();
-  const result = getResearchCheckResult(roll.total);
+  const statKey = approach.statKey || 'strength';
+  const statLabel = heroStatLabels[statKey] || 'Характеристика';
+  const statValue = getHeroStatValue(statKey);
+  const total = roll.total + statValue;
+  const result = getResearchCheckResult(roll.total, total);
 
   return {
     roll,
+    statKey,
+    statLabel,
+    statValue,
+    total,
     resultLabel: result.label,
     progressGain: result.progressGain
   };
 }
 
-function getResearchCheckResult(total) {
-  if (total === 2) return { label: 'Критический провал', progressGain: 0 };
+function getHeroStatValue(statKey) {
+  const hero = state.hero || createHero();
+  const stats = hero.stats || {};
+  return savedNumber(stats[statKey], 0);
+}
+
+function getResearchCheckResult(naturalTotal, total) {
+  if (naturalTotal === 2) return { label: 'Критический провал', progressGain: 0 };
+  if (naturalTotal === 12) return { label: 'Критический успех', progressGain: 2 };
   if (total <= 5) return { label: 'Провал', progressGain: 0 };
   if (total <= 8) return { label: 'Частичный успех', progressGain: 1 };
-  if (total <= 11) return { label: 'Успех', progressGain: 1 };
-  return { label: 'Критический успех', progressGain: 2 };
+  return { label: 'Успех', progressGain: 1 };
 }
 
 function getResearchProgressGain(check) {
@@ -971,7 +988,7 @@ function buildGatherResultPanel(check, actualGain, remaining, depletedNow) {
 
 function buildResearchResultPanel(territory, check, progressGain, opened, approach) {
   const approachLine = 'Подход: ' + approach.title + '.';
-  const resultLine = 'Бросок 2d6: ' + check.roll.total + '. ' + check.resultLabel + '. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
+  const resultLine = buildResearchRollLine(check) + ' ' + check.resultLabel + '. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
   const progressLine = 'Прогресс: +' + progressGain + '.';
 
   if (opened) {
@@ -983,6 +1000,10 @@ function buildResearchResultPanel(territory, check, progressGain, opened, approa
 
 function getResearchApproach(approachKey) {
   return researchApproaches[approachKey] || researchApproaches.direct;
+}
+
+function buildResearchRollLine(check) {
+  return 'Бросок 2d6: ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + '.';
 }
 
 function formatSignedModifier(value) {
