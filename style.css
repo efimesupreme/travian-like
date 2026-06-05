@@ -795,3 +795,111 @@ p {
     padding: 12px;
   }
 }
+
+.territory-card.territory-closed {
+  border-color: rgba(190, 205, 214, 0.45);
+  border-style: dashed;
+  background:
+    linear-gradient(145deg, rgba(22, 27, 34, 0.96), rgba(43, 38, 42, 0.9)),
+    repeating-linear-gradient(135deg, rgba(217, 245, 255, 0.05) 0 2px, transparent 2px 12px);
+}
+
+.territory-card.territory-closed .card-kicker,
+.territory-card.territory-closed .card-select em {
+  color: rgba(217, 245, 255, 0.72);
+}
+
+.territory-card.territory-closed .card-select {
+  min-height: 230px;
+}
+
+.territory-card.territory-closed .compact-actions button,
+.recon-actions button {
+  color: #06101d;
+  background: linear-gradient(135deg, var(--warning), #fff1d8);
+}
+
+.recon-card {
+  display: grid;
+  gap: 16px;
+  min-height: 610px;
+  padding: 28px;
+  border: 1px solid rgba(116, 215, 255, 0.28);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 40% 20%, rgba(116, 215, 255, 0.16), transparent 24rem),
+    linear-gradient(145deg, rgba(8, 18, 31, 0.86), rgba(18, 36, 55, 0.72));
+}
+
+.recon-card > p {
+  max-width: 780px;
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.recon-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.recon-summary article,
+.recon-target-card {
+  border: 1px solid rgba(116, 215, 255, 0.18);
+  border-radius: 14px;
+  background: rgba(8, 18, 31, 0.62);
+}
+
+.recon-summary article {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.recon-summary small,
+.recon-target-card span {
+  color: var(--muted);
+}
+
+.recon-summary strong {
+  font-size: 1.6rem;
+}
+
+.recon-target-list {
+  display: grid;
+  gap: 12px;
+}
+
+.recon-target-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr);
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+}
+
+.recon-target-card > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.recon-empty {
+  margin-bottom: 0;
+  padding: 14px;
+  border: 1px dashed rgba(116, 215, 255, 0.28);
+  border-radius: 14px;
+  color: var(--muted);
+}
+
+@media (max-width: 760px) {
+  .recon-card {
+    min-height: auto;
+    padding: 12px;
+  }
+
+  .recon-summary,
+  .recon-target-card {
+    grid-template-columns: 1fr;
+  }
+}
