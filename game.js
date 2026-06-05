@@ -556,6 +556,8 @@ function normalizeTerritoryProgress(territory) {
 
   if (territory.status === 'hidden') {
     territory.progress = 0;
+    territory.discoverProgressRequired = getTerritoryDiscoverProgressRequired(territory);
+    territory.discoverProgress = clampSavedNumber(territory.discoverProgress, 0, 0, territory.discoverProgressRequired);
     return;
   }
 
@@ -846,6 +848,49 @@ function gatherTerritory(key) {
   }
 }
 
+function exploreHiddenTerritory(key) {
+  const territory = state.territories[key];
+
+  if (!territory || territory.status !== 'hidden') {
+    return;
+  }
+
+  const selection = getCurrentSelection();
+
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
+  const requiredProgress = getTerritoryDiscoverProgressRequired(territory);
+  const currentProgress = getTerritoryDiscoverProgress(territory);
+  territory.discoverProgressRequired = requiredProgress;
+  territory.discoverProgress = currentProgress;
+
+  spendStamina();
+  const check = resolveDiscoverCheck();
+  const progressGain = getDiscoverProgressGain(check);
+  territory.discoverProgress = Math.min(requiredProgress, territory.discoverProgress + progressGain);
+  const discovered = territory.discoverProgress >= requiredProgress;
+
+  if (discovered) {
+    territory.status = 'discovered';
+    territory.discoverProgress = requiredProgress;
+    territory.progress = clampSavedNumber(territory.progress, 0, 0, Math.max(1, savedNumber(territory.requiredProgress, 1)));
+  }
+
+  const currentSelection = getCurrentSelection();
+  state.actionPanelMode = 'actions';
+  if (currentSelection) {
+    setNarrativeMessage(currentSelection, buildDiscoverResultPanel(territory, check, progressGain, discovered));
+  }
+
+  addLog('Исследование неизвестной зоны выполнено. Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Результат: ' + check.resultLabel + '. Добавленный прогресс обнаружения: +' + progressGain + '. Потрачена 1 выносливость.');
+
+  if (discovered) {
+    addLog('Зона обнаружена: ' + territory.name + '.');
+  }
+}
+
 function researchTerritory(key, approachKey) {
   const territory = state.territories[key];
 
@@ -990,7 +1035,30 @@ function getResearchCheckResult(naturalTotal, total, difficulty) {
   return { label: 'Успех', progressGain: 1 };
 }
 
+function resolveDiscoverCheck() {
+  const roll = roll2d6();
+  const result = getDiscoverCheckResult(roll.total);
+
+  return {
+    roll,
+    resultLabel: result.label,
+    progressGain: result.progressGain
+  };
+}
+
+function getDiscoverCheckResult(total) {
+  if (total === 2) return { label: 'Критический провал', progressGain: 0 };
+  if (total <= 5) return { label: 'Провал', progressGain: 0 };
+  if (total <= 8) return { label: 'Частичный успех', progressGain: 1 };
+  if (total <= 11) return { label: 'Успех', progressGain: 1 };
+  return { label: 'Критический успех', progressGain: 1 };
+}
+
 function getResearchProgressGain(check) {
+  return Math.max(0, savedNumber(check.progressGain, 0));
+}
+
+function getDiscoverProgressGain(check) {
   return Math.max(0, savedNumber(check.progressGain, 0));
 }
 
@@ -1039,6 +1107,17 @@ function buildResearchResultPanel(territory, check, progressGain, opened, approa
   }
 
   return approach.resultText + '\n\n' + approachLine + '\n' + resultLine + ' ' + progressLine;
+}
+
+function buildDiscoverResultPanel(territory, check, progressGain, discovered) {
+  const resultLine = 'Бросок 2d6: ' + check.roll.total + '. ' + check.resultLabel + '. Прогресс обнаружения: ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired + '.';
+  const progressLine = 'Прогресс: +' + progressGain + '.';
+
+  if (discovered) {
+    return resultLine + '\n' + progressLine + '\n\nЗона обнаружена: ' + territory.name + '.';
+  }
+
+  return resultLine + ' ' + progressLine;
 }
 
 function getResearchApproach(approachKey) {
@@ -1104,6 +1183,15 @@ function getTerritoryProgressRemaining(territory) {
 
 function getTerritoryDiscoverProgressRequired(territory) {
   return Math.max(1, savedNumber(territory.discoverProgressRequired, 1));
+}
+
+function getTerritoryDiscoverProgress(territory) {
+  const required = getTerritoryDiscoverProgressRequired(territory);
+  return clampSavedNumber(territory.discoverProgress, 0, 0, required);
+}
+
+function getTerritoryDiscoverProgressRemaining(territory) {
+  return Math.max(0, getTerritoryDiscoverProgressRequired(territory) - getTerritoryDiscoverProgress(territory));
 }
 
 function getTerritoryRemaining(territory) {
@@ -1320,7 +1408,7 @@ function renderTerritories() {
       detailsHtml += '<p>' + territory.description + '</p>' +
         '<em>Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '</em>';
     } else {
-      detailsHtml += '<em>Исследований до обнаружения: ' + getTerritoryDiscoverProgressRequired(territory) + '</em>';
+      detailsHtml += '<em>Исследований до обнаружения: ' + getTerritoryDiscoverProgressRemaining(territory) + '</em>';
     }
 
     card.innerHTML = '<button class="card-select" type="button" data-territory-key="' + key + '">' +
@@ -1609,7 +1697,7 @@ function getShipNarrative(key, inspected) {
 
 function getTerritoryPanelDescription(territory) {
   if (territory.status === 'hidden') {
-    return 'Статус: Скрыта. Исследований до обнаружения: ' + getTerritoryDiscoverProgressRequired(territory) + '.';
+    return 'Статус: Скрыта. Исследований до обнаружения: ' + getTerritoryDiscoverProgressRemaining(territory) + '.';
   }
 
   if (territory.status === 'discovered') {
@@ -1632,7 +1720,7 @@ function getTerritoryInspectDescription(territory) {
     return territory.description + ' Статус: Обнаружена. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
   }
 
-  return 'Статус: Скрыта. Исследований до обнаружения: ' + getTerritoryDiscoverProgressRequired(territory) + '.';
+  return 'Статус: Скрыта. Исследований до обнаружения: ' + getTerritoryDiscoverProgressRemaining(territory) + '.';
 }
 
 function renderObjectActionOptions(selection) {
@@ -1674,8 +1762,7 @@ function renderObjectActionOptions(selection) {
       appendResearchApproachOptions(selection.key, territory);
       appendActionOption('🔎', formatActionTitle('Осмотреть сигнал', {}), '', 'inspectTerritoryKey', selection.key, false);
     } else if (territory.status === 'hidden') {
-      appendActionOption('👣', formatActionTitle('Осторожно приблизиться', {}), '', 'inspectTerritoryKey', selection.key, false);
-      appendActionOption('🔎', formatActionTitle('Осмотреть горизонт', {}), '', 'inspectTerritoryKey', selection.key, false);
+      appendActionOption('🔍', 'Исследовать неизвестную зону (-1 выносливость)', 'Бросок 2d6 · до обнаружения: ' + getTerritoryDiscoverProgressRemaining(territory), 'discoverTerritoryKey', selection.key, false);
     }
     appendBackOption();
     return;
@@ -2042,6 +2129,8 @@ function mergeSavedState(saved) {
       }
       nextTerritory.requiredProgress = savedNumber(savedTerritory.requiredProgress, nextTerritory.requiredProgress);
       nextTerritory.progress = savedNumber(savedTerritory.progress, nextTerritory.progress);
+      nextTerritory.discoverProgressRequired = savedNumber(savedTerritory.discoverProgressRequired, nextTerritory.discoverProgressRequired);
+      nextTerritory.discoverProgress = savedNumber(savedTerritory.discoverProgress, nextTerritory.discoverProgress);
       nextTerritory.remaining = Math.max(0, savedNumber(savedTerritory.remaining, nextTerritory.remaining || 0));
       if (nextTerritory.status === 'depleted') {
         nextTerritory.remaining = 0;
@@ -2179,6 +2268,8 @@ document.addEventListener('click', function (event) {
   } else if (target.dataset.researchApproachKey) {
     const parts = target.dataset.researchApproachKey.split(':');
     performResearchApproach(parts[0], parts[1]);
+  } else if (target.dataset.discoverTerritoryKey) {
+    exploreHiddenTerritory(target.dataset.discoverTerritoryKey);
   } else if (target.dataset.inspectTerritoryKey) {
     const territory = state.territories[target.dataset.inspectTerritoryKey];
     inspectTerritory(target.dataset.inspectTerritoryKey, getTerritoryInspectDescription(territory));
