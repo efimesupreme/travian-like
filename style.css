@@ -2429,15 +2429,6 @@ button {
   line-height: 1.45;
 }
 
-.narrative-feed .info-list {
-  margin-top: 0;
-}
-
-.narrative-feed .panel-actions button {
-  border: 1px solid rgba(116, 215, 255, 0.18);
-  background: linear-gradient(135deg, rgba(25, 54, 82, 0.96), rgba(8, 18, 31, 0.98));
-}
-
 .panel-footer {
   flex: 0 0 auto;
   margin: 0;
@@ -2549,4 +2540,16 @@ button {
   color: var(--muted);
   font-size: 0.75rem;
   line-height: 1.3;
+}
+
+/* Simplified right panel actions: accessible buttons rendered as light text rows. */
+.narrative-feed .panel-actions .action-choice {
+  border: 0;
+  border-bottom: 1px solid rgba(116, 215, 255, 0.18);
+  background: transparent;
+}
+
+.narrative-feed .panel-actions .action-choice:hover,
+.narrative-feed .panel-actions .action-choice:focus-visible {
+  background: rgba(116, 215, 255, 0.09);
 }
