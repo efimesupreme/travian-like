@@ -2427,6 +2427,7 @@ button {
   background: rgba(116, 215, 255, 0.06);
   font-size: 13px;
   line-height: 1.45;
+  white-space: pre-line;
 }
 
 .panel-footer {
