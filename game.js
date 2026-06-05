@@ -1,6 +1,6 @@
 // Аурелия-18: единая оболочка сцен «Герой», «Пустоши», «Корабль» и «Город».
-const saveKey = 'aurelia-18-save-v13';
-const legacySaveKeys = ['aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
+const saveKey = 'aurelia-18-save-v14';
+const legacySaveKeys = ['aurelia-18-save-v13', 'aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
 const typewriterDelay = 22;
@@ -125,60 +125,84 @@ const shipSystemBlueprints = {
   }
 };
 
+const territoryStatusLabels = {
+  hidden: 'скрыта',
+  discovered: 'обнаружена',
+  researching: 'исследуется',
+  open: 'открыта',
+  settled: 'освоена'
+};
+
 const territoryBlueprints = {
-  debrisField: {
-    name: 'Поле обломков',
-    biome: 'Россыпь обшивки, грузовых ферм и остывших посадочных опор.',
-    resourceText: 'металл',
-    baseOutput: { metal: 6 }
+  crashSite: {
+    id: 'crashSite',
+    name: 'Место крушения',
+    status: 'open',
+    description: 'Центральная зона вокруг корабля, где начинается игра.',
+    resource: 'metal',
+    baseGain: { metal: 2 },
+    progress: 1,
+    requiredProgress: 1
   },
-  dustyCollector: {
-    name: 'Пыльный водосборник',
-    biome: 'Складки рельефа собирают ночной конденсат под слоем красной пыли.',
-    resourceText: 'вода',
-    baseOutput: { water: 4 }
+  nearDebris: {
+    id: 'nearDebris',
+    name: 'Ближние обломки',
+    status: 'open',
+    description: 'Россыпь обшивки, посадочных опор и грузовых рам.',
+    resource: 'metal',
+    baseGain: { metal: 4 },
+    progress: 1,
+    requiredProgress: 1
   },
-  solarRidge: {
-    name: 'Солнечная гряда',
-    biome: 'Открытая каменная кромка с сильным ветром и стабильным световым потоком.',
-    resourceText: 'энергия',
-    baseOutput: { energy: 5 }
+  wetLowland: {
+    id: 'wetLowland',
+    name: 'Влажная низина',
+    status: 'open',
+    description: 'Складка рельефа, где ночью собирается конденсат.',
+    resource: 'water',
+    baseGain: { water: 3 },
+    progress: 1,
+    requiredProgress: 1
   },
-  oldStorage: {
-    name: 'Старый склад проекта',
-    openCost: 4,
-    biome: 'Полузасыпанный контейнерный ряд с совместимыми деталями старой экспедиции.',
-    resourceText: 'компоненты',
-    baseOutput: { components: 2 }
+  sandRidge: {
+    id: 'sandRidge',
+    name: 'Песчаная гряда',
+    status: 'discovered',
+    description: 'На горизонте видна каменная кромка и следы старого ветра.',
+    resource: '',
+    baseGain: {},
+    progress: 0,
+    requiredProgress: 3
   },
-  commNode: {
-    name: 'Узел связи',
-    openCost: 5,
-    biome: 'Поваленная мачта связи периодически отдаёт фрагменты технической телеметрии.',
-    resourceText: 'разведданные',
-    baseOutput: { recon: 3 }
+  weakSignal: {
+    id: 'weakSignal',
+    name: 'Слабый сигнал',
+    status: 'discovered',
+    description: 'Аварийный приёмник ловит короткий неустойчивый импульс.',
+    resource: '',
+    baseGain: {},
+    progress: 0,
+    requiredProgress: 4
   },
-  rustyFarm: {
-    name: 'Ржавая ферма',
-    openCost: 6,
-    biome: 'Старые гидропонные ванны сохранили влагу и немного обслуживающих деталей.',
-    resourceText: 'вода и компоненты',
-    baseOutput: { water: 3, components: 1 }
+  farWasteland: {
+    id: 'farWasteland',
+    name: 'Дальняя пустошь',
+    status: 'hidden',
+    description: 'Неизвестная зона за пределами уверенного обзора.',
+    resource: '',
+    baseGain: {},
+    progress: 0,
+    requiredProgress: 5
   },
-  brokenDrill: {
-    name: 'Разбитая буровая',
-    openCost: 7,
-    biome: 'Сорванная буровая платформа оставила металл и пригодные к перепайке узлы.',
-    resourceText: 'металл и компоненты',
-    baseOutput: { metal: 4, components: 1 }
-  },
-  blackDune: {
-    name: 'Чёрная дюна',
-    openCost: 9,
-    biome: 'Магнитный песок скрывает случайные включения: металл, компоненты или разведданные.',
-    resourceText: 'случайно: металл, компоненты или разведданные',
-    baseOutput: { random: 4 },
-    randomResources: ['metal', 'components', 'recon']
+  oldRoad: {
+    id: 'oldRoad',
+    name: 'Старая дорога',
+    status: 'hidden',
+    description: 'Возможный маршрут или след старой инфраструктуры.',
+    resource: '',
+    baseGain: {},
+    progress: 0,
+    requiredProgress: 5
   }
 };
 
@@ -389,10 +413,7 @@ function createTerritories() {
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    territories[key] = {
-      level: 1,
-      isOpen: !territoryBlueprints[key].openCost,
-    };
+    territories[key] = { ...territoryBlueprints[key] };
   }
 
   return territories;
@@ -628,46 +649,31 @@ function returnToSelectedPanel() {
 
 function gatherTerritory(key) {
   const territory = state.territories[key];
-  const blueprint = territoryBlueprints[key];
 
-  if (!territory || !blueprint) {
+  if (!territory || !canGatherTerritory(territory)) {
     return;
   }
 
   const selection = getCurrentSelection();
 
   if (!hasEnoughStamina(selection)) {
-    return;
-  }
-
-  if (!territory.isOpen) {
-    if (selection) {
-      setNarrativeMessage(selection, 'Герой видит только серый контур зоны. Сначала её нужно исследовать или открыть за разведданные.');
-    }
-    addLog(blueprint.name + ': закрытая зона недоступна для добычи.');
     return;
   }
 
   spendStamina();
   const gain = getTerritoryGain(key);
-  const gainKeys = Object.keys(gain);
-
-  for (let i = 0; i < gainKeys.length; i++) {
-    const resource = gainKeys[i];
-    state.resources[resource] += gain[resource];
-  }
+  addResources(gain);
 
   if (selection) {
-    setNarrativeMessage(selection, 'Герой проходит по отмеченному участку пустоши и вытаскивает из песка всё, что ещё можно использовать. Пыль быстро скрывает следы работы.');
+    setNarrativeMessage(selection, 'Герой обследует отмеченный участок и забирает только то, что можно унести без долгой стоянки.');
   }
-  addLog('Получено: ' + formatGain(gain) + '.');
+  addLog('Герой обследовал ' + territory.name + '. Получено: ' + formatGain(gain) + '.');
 }
 
-function scoutTerritoryPersonally(key) {
+function startTerritoryResearch(key) {
   const territory = state.territories[key];
-  const blueprint = territoryBlueprints[key];
 
-  if (!territory || !blueprint || territory.isOpen) {
+  if (!territory || territory.status !== 'discovered') {
     return;
   }
 
@@ -677,39 +683,19 @@ function scoutTerritoryPersonally(key) {
     return;
   }
 
-  if (state.resources.water < 2 && state.resources.energy < 1) {
-    if (selection) { setNarrativeMessage(selection, 'Пустошь ждёт за пределом безопасного маршрута, но запасы не позволяют идти сейчас.'); }
-    addLog('Недостаточно воды и энергии для личной разведки. Нужно: вода 2, энергия 1.');
-    return;
-  }
-
-  if (state.resources.water < 2) {
-    if (selection) { setNarrativeMessage(selection, 'Маршрут возможен, но воды не хватит даже на короткий выход.'); }
-    addLog('Недостаточно воды для личной разведки. Нужно: вода 2.');
-    return;
-  }
-
-  if (state.resources.energy < 1) {
-    if (selection) { setNarrativeMessage(selection, 'Приборы проседают по питанию. Без энергии личный выход станет слепым.'); }
-    addLog('Недостаточно энергии для личной разведки. Нужно: энергия 1.');
-    return;
-  }
-
   spendStamina();
-  state.resources.water -= 2;
-  state.resources.energy -= 1;
-  state.resources.recon += 2;
+  territory.status = 'researching';
+  territory.progress = 0;
   if (selection) {
-    setNarrativeMessage(selection, 'Герой уходит за границу отмеченного сектора. Песок глушит шаги, но прибор возвращает достаточно признаков, чтобы уточнить карту.');
+    setNarrativeMessage(selection, 'Герой отмечает границы зоны и начинает спокойную проверку без бросков и случайных событий.');
   }
-  addLog('Герой лично исследовал зону: ' + blueprint.name + '. Получено: разведданные +2.');
+  addLog('Герой начал исследование: ' + territory.name + '.');
 }
 
-function openTerritory(key) {
+function continueTerritoryResearch(key) {
   const territory = state.territories[key];
-  const blueprint = territoryBlueprints[key];
 
-  if (!territory || !blueprint || territory.isOpen) {
+  if (!territory || territory.status !== 'researching') {
     return;
   }
 
@@ -719,61 +705,66 @@ function openTerritory(key) {
     return;
   }
 
-  if (state.resources.recon < blueprint.openCost) {
-    if (selection) {
-      setNarrativeMessage(selection, 'Герой сверяет обрывки телеметрии, но данных слишком мало: контур зоны остаётся закрытым.');
-    }
-    addLog('Недостаточно разведданных для открытия: ' + blueprint.name + '.');
+  spendStamina();
+  territory.progress = Math.min(territory.requiredProgress, territory.progress + 1);
+  if (selection) {
+    setNarrativeMessage(selection, 'Герой продвигается по отмеченным признакам и уточняет карту участка.');
+  }
+  addLog('Исследование продвинулось: ' + territory.name + ' ' + territory.progress + ' / ' + territory.requiredProgress + '.');
+
+  if (territory.progress >= territory.requiredProgress) {
+    territory.status = 'open';
+    territory.progress = territory.requiredProgress;
+    addLog('Клетка открыта: ' + territory.name + '.');
+  }
+}
+
+function inspectTerritory(key, message) {
+  const territory = state.territories[key];
+
+  if (!territory) {
+    return;
+  }
+
+  const selection = getCurrentSelection();
+
+  if (!hasEnoughStamina(selection)) {
     return;
   }
 
   spendStamina();
-  state.resources.recon -= blueprint.openCost;
-  territory.isOpen = true;
   if (selection) {
-    setNarrativeMessage(selection, 'Старые координаты складываются в маршрут. Серая метка на карте становится полноценной пустошью для будущих действий.');
+    setNarrativeMessage(selection, message);
   }
-  addLog('Открыта новая пустошь: ' + blueprint.name + '.');
+  saveGame();
+  render();
 }
 
 function getTerritoryGain(key) {
-  const blueprint = territoryBlueprints[key];
-  const multiplier = 1;
-
-  if (blueprint.randomResources) {
-    const randomIndex = Math.floor(Math.random() * blueprint.randomResources.length);
-    const resource = blueprint.randomResources[randomIndex];
-    return { [resource]: blueprint.baseOutput.random * multiplier };
-  }
-
-  const gain = {};
-  const keys = Object.keys(blueprint.baseOutput);
-
-  for (let i = 0; i < keys.length; i++) {
-    const resource = keys[i];
-    gain[resource] = blueprint.baseOutput[resource] * multiplier;
-  }
-
-  return gain;
+  const territory = state.territories[key] || territoryBlueprints[key];
+  return { ...(territory.baseGain || {}) };
 }
 
 function getTerritoryOutputText(key) {
-  const blueprint = territoryBlueprints[key];
-  const multiplier = 1;
+  const gain = getTerritoryGain(key);
 
-  if (blueprint.randomResources) {
-    return '+' + (blueprint.baseOutput.random * multiplier) + ' случайного ресурса за действие';
-  }
-
-  const gain = {};
-  const keys = Object.keys(blueprint.baseOutput);
-
-  for (let i = 0; i < keys.length; i++) {
-    const resource = keys[i];
-    gain[resource] = blueprint.baseOutput[resource] * multiplier;
+  if (Object.keys(gain).length === 0) {
+    return 'ресурс скрыт';
   }
 
   return formatGain(gain) + ' за действие';
+}
+
+function getTerritoryResourceText(territory) {
+  if (!territory.resource) {
+    return 'ресурс скрыт';
+  }
+
+  return resourceLabels[territory.resource] || territory.resource;
+}
+
+function canGatherTerritory(territory) {
+  return territory.status === 'open' || territory.status === 'settled';
 }
 
 function getMissingResources(cost) {
@@ -958,30 +949,37 @@ function renderTerritories() {
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    const blueprint = territoryBlueprints[key];
-    const territory = state.territories[key];
-    const isOpen = territory.isOpen;
+    const territory = state.territories[key] || territoryBlueprints[key];
     const card = document.createElement('article');
-    card.className = 'game-card territory-card territory-' + i;
-    card.classList.toggle('territory-closed', !isOpen);
+    card.className = 'game-card territory-card territory-' + i + ' territory-status-' + territory.status;
+    card.classList.toggle('territory-closed', territory.status === 'hidden');
     card.classList.toggle('selected', state.mode === 'territories' && state.selectedTerritoryKey === key);
 
-    let detailsHtml = '';
-    if (isOpen) {
-      detailsHtml = '<small>Статус: открыта</small>' +
-        '<p>' + blueprint.biome + '</p>' +
-        '<em>Ресурс: ' + blueprint.resourceText + '</em>' +
+    let detailsHtml = '<small>Статус: ' + territoryStatusLabels[territory.status] + '</small>';
+    if (territory.status === 'open' || territory.status === 'settled') {
+      detailsHtml += '<p>' + territory.description + '</p>' +
+        '<em>Ресурс: ' + getTerritoryResourceText(territory) + '</em>' +
         '<em>Выход: ' + getTerritoryOutputText(key) + '</em>';
+      if (territory.status === 'settled') {
+        detailsHtml += '<span class="territory-badge">освоена</span>';
+      }
+    } else if (territory.status === 'discovered') {
+      detailsHtml += '<p>' + territory.description + '</p>' +
+        '<em>Ресурс скрыт</em>' +
+        '<em>Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '</em>';
+    } else if (territory.status === 'researching') {
+      detailsHtml += '<p>' + territory.description + '</p>' +
+        '<em>Ресурс скрыт</em>' +
+        '<em>Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '</em>';
     } else {
-      detailsHtml = '<small>Статус: неизвестная зона</small>' +
-        '<p>Контуры зоны видны на сканере, но точный ресурс и опасные участки ещё не подтверждены.</p>' +
-        '<em>Потенциальный ресурс неизвестен</em>' +
-        '<em>Открытие: разведданные ' + blueprint.openCost + '</em>';
+      detailsHtml += '<p>Неизвестная область за пределами уверенного обзора.</p>' +
+        '<em>Ресурс скрыт</em>' +
+        '<em>Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '</em>';
     }
 
     card.innerHTML = '<button class="card-select" type="button" data-territory-key="' + key + '">' +
       '<span class="card-kicker">пустошь</span>' +
-      '<strong>' + blueprint.name + '</strong>' +
+      '<strong>' + (territory.status === 'hidden' ? 'Неизвестная зона' : territory.name) + '</strong>' +
       detailsHtml +
       '</button>';
     elements.territoriesGrid.appendChild(card);
@@ -1167,18 +1165,16 @@ function getCurrentSelection() {
 
   if (state.mode === 'territories' && state.selectedTerritoryKey) {
     const key = state.selectedTerritoryKey;
-    const blueprint = territoryBlueprints[key];
     const territory = state.territories[key];
-    if (!blueprint || !territory) return null;
-    const isOpen = territory.isOpen;
+    if (!territory) return null;
     return {
       id: 'territory:' + key,
       kind: 'territory',
       key,
-      name: blueprint.name,
-      type: isOpen ? 'открытая пустошь' : 'неизвестная пустошь',
-      description: isOpen ? getTerritoryNarrative(key, false) : 'Контуры зоны проступают на сканере серой дугой. Точный ресурс и опасные участки ещё не подтверждены.',
-      inspectDescription: isOpen ? getTerritoryNarrative(key, true) + ' Основной ресурс: ' + blueprint.resourceText + '.' : 'Песок лежит неровными дугами вокруг места крушения. В нескольких местах из него торчат фрагменты обшивки, кабели и посадочные опоры.'
+      name: territory.name,
+      type: territoryStatusLabels[territory.status] + ' пустошь',
+      description: getTerritoryPanelDescription(territory),
+      inspectDescription: getTerritoryInspectDescription(territory)
     };
   }
 
@@ -1265,35 +1261,40 @@ function getShipNarrative(key, inspected) {
   return narratives[key] || shipSystemBlueprints[key].description;
 }
 
-function getTerritoryNarrative(key, inspected) {
-  const narratives = {
-    debrisField: inspected
-      ? 'Герой приседает у раскалённой панели и проверяет край перчаткой. Металл здесь пригоден, если не торопиться и не цеплять резаные швы.'
-      : 'Поле обломков тянется от корпуса корабля неровной дугой. В песке торчат фрагменты посадочных опор, грузовых рам и обшивки. Здесь можно найти металл, если не бояться резаных краёв и горячих панелей.',
-    dustyCollector: inspected
-      ? 'Под красной пылью блестит тонкая влага. Герой отмечает складки рельефа, где ночной конденсат собирается дольше всего.'
-      : 'Пыльный водосборник прячет влагу в складках рельефа. Днём это просто сухая красная чаша, ночью — шанс пополнить запас воды.',
-    solarRidge: inspected
-      ? 'Ветер сбивает песок с каменной гряды, а датчик света держит ровную шкалу. Здесь можно снять энергию без лишних установок.'
-      : 'Солнечная гряда открыта ветру и свету. Камень нагрет, горизонт чист, а поток энергии кажется стабильнее корабельного питания.',
-    oldStorage: inspected
-      ? 'Герой счищает пыль с контейнерных замков. На маркировке старой экспедиции ещё можно различить совместимые серии деталей.'
-      : 'Старый склад проекта полузасыпан песком. Контейнеры стоят криво, но внутри могут сохраниться компоненты прежней экспедиции.',
-    commNode: inspected
-      ? 'Поваленная мачта связи потрескивает короткими пакетами телеметрии. Герой ловит фрагменты маршрутов и старых сигналов.'
-      : 'Узел связи лежит среди камней, но периодически отдаёт технические фрагменты, из которых можно собрать разведданные.',
-    rustyFarm: inspected
-      ? 'Ржавые ванны пахнут минералами и старой органикой. Влага ещё держится в нижних секциях, рядом попадаются обслуживающие детали.'
-      : 'Ржавая ферма — остатки гидропоники под песком. Здесь вода смешалась с металлом, ржавчиной и чужими ремонтными следами.',
-    brokenDrill: inspected
-      ? 'Герой обходит сорванную платформу по тени. Буровая мачта мертва, зато лом и узлы крепления ещё можно снять.'
-      : 'Разбитая буровая оставила в пустоши тяжёлые фермы, кабели и металл, переживший больше ударов, чем сам корабль.',
-    blackDune: inspected
-      ? 'Магнитный песок цепляется к ботинкам и прибору. Под поверхностью что-то откликается: металл, компоненты или обрывки данных.'
-      : 'Чёрная дюна выглядит живой из-за магнитного песка. Она скрывает случайные включения и не обещает одинаковой добычи дважды.'
-  };
+function getTerritoryPanelDescription(territory) {
+  if (territory.status === 'hidden') {
+    return 'За границей обзора остаётся тёмный участок карты. Приборы дают только слабую форму рельефа без ресурса.';
+  }
 
-  return narratives[key] || territoryBlueprints[key].biome;
+  if (territory.status === 'discovered') {
+    return territory.description + ' Точные свойства ещё не подтверждены.';
+  }
+
+  if (territory.status === 'researching') {
+    return territory.description + ' Исследование уже начато: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
+  }
+
+  if (territory.status === 'settled') {
+    return territory.description + ' Участок уже отмечен как освоенный задел.';
+  }
+
+  return territory.description;
+}
+
+function getTerritoryInspectDescription(territory) {
+  if (territory.status === 'open' || territory.status === 'settled') {
+    return territory.description + ' Основной ресурс: ' + getTerritoryResourceText(territory) + '. Базовая добыча: ' + formatGain(territory.baseGain) + '.';
+  }
+
+  if (territory.status === 'discovered') {
+    return territory.description + ' Сигнал или контур достаточно устойчив, чтобы начать исследование.';
+  }
+
+  if (territory.status === 'researching') {
+    return territory.description + ' Прогресс исследования: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
+  }
+
+  return 'Песок, дальний рельеф и помехи скрывают детали. Зона пока не даёт точных данных.';
 }
 
 function renderObjectActionOptions(selection) {
@@ -1328,11 +1329,20 @@ function renderObjectActionOptions(selection) {
 
   if (selection.kind === 'territory') {
     const territory = state.territories[selection.key];
-    if (territory.isOpen) {
-      appendActionOption('💧', formatActionTitle(getGatherActionTitle(selection.key), {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
-    } else {
-      appendActionOption('🥾', formatActionTitle('Исследовать лично', { water: 2, energy: 1 }), 'Результат: разведданные +2', 'scoutHeroKey', selection.key, false);
-      appendActionOption('📡', formatActionTitle('Открыть пустошь', { recon: territoryBlueprints[selection.key].openCost }), '', 'openTerritoryKey', selection.key, false);
+    if (territory.status === 'open') {
+      appendActionOption('⛏️', formatActionTitle('Собрать ресурс', {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
+      appendActionOption('🔎', formatActionTitle('Осмотреть внимательнее', {}), '', 'inspectTerritoryKey', selection.key, false);
+    } else if (territory.status === 'discovered') {
+      appendActionOption('🔍', formatActionTitle('Начать исследование', {}), 'Прогресс: ' + territory.progress + ' / ' + territory.requiredProgress, 'startResearchKey', selection.key, false);
+      appendActionOption('🔎', formatActionTitle('Осмотреть сигнал', {}), '', 'inspectTerritoryKey', selection.key, false);
+    } else if (territory.status === 'hidden') {
+      appendActionOption('👣', formatActionTitle('Осторожно приблизиться', {}), '', 'inspectTerritoryKey', selection.key, false);
+      appendActionOption('🔎', formatActionTitle('Осмотреть горизонт', {}), '', 'inspectTerritoryKey', selection.key, false);
+    } else if (territory.status === 'researching') {
+      appendActionOption('🔍', formatActionTitle('Продолжить исследование', {}), 'Прогресс: ' + territory.progress + ' / ' + territory.requiredProgress, 'continueResearchKey', selection.key, false);
+    } else if (territory.status === 'settled') {
+      appendActionOption('⛏️', formatActionTitle('Собрать ресурс', {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
+      appendActionOption('🔎', formatActionTitle('Осмотреть участок', {}), '', 'inspectTerritoryKey', selection.key, false);
     }
     appendBackOption();
     return;
@@ -1407,19 +1417,7 @@ function formatMaybeCost(cost) {
 
 
 function getGatherActionTitle(key) {
-  const resourceText = territoryBlueprints[key].resourceText;
-  const titles = {
-    'металл': 'Собрать металл',
-    'вода': 'Собрать воду',
-    'энергия': 'Собрать энергию',
-    'компоненты': 'Собрать компоненты',
-    'разведданные': 'Собрать разведданные',
-    'вода и компоненты': 'Собрать воду и компоненты',
-    'металл и компоненты': 'Собрать металл и компоненты',
-    'случайно: металл, компоненты или разведданные': 'Собрать случайный ресурс'
-  };
-
-  return titles[resourceText] || 'Собрать ресурс';
+  return 'Собрать ресурс';
 }
 
 function formatActionTitle(title, cost) {
@@ -1511,7 +1509,7 @@ function countOpenTerritories() {
   let opened = 0;
 
   for (let i = 0; i < keys.length; i++) {
-    if (state.territories[keys[i]].isOpen) {
+    if (canGatherTerritory(state.territories[keys[i]])) {
       opened += 1;
     }
   }
@@ -1675,10 +1673,19 @@ function mergeSavedState(saved) {
   const territoryKeys = Object.keys(next.territories);
   for (let i = 0; i < territoryKeys.length; i++) {
     const key = territoryKeys[i];
-    if (savedTerritories[key]) {
-      next.territories[key].level = Math.max(1, savedNumber(savedTerritories[key].level, 1));
-      if (typeof savedTerritories[key].isOpen === 'boolean') {
-        next.territories[key].isOpen = savedTerritories[key].isOpen;
+    const savedTerritory = savedTerritories[key];
+    if (savedTerritory) {
+      const nextTerritory = next.territories[key];
+      const savedStatus = savedTerritory.status;
+      if (['hidden', 'discovered', 'researching', 'open', 'settled'].includes(savedStatus)) {
+        nextTerritory.status = savedStatus;
+      } else if (typeof savedTerritory.isOpen === 'boolean') {
+        nextTerritory.status = savedTerritory.isOpen ? 'open' : nextTerritory.status;
+      }
+      nextTerritory.requiredProgress = Math.max(1, savedNumber(savedTerritory.requiredProgress, nextTerritory.requiredProgress));
+      nextTerritory.progress = clampSavedNumber(savedTerritory.progress, nextTerritory.progress, 0, nextTerritory.requiredProgress);
+      if (nextTerritory.status === 'open' || nextTerritory.status === 'settled') {
+        nextTerritory.progress = nextTerritory.requiredProgress;
       }
     }
   }
@@ -1774,12 +1781,13 @@ document.addEventListener('click', function (event) {
     repairSystem(target.dataset.repairKey);
   } else if (target.dataset.gatherKey) {
     gatherTerritory(target.dataset.gatherKey);
-  } else if (target.dataset.scoutHeroKey) {
-    scoutTerritoryPersonally(target.dataset.scoutHeroKey);
-  } else if (target.dataset.scoutPersonKey) {
-    scoutTerritoryPersonally(target.dataset.scoutPersonKey);
-  } else if (target.dataset.openTerritoryKey) {
-    openTerritory(target.dataset.openTerritoryKey);
+  } else if (target.dataset.startResearchKey) {
+    startTerritoryResearch(target.dataset.startResearchKey);
+  } else if (target.dataset.continueResearchKey) {
+    continueTerritoryResearch(target.dataset.continueResearchKey);
+  } else if (target.dataset.inspectTerritoryKey) {
+    const territory = state.territories[target.dataset.inspectTerritoryKey];
+    inspectTerritory(target.dataset.inspectTerritoryKey, getTerritoryInspectDescription(territory));
   }
 });
 
