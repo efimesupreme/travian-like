@@ -1,8 +1,44 @@
 // Аурелия-18: единая оболочка сцен «Герой», «Корабль», «Пустоши», «Город» и «Разведка».
-const saveKey = 'aurelia-18-save-v8';
-const legacySaveKeys = ['aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
+const saveKey = 'aurelia-18-save-v9';
+const legacySaveKeys = ['aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
+
+
+const initialHero = {
+  name: 'Герой',
+  status: 'выживший после крушения',
+  type: 'выживший',
+  description: 'Герой пытается выжить на Аурелии-18, восстановить корабль и понять, что скрывает планета.',
+  stats: {
+    strength: 1,
+    wisdom: 1,
+    agility: 1
+  },
+  equipment: {
+    head: '',
+    upperBody: '',
+    lowerBody: '',
+    legs: '',
+    boots: ''
+  },
+  thoughts: ['', '', ''],
+  items: ['', '', '']
+};
+
+const heroStatLabels = {
+  strength: 'Сила',
+  wisdom: 'Мудрость',
+  agility: 'Ловкость'
+};
+
+const heroEquipmentLabels = {
+  head: 'Голова',
+  upperBody: 'Тело верх',
+  lowerBody: 'Тело низ',
+  legs: 'Ноги',
+  boots: 'Ботинки'
+};
 
 const initialResources = {
   energy: 8,
@@ -311,6 +347,7 @@ function createInitialState() {
     selectedCityType: '',
     actionPanelMode: 'selected',
     inspectedObjectId: '',
+    hero: createHero(),
     drones: {
       total: 3,
       free: 3,
@@ -320,6 +357,10 @@ function createInitialState() {
     territories: createTerritories(),
     logMessages: ['Аварийный интерфейс Аурелии-18 запущен. Выберите сцену и объект для действий Героя.']
   };
+}
+
+function createHero() {
+  return JSON.parse(JSON.stringify(initialHero));
 }
 
 function createSystems() {
@@ -757,6 +798,7 @@ function render() {
   renderNavigation();
   renderDrones();
   renderScreens();
+  renderHeroScreen();
   renderShipSystems();
   renderTerritories();
   renderCity();
@@ -851,10 +893,49 @@ function renderScreens() {
 }
 
 function renderHeroScreen() {
-  const card = elements.heroScreen.querySelector('.hero-scene-card');
-  if (card) {
-    card.classList.toggle('selected', state.mode === 'hero');
+  const hero = state.hero || createHero();
+  elements.heroScreen.innerHTML =
+    '<article class="hero-scene-card" aria-label="Карточка героя">' +
+      '<div class="hero-card-header">' +
+        '<div>' +
+          '<span class="card-kicker">карточка героя</span>' +
+          '<h3>' + hero.name + '</h3>' +
+          '<p class="hero-status">Статус: ' + hero.status + '</p>' +
+        '</div>' +
+        '<button type="button" data-hero-select="true">Выбрать Героя</button>' +
+      '</div>' +
+      '<p class="hero-description">' + hero.description + '</p>' +
+      renderHeroStats(hero.stats) +
+      renderHeroSlots('Экипировка', hero.equipment, heroEquipmentLabels, 'equipment') +
+      renderHeroSlots('Мысли', hero.thoughts, null, 'thoughts') +
+      renderHeroSlots('Предметы', hero.items, null, 'items') +
+    '</article>';
+}
+
+function renderHeroStats(stats) {
+  const keys = Object.keys(heroStatLabels);
+  let html = '<section class="hero-section hero-stats" aria-label="Характеристики героя"><h4>Характеристики</h4><div class="hero-stat-grid">';
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    html += '<div class="hero-stat"><span>' + heroStatLabels[key] + '</span><strong>' + stats[key] + '</strong></div>';
   }
+
+  return html + '</div></section>';
+}
+
+function renderHeroSlots(title, slots, labels, className) {
+  const keys = Array.isArray(slots) ? slots.map(function (_, index) { return index; }) : Object.keys(slots);
+  let html = '<section class="hero-section hero-slots hero-' + className + '" aria-label="' + title + '"><h4>' + title + '</h4><div class="hero-slot-grid">';
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const label = labels ? labels[key] : 'Слот ' + (i + 1);
+    const value = Array.isArray(slots) ? slots[key] : slots[key];
+    html += '<div class="hero-slot"><span>' + label + '</span><strong>' + (value || 'пусто') + '</strong></div>';
+  }
+
+  return html + '</div></section>';
 }
 
 function renderShipSystems() {
@@ -1038,14 +1119,15 @@ function renderEmptyHeroActions() {
 
 function getCurrentSelection() {
   if (state.mode === 'hero') {
+    const hero = state.hero || createHero();
     return {
       id: 'hero:main',
       kind: 'hero',
-      name: 'Герой',
-      type: 'Герой',
-      description: 'Выживший после крушения управляет ремонтом корабля, разведкой пустошей и контактами в Ашхаб-18.',
-      inspectDescription: 'Здоровье Героя стабильно. Усталость, экипировка и инвентарь пока не учитываются — это заглушка будущей системы Героя.',
-      details: [['Здоровье', 'стабильно'], ['Состояние', 'усталость не учитывается'], ['Экипировка', 'не добавлена']]
+      name: hero.name,
+      type: hero.type,
+      description: hero.description,
+      inspectDescription: 'Состояние стабильное. Полноценная система здоровья будет добавлена позже.',
+      details: [['Статус', hero.status], ['Сила', hero.stats.strength], ['Мудрость', hero.stats.wisdom], ['Ловкость', hero.stats.agility]]
     };
   }
 
@@ -1146,7 +1228,10 @@ function getCitySelection() {
 
 function renderObjectActionOptions(selection) {
   if (selection.kind === 'hero') {
-    appendActionButton('Отдохнуть', 'heroRest', 'true', false);
+    appendActionButton('Отдохнуть', 'heroAction', 'rest', false);
+    appendActionButton('Проверить экипировку', 'heroAction', 'equipment', false);
+    appendActionButton('Проверить мысли', 'heroAction', 'thoughts', false);
+    appendActionButton('Проверить предметы', 'heroAction', 'items', false);
     return;
   }
 
@@ -1192,7 +1277,7 @@ function inspectCurrentSelection() {
   if (!selection) return;
   state.actionPanelMode = 'selected';
   state.inspectedObjectId = selection.id;
-  addLog('Герой осмотрел ' + getInspectLogType(selection) + ': ' + selection.name + '.');
+  addLog(selection.kind === 'hero' ? 'Герой проверил своё состояние.' : 'Герой осмотрел ' + getInspectLogType(selection) + ': ' + selection.name + '.');
 }
 
 function getInspectLogType(selection) {
@@ -1211,10 +1296,18 @@ function showCurrentActions() {
   render();
 }
 
-function restHero() {
+function performHeroAction(action) {
   state.mode = 'hero';
-  state.actionPanelMode = 'selected';
-  addLog('Герой отдохнул. Эффект отдыха будет добавлен позже.');
+  state.actionPanelMode = 'actions';
+
+  const messages = {
+    rest: 'Герой отдохнул несколько минут. Система состояния будет добавлена позже.',
+    equipment: 'Слоты экипировки осмотрены.',
+    thoughts: 'Слоты мыслей пусты.',
+    items: 'Слоты предметов пусты.'
+  };
+
+  addLog(messages[action] || 'Действие Героя пока недоступно.');
 }
 
 function getCityActivity(key) {
@@ -1421,6 +1514,7 @@ function mergeSavedState(saved) {
   next.selectedCityType = saved.selectedCityType || '';
   next.actionPanelMode = saved.actionPanelMode === 'actions' ? 'actions' : 'selected';
   next.inspectedObjectId = typeof saved.inspectedObjectId === 'string' ? saved.inspectedObjectId : '';
+  next.hero = mergeSavedHero(saved.hero);
 
   if (saved.drones) {
     next.drones.total = savedNumber(saved.drones.total, 3);
@@ -1460,6 +1554,29 @@ function mergeSavedState(saved) {
     : ['Сохранение загружено. Продолжайте развитие базы.'];
 
   return next;
+}
+
+function mergeSavedHero(savedHero) {
+  const hero = createHero();
+
+  if (!savedHero || typeof savedHero !== 'object') {
+    return hero;
+  }
+
+  hero.name = typeof savedHero.name === 'string' && savedHero.name ? savedHero.name : hero.name;
+  hero.status = typeof savedHero.status === 'string' && savedHero.status ? savedHero.status : hero.status;
+  hero.type = typeof savedHero.type === 'string' && savedHero.type ? savedHero.type : hero.type;
+  hero.description = typeof savedHero.description === 'string' && savedHero.description ? savedHero.description : hero.description;
+
+  if (savedHero.stats) {
+    const statKeys = Object.keys(hero.stats);
+    for (let i = 0; i < statKeys.length; i++) {
+      const key = statKeys[i];
+      hero.stats[key] = savedNumber(savedHero.stats[key], hero.stats[key]);
+    }
+  }
+
+  return hero;
 }
 
 function normalizeDrones(next) {
@@ -1510,8 +1627,8 @@ document.addEventListener('click', function (event) {
     inspectCurrentSelection();
   } else if (target.dataset.showObjectActions) {
     showCurrentActions();
-  } else if (target.dataset.heroRest) {
-    restHero();
+  } else if (target.dataset.heroAction) {
+    performHeroAction(target.dataset.heroAction);
   } else if (target.dataset.cityActivitySelectKey) {
     const parts = target.dataset.cityActivitySelectKey.split(':');
     selectCityActivity(parts[0], parts[1]);
