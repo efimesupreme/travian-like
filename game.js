@@ -809,10 +809,10 @@ function render() {
 
 function renderResources() {
   elements.turn.textContent = state.turn;
-  elements.energy.textContent = state.resources.energy;
-  elements.water.textContent = state.resources.water;
-  elements.components.textContent = state.resources.components;
-  elements.metal.textContent = state.resources.metal;
+  elements.energy.textContent = state.resources.energy + ' / 10';
+  elements.water.textContent = state.resources.water + ' / 20';
+  elements.components.textContent = state.resources.components + ' / 20';
+  elements.metal.textContent = state.resources.metal + ' / 20';
   elements.recon.textContent = state.resources.recon;
   if (elements.reconScreenAmount) {
     elements.reconScreenAmount.textContent = state.resources.recon;
@@ -1125,8 +1125,8 @@ function getCurrentSelection() {
       kind: 'hero',
       name: hero.name,
       type: hero.type,
-      description: hero.description,
-      inspectDescription: 'Состояние стабильное. Полноценная система здоровья будет добавлена позже.',
+      description: 'Герой стоит у аварийного интерфейса и сверяет маршрут между кораблём, пустошами и городом. Личные показатели пока служат ориентиром, а не отдельной механикой.',
+      inspectDescription: 'Герой проверяет крепления скафандра, дыхательный контур и остатки пайков. Состояние стабильное; полноценная система здоровья будет добавлена позже.',
       details: [['Статус', hero.status], ['Сила', hero.stats.strength], ['Мудрость', hero.stats.wisdom], ['Ловкость', hero.stats.agility]]
     };
   }
@@ -1142,8 +1142,8 @@ function getCurrentSelection() {
       key,
       name: blueprint.name,
       type: 'система корабля',
-      description: blueprint.description,
-      inspectDescription: blueprint.description + ' Текущее состояние: ' + system.status + '. Стоимость ремонта: ' + formatCost(blueprint.repairCost) + '.',
+      description: getShipNarrative(key, false),
+      inspectDescription: getShipNarrative(key, true) + ' Текущее состояние: ' + system.status + '. Стоимость ремонта: ' + formatCost(blueprint.repairCost) + '.',
       details: [['Статус', system.status], ['Уровень', system.level], ['Ремонт', formatCost(blueprint.repairCost)]]
     };
   }
@@ -1160,8 +1160,8 @@ function getCurrentSelection() {
       key,
       name: blueprint.name,
       type: isOpen ? 'открытая пустошь' : 'неизвестная пустошь',
-      description: isOpen ? blueprint.biome : 'Контуры зоны видны на сканере, но точный ресурс и опасные участки ещё не подтверждены.',
-      inspectDescription: isOpen ? blueprint.biome + ' Основной ресурс: ' + blueprint.resourceText + '.' : 'Неизвестная пустошь требует разведки. Герой может отправить дрона, пойти лично или открыть зону за разведданные.',
+      description: isOpen ? getTerritoryNarrative(key, false) : 'Контуры зоны проступают на сканере серой дугой. Точный ресурс и опасные участки ещё не подтверждены.',
+      inspectDescription: isOpen ? getTerritoryNarrative(key, true) + ' Основной ресурс: ' + blueprint.resourceText + '.' : 'Герой увеличивает масштаб сканера: неизвестная пустошь отвечает рваным сигналом. Можно отправить дрона, пойти лично или открыть зону за разведданные.',
       details: isOpen
         ? [['Статус', 'открыта'], ['Ресурс', blueprint.resourceText], ['Дроны', territory.assignedDrones + ' / ' + territory.droneLimit], ['Выход', territory.assignedDrones === 0 ? 'нет добычи без дронов' : getTerritoryOutputText(key)]]
         : [['Статус', 'неизвестная зона'], ['Открытие', 'разведданные ' + blueprint.openCost], ['Подсказка', 'Разведайте или откройте пустошь через действия Героя.']]
@@ -1190,7 +1190,7 @@ function getCitySelection() {
       name: district.name,
       type: 'район',
       description: district.description,
-      inspectDescription: district.description + ' В районе доступны активности: ' + cityActivities.map(function (activity) { return activity.name; }).join(', ') + '.',
+      inspectDescription: 'Герой задерживается у входа в район: шум воды в трубах, ремонтные запахи и голоса караванщиков складываются в карту возможностей. Доступны активности: ' + cityActivities.map(function (activity) { return activity.name; }).join(', ') + '.',
       details: [['Город', 'Ашхаб-18'], ['Активности', cityActivities.length + ' вариантов']]
     };
   }
@@ -1207,7 +1207,7 @@ function getCitySelection() {
       name: activity.name,
       type: 'городская активность',
       description: activity.description,
-      inspectDescription: activity.description + ' Район: ' + district.name + '. Стоимость: ' + formatMaybeCost(activity.cost) + '. Результат: ' + formatCityResult(activity) + '.',
+      inspectDescription: 'Герой оценивает место внимательнее: ' + activity.description + ' Район: ' + district.name + '. Стоимость: ' + formatMaybeCost(activity.cost) + '. Результат: ' + formatCityResult(activity) + '.',
       details: [['Район', district.name], ['Стоимость', formatMaybeCost(activity.cost)], ['Результат', formatCityResult(activity)]]
     };
   }
@@ -1221,9 +1221,72 @@ function getCitySelection() {
     name: point.name,
     type: 'уникальная точка',
     description: point.description,
-    inspectDescription: point.description + ' Стоимость: ' + formatMaybeCost(point.cost) + '. Результат: ' + formatCityResult(point) + '.',
+    inspectDescription: 'Герой осматривает точку отдельно от городского шума: ' + point.description + ' Стоимость: ' + formatMaybeCost(point.cost) + '. Результат: ' + formatCityResult(point) + '.',
     details: [['Город', 'Ашхаб-18'], ['Стоимость', formatMaybeCost(point.cost)], ['Результат', formatCityResult(point)]]
   };
+}
+
+
+function getShipNarrative(key, inspected) {
+  const narratives = {
+    hull: inspected
+      ? 'Герой проводит фонарём вдоль обшивки. Вмятины уходят в темноту, а на стыках ещё виден песок, забившийся после посадки.'
+      : 'Обшивка держит остаточное давление и защищает командный узел от песчаных ударов, но каждый внешний лист напоминает о жёсткой посадке.',
+    reactor: inspected
+      ? 'Герой проводит ладонью по панели реакторного отсека. Металл вибрирует неровно: питание есть, но контур явно работает на пределе.'
+      : 'Реакторный отсек отдаёт нестабильное питание в аварийную сеть корабля. Свет здесь дрожит чаще, чем должен.',
+    lifeSupport: inspected
+      ? 'Герой прислушивается к кашлю фильтров и сухому шороху аварийных пайков. Контур жив, но повреждённая магистраль тянет ресурс слишком жадно.'
+      : 'Система жизнеобеспечения. Воздушные фильтры, теплообменники и аварийные пайки подключены к повреждённой магистрали. Без этого контура Герой не продержался бы в открытом космосе и нескольких часов.',
+    waterLoop: inspected
+      ? 'На полу под водным контуром темнеют кристаллические следы утечки. Герой отмечает клапаны, которые придётся закрывать вручную.'
+      : 'Водный контур пытается гонять очистку по замкнутому циклу, но разгерметизация превращает каждую каплю в стратегический риск.',
+    droneWorkshop: inspected
+      ? 'Манипуляторы сборочного цеха застыли над пустыми креплениями. Герой видит, где можно вернуть дронам нормальное обслуживание.'
+      : 'Сборочный цех дронов хранит заблокированные станки, манипуляторы и крепления для будущего ремонта разведчиков.',
+    navigation: inspected
+      ? 'Герой сверяет звёздные таблицы с дрожащими показаниями гироскопов. Карты целы, но корабль пока не доверяет собственному курсу.'
+      : 'Навигационный модуль помнит маршруты между звёздами, хотя посадочный автопилот и гироскопы всё ещё молчат.',
+    scanner: inspected
+      ? 'Сенсорная решётка ловит песчаные выбросы и обрывает дальние сигналы. Несколько плат явно просят замены.'
+      : 'Сканерный модуль видит ближайшую пыль, обломки и помехи, но дальняя картина Аурелии-18 остаётся рваной.',
+    server: inspected
+      ? 'В серверном узле щёлкают холодные реле. Архив схем доступен кусками, будто корабль вспоминает себя через боль.'
+      : 'Серверный узел хранит ремонтные схемы и фрагменты бортового архива, но часть кластеров отключена от питания.'
+  };
+
+  return narratives[key] || shipSystemBlueprints[key].description;
+}
+
+function getTerritoryNarrative(key, inspected) {
+  const narratives = {
+    debrisField: inspected
+      ? 'Герой приседает у раскалённой панели и проверяет край перчаткой. Металл здесь пригоден, если не торопиться и не цеплять резаные швы.'
+      : 'Поле обломков тянется от корпуса корабля неровной дугой. В песке торчат фрагменты посадочных опор, грузовых рам и обшивки. Здесь можно найти металл, если не бояться резаных краёв и горячих панелей.',
+    dustyCollector: inspected
+      ? 'Под красной пылью блестит тонкая влага. Герой отмечает складки рельефа, где ночной конденсат собирается дольше всего.'
+      : 'Пыльный водосборник прячет влагу в складках рельефа. Днём это просто сухая красная чаша, ночью — шанс пополнить запас воды.',
+    solarRidge: inspected
+      ? 'Ветер сбивает песок с каменной гряды, а датчик света держит ровную шкалу. Здесь можно снять энергию без лишних установок.'
+      : 'Солнечная гряда открыта ветру и свету. Камень нагрет, горизонт чист, а поток энергии кажется стабильнее корабельного питания.',
+    oldStorage: inspected
+      ? 'Герой счищает пыль с контейнерных замков. На маркировке старой экспедиции ещё можно различить совместимые серии деталей.'
+      : 'Старый склад проекта полузасыпан песком. Контейнеры стоят криво, но внутри могут сохраниться компоненты прежней экспедиции.',
+    commNode: inspected
+      ? 'Поваленная мачта связи потрескивает короткими пакетами телеметрии. Герой ловит фрагменты маршрутов и старых сигналов.'
+      : 'Узел связи лежит среди камней, но периодически отдаёт технические фрагменты, из которых можно собрать разведданные.',
+    rustyFarm: inspected
+      ? 'Ржавые ванны пахнут минералами и старой органикой. Влага ещё держится в нижних секциях, рядом попадаются обслуживающие детали.'
+      : 'Ржавая ферма — остатки гидропоники под песком. Здесь вода смешалась с металлом, ржавчиной и чужими ремонтными следами.',
+    brokenDrill: inspected
+      ? 'Герой обходит сорванную платформу по тени. Буровая мачта мертва, зато лом и узлы крепления ещё можно снять.'
+      : 'Разбитая буровая оставила в пустоши тяжёлые фермы, кабели и металл, переживший больше ударов, чем сам корабль.',
+    blackDune: inspected
+      ? 'Магнитный песок цепляется к ботинкам и прибору. Под поверхностью что-то откликается: металл, компоненты или обрывки данных.'
+      : 'Чёрная дюна выглядит живой из-за магнитного песка. Она скрывает случайные включения и не обещает одинаковой добычи дважды.'
+  };
+
+  return narratives[key] || territoryBlueprints[key].biome;
 }
 
 function renderObjectActionOptions(selection) {
