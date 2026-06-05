@@ -238,6 +238,7 @@ const territoryBlueprints = {
     baseGain: { components: 1 },
     remaining: 10,
     action: 'Искать компоненты',
+    difficulty: 9,
     progress: 0,
     requiredProgress: 4
   },
@@ -253,6 +254,7 @@ const territoryBlueprints = {
     baseGain: { metal: 2 },
     remaining: 30,
     action: 'Пройти вдоль линии падения',
+    difficulty: 8,
     progress: 0,
     requiredProgress: 2
   },
@@ -268,6 +270,7 @@ const territoryBlueprints = {
     baseGain: { components: 1 },
     remaining: 14,
     action: 'Проверить контейнер',
+    difficulty: 9,
     progress: 0,
     requiredProgress: 3
   },
@@ -283,6 +286,7 @@ const territoryBlueprints = {
     baseGain: { water: 1 },
     remaining: 22,
     action: 'Собрать конденсат',
+    difficulty: 9,
     progress: 0,
     requiredProgress: 3
   }
@@ -507,6 +511,9 @@ function createTerritories() {
 
 function normalizeTerritoryProgress(territory) {
   territory.requiredProgress = Math.max(1, savedNumber(territory.requiredProgress, 1));
+  if (territory.difficulty !== undefined) {
+    territory.difficulty = Math.max(1, savedNumber(territory.difficulty, 1));
+  }
 
   if (territory.status === 'open' || territory.status === 'depleted') {
     territory.progress = territory.requiredProgress;
@@ -825,7 +832,7 @@ function researchTerritory(key, approachKey) {
   territory.progress = currentProgress;
 
   spendStamina();
-  const check = resolveResearchCheck(approach);
+  const check = resolveResearchCheck(approach, territory);
   const progressGain = getResearchProgressGain(check);
   territory.progress = Math.min(requiredProgress, territory.progress + progressGain);
   const opened = territory.progress >= requiredProgress;
@@ -843,7 +850,7 @@ function researchTerritory(key, approachKey) {
   }
 
   addLog('Подход к исследованию зоны «' + territory.name + '»: ' + approach.title + '. Использованная характеристика: ' + check.statLabel + ' ' + check.statValue + '. Потрачена 1 выносливость.');
-  addLog('Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Итог с бонусом: ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + '.');
+  addLog('Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Итог с бонусом: ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + ' против сложности ' + check.difficulty + '.');
   addLog('Результат исследования: ' + check.resultLabel + '.');
   addLog('Добавленный прогресс исследования: +' + progressGain + '. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.');
 
@@ -914,13 +921,14 @@ function rollD6() {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-function resolveResearchCheck(approach) {
+function resolveResearchCheck(approach, territory) {
   const roll = roll2d6();
   const statKey = approach.statKey || 'strength';
   const statLabel = heroStatLabels[statKey] || 'Характеристика';
   const statValue = getHeroStatValue(statKey);
   const total = roll.total + statValue;
-  const result = getResearchCheckResult(roll.total, total);
+  const difficulty = Math.max(1, savedNumber(territory && territory.difficulty, 1));
+  const result = getResearchCheckResult(roll.total, total, difficulty);
 
   return {
     roll,
@@ -928,6 +936,7 @@ function resolveResearchCheck(approach) {
     statLabel,
     statValue,
     total,
+    difficulty,
     resultLabel: result.label,
     progressGain: result.progressGain
   };
@@ -939,11 +948,11 @@ function getHeroStatValue(statKey) {
   return savedNumber(stats[statKey], 0);
 }
 
-function getResearchCheckResult(naturalTotal, total) {
+function getResearchCheckResult(naturalTotal, total, difficulty) {
   if (naturalTotal === 2) return { label: 'Критический провал', progressGain: 0 };
   if (naturalTotal === 12) return { label: 'Критический успех', progressGain: 2 };
-  if (total <= 5) return { label: 'Провал', progressGain: 0 };
-  if (total <= 8) return { label: 'Частичный успех', progressGain: 1 };
+  if (total < difficulty) return { label: 'Провал', progressGain: 0 };
+  if (total === difficulty) return { label: 'Частичный успех', progressGain: 1 };
   return { label: 'Успех', progressGain: 1 };
 }
 
@@ -1003,7 +1012,7 @@ function getResearchApproach(approachKey) {
 }
 
 function buildResearchRollLine(check) {
-  return 'Бросок 2d6: ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + '.';
+  return 'Бросок 2d6: ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + ' против сложности ' + check.difficulty + '.';
 }
 
 function formatSignedModifier(value) {
