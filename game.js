@@ -8,29 +8,17 @@ const typewriterCursor = '|';
 const staminaActionCost = 1;
 
 const researchApproaches = {
-  strength: {
-    stat: 'strength',
-    baseDifficulty: 7,
-    requiredStat: 1,
-    title: 'Через Силу',
-    successText: 'Герой берёт участок прямым усилием: сдвигает песок, проверяет твёрдые края и находит опорную линию, по которой зона перестаёт быть случайным пятном на карте.',
-    failureText: 'Песок сопротивляется каждому движению. Герой успевает отметить несколько признаков, но контур зоны снова распадается на тяжёлую пыль и неровные тени.'
+  direct: {
+    title: 'Пробиться напрямую',
+    resultText: 'Герой действует грубо и быстро, расчищая путь через песок и обломки.'
   },
-  wisdom: {
-    stat: 'wisdom',
-    baseDifficulty: 7,
-    requiredStat: 1,
-    title: 'Через Мудрость',
-    successText: 'Сканер отвечает не сразу. Сначала только шум, затем тонкая зелёная линия проходит по контуру объекта, и фрагмент старой системы перестаёт быть просто пятном под песком.',
-    failureText: 'Сигнал распадается на шум раньше, чем Герой успевает закрепить направление. Пустошь снова становится плоской и молчаливой, будто ничего здесь и не было.'
+  signals: {
+    title: 'Проанализировать сигналы',
+    resultText: 'Герой сверяет показания приборов и ищет закономерность в помехах.'
   },
-  agility: {
-    stat: 'agility',
-    baseDifficulty: 7,
-    requiredStat: 1,
-    title: 'Через Ловкость',
-    successText: 'Герой меняет угол, ловит короткое окно между порывами ветра и успевает пройти по кромке следа. Карта получает чистую отметку вместо дрожащей догадки.',
-    failureText: 'Порыв срывает ритм движения. Герой отступает на безопасную линию, а нужный след растворяется в песке быстрее, чем его удаётся закрепить.'
+  careful: {
+    title: 'Пройти осторожно',
+    resultText: 'Герой медленно обходит опасные участки и проверяет зону без лишнего риска.'
   }
 };
 
@@ -814,7 +802,7 @@ function gatherTerritory(key) {
   }
 }
 
-function researchTerritory(key) {
+function researchTerritory(key, approachKey) {
   const territory = state.territories[key];
 
   if (!territory || territory.status !== 'discovered') {
@@ -822,6 +810,7 @@ function researchTerritory(key) {
   }
 
   const selection = getCurrentSelection();
+  const approach = getResearchApproach(approachKey);
 
   if (!hasEnoughStamina(selection)) {
     return;
@@ -847,10 +836,10 @@ function researchTerritory(key) {
   const currentSelection = getCurrentSelection();
   state.actionPanelMode = 'actions';
   if (currentSelection) {
-    setNarrativeMessage(currentSelection, buildResearchResultPanel(territory, check, progressGain, opened));
+    setNarrativeMessage(currentSelection, buildResearchResultPanel(territory, check, progressGain, opened, approach));
   }
 
-  addLog('Потрачена 1 выносливость на исследование зоны: ' + territory.name + '.');
+  addLog('Подход к исследованию зоны «' + territory.name + '»: ' + approach.title + '. Потрачена 1 выносливость.');
   addLog('Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '.');
   addLog('Результат исследования: ' + check.resultLabel + '.');
   addLog('Добавленный прогресс исследования: +' + progressGain + '. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.');
@@ -868,8 +857,8 @@ function continueTerritoryResearch(key) {
   researchTerritory(key);
 }
 
-function performResearchApproach(key) {
-  researchTerritory(key);
+function performResearchApproach(key, approachKey) {
+  researchTerritory(key, approachKey);
 }
 
 function inspectTerritory(key, message) {
@@ -980,14 +969,20 @@ function buildGatherResultPanel(check, actualGain, remaining, depletedNow) {
   return lines.join(' ');
 }
 
-function buildResearchResultPanel(territory, check, progressGain, opened) {
+function buildResearchResultPanel(territory, check, progressGain, opened, approach) {
+  const approachLine = 'Подход: ' + approach.title + '.';
   const resultLine = 'Бросок 2d6: ' + check.roll.total + '. ' + check.resultLabel + '. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
+  const progressLine = 'Прогресс: +' + progressGain + '.';
 
   if (opened) {
-    return resultLine + '\n\nЗона открыта: ' + territory.name + '.';
+    return approach.resultText + '\n\n' + approachLine + '\n' + resultLine + '\n' + progressLine + '\n\nЗона открыта: ' + territory.name + '.';
   }
 
-  return resultLine + ' Прогресс: +' + progressGain + '.';
+  return approach.resultText + '\n\n' + approachLine + '\n' + resultLine + ' ' + progressLine;
+}
+
+function getResearchApproach(approachKey) {
+  return researchApproaches[approachKey] || researchApproaches.direct;
 }
 
 function formatSignedModifier(value) {
@@ -1610,7 +1605,7 @@ function renderObjectActionOptions(selection) {
       appendActionOption('⛏️', formatActionTitle(getGatherActionTitle(selection.key), {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
       appendActionOption('🔎', formatActionTitle('Осмотреть внимательнее', {}), '', 'inspectTerritoryKey', selection.key, false);
     } else if (territory.status === 'discovered') {
-      appendActionOption('🔍', formatActionTitle('Исследовать зону', {}), 'Бросок 2d6 · исследование: ' + territory.progress + ' / ' + territory.requiredProgress, 'researchKey', selection.key, false);
+      appendResearchApproachOptions(selection.key, territory);
       appendActionOption('🔎', formatActionTitle('Осмотреть сигнал', {}), '', 'inspectTerritoryKey', selection.key, false);
     } else if (territory.status === 'hidden') {
       appendActionOption('👣', formatActionTitle('Осторожно приблизиться', {}), '', 'inspectTerritoryKey', selection.key, false);
@@ -1649,8 +1644,7 @@ function appendResearchApproachOptions(key, territory) {
   for (let i = 0; i < approachKeys.length; i++) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
-    const statLabel = heroStatLabels[approach.stat];
-    appendActionOption('🎲', formatActionTitle(approach.title, {}), statLabel + ' ' + approach.requiredStat + ' · сложность ' + approach.baseDifficulty + ' · прогресс: ' + territory.progress + ' / ' + territory.requiredProgress, 'researchApproachKey', key + ':' + approachKey, false);
+    appendActionOption('🔍', formatActionTitle(approach.title, {}), 'Бросок 2d6 · исследование: ' + territory.progress + ' / ' + territory.requiredProgress, 'researchApproachKey', key + ':' + approachKey, false);
   }
 }
 
