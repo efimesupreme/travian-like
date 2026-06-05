@@ -1,37 +1,31 @@
-// Аурелия-18: разделы «Корабль» и «Территории».
-const saveKey = 'aurelia-18-save-v4';
-const legacySaveKeys = ['aurelia-18-save-v3', 'aurelia-18-save-v2'];
+// Аурелия-18: разделы «Корабль», «Пустоши», «Город» и «Разведка».
+const saveKey = 'aurelia-18-save-v5';
+const legacySaveKeys = ['aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
 
 const initialResources = {
-  credits: 100,
-  metal: 15,
-  water: 10,
   energy: 8,
-  ether: 0,
-  data: 0,
-  components: 3
+  water: 10,
+  components: 3,
+  metal: 15,
+  recon: 0
 };
 
 const resourceLabels = {
-  credits: 'кредиты',
-  metal: 'металл',
-  water: 'вода',
   energy: 'энергия',
-  ether: 'эфир',
-  data: 'данные',
-  components: 'компоненты'
+  water: 'вода',
+  components: 'компоненты',
+  metal: 'металл',
+  recon: 'разведданные'
 };
 
 const resourceGenitiveLabels = {
-  credits: 'кредитов',
-  metal: 'металла',
-  water: 'воды',
   energy: 'энергии',
-  ether: 'эфира',
-  data: 'данных',
-  components: 'компонентов'
+  water: 'воды',
+  components: 'компонентов',
+  metal: 'металла',
+  recon: 'разведданных'
 };
 
 const shipSystemBlueprints = {
@@ -81,7 +75,7 @@ const shipSystemBlueprints = {
     name: 'Серверный узел',
     description: 'Бортовой архив хранит схемы ремонта, но часть кластеров отключена от питания.',
     status: 'повреждено',
-    repairCost: { energy: 2, data: 1, components: 1 }
+    repairCost: { energy: 2, recon: 1, components: 1 }
   }
 };
 
@@ -104,12 +98,6 @@ const territoryBlueprints = {
     resourceText: 'энергия',
     baseOutput: { energy: 5 }
   },
-  etherVein: {
-    name: 'Эфирная жила',
-    biome: 'Светящиеся прожилки в породе дают редкий эфир при осторожной выемке.',
-    resourceText: 'эфир',
-    baseOutput: { ether: 3 }
-  },
   oldStorage: {
     name: 'Старый склад проекта',
     biome: 'Полузасыпанный контейнерный ряд с совместимыми деталями старой экспедиции.',
@@ -119,21 +107,78 @@ const territoryBlueprints = {
   commNode: {
     name: 'Узел связи',
     biome: 'Поваленная мачта связи периодически отдаёт фрагменты технической телеметрии.',
-    resourceText: 'данные',
-    baseOutput: { data: 3 }
+    resourceText: 'разведданные',
+    baseOutput: { recon: 3 }
   },
   rustyFarm: {
     name: 'Ржавая ферма',
     biome: 'Старые гидропонные ванны сохранили влагу и немного обслуживающих деталей.',
-    resourceText: 'вода и немного компонентов',
+    resourceText: 'вода и компоненты',
     baseOutput: { water: 3, components: 1 }
+  },
+  brokenDrill: {
+    name: 'Разбитая буровая',
+    biome: 'Сорванная буровая платформа оставила металл и пригодные к перепайке узлы.',
+    resourceText: 'металл и компоненты',
+    baseOutput: { metal: 4, components: 1 }
   },
   blackDune: {
     name: 'Чёрная дюна',
-    biome: 'Магнитный песок скрывает случайные включения: металл, эфир или пакеты данных.',
-    resourceText: 'случайно: металл, эфир или данные',
+    biome: 'Магнитный песок скрывает случайные включения: металл, компоненты или разведданные.',
+    resourceText: 'случайно: металл, компоненты или разведданные',
     baseOutput: { random: 4 },
-    randomResources: ['metal', 'ether', 'data']
+    randomResources: ['metal', 'components', 'recon']
+  }
+};
+
+const cityDistricts = {
+  caravanGate: {
+    name: 'Караванные ворота',
+    description: 'Въездной пояс Ашхаб-18: стоянки караванов, досмотр грузов и пыльные навесы у стены.'
+  },
+  moistureMarket: {
+    name: 'Рынок влаги',
+    description: 'Торговые ряды вокруг водных резервуаров, где жители сверяют пайки и слухи.'
+  },
+  lowerWorkshops: {
+    name: 'Нижние мастерские',
+    description: 'Тесные ремонтные боксы под городскими настилами, наполненные искрами и запахом металла.'
+  },
+  livingDomes: {
+    name: 'Жилые купола',
+    description: 'Сектора купольных общежитий с переходами, фильтрами и семейными ячейками.'
+  },
+  industrialOutskirts: {
+    name: 'Промышленная окраина',
+    description: 'Грубый край города с шумными цехами, складами и линиями переработки.'
+  }
+};
+
+const cityActivities = [
+  { key: 'bar', name: 'Бар', description: 'Место для слухов, отдыха и случайных встреч.' },
+  { key: 'shop', name: 'Магазин', description: 'Закрытая пока точка снабжения и обмена.' },
+  { key: 'stall', name: 'Ларёк', description: 'Мелкая городская точка с быстрыми поручениями.' },
+  { key: 'sideJob', name: 'Подработка', description: 'Доска простых работ для тех, кто готов помочь району.' },
+  { key: 'caravanStop', name: 'Караванная остановка', description: 'Площадка ожидания внешних караванов.' },
+  { key: 'electrochemistry', name: 'Электрохимия', description: 'Мастерская аккумуляторов, электролитов и грубой переработки.' }
+];
+
+const cityUniquePoints = {
+  patrol: {
+    name: 'Патруль',
+    description: 'Маршрут городского дозора, отмеченный на схеме Ашхаб-18.'
+  },
+  hippodrome: {
+    name: 'Ипподром',
+    description: 'Песчаный круг для заездов и ставок, пока без игровой логики.'
+  },
+  prison: {
+    name: 'Тюрьма',
+    description: 'Охраняемый блок на краю административного сектора.'
+  },
+  hospital: {
+    name: 'Больница',
+    description: 'Медицинский купол с сортировкой пострадавших и карантинным шлюзом.'
   }
 };
 
@@ -141,13 +186,11 @@ let state = createInitialState();
 
 const elements = {
   turn: document.getElementById('turn'),
-  credits: document.getElementById('credits'),
-  metal: document.getElementById('metal'),
-  water: document.getElementById('water'),
   energy: document.getElementById('energy'),
-  ether: document.getElementById('ether'),
-  data: document.getElementById('data'),
+  water: document.getElementById('water'),
   components: document.getElementById('components'),
+  metal: document.getElementById('metal'),
+  recon: document.getElementById('recon'),
   totalDrones: document.getElementById('totalDrones'),
   totalFreeDrones: document.getElementById('totalFreeDrones'),
   totalAssignedDrones: document.getElementById('totalAssignedDrones'),
@@ -160,9 +203,13 @@ const elements = {
   screenSubtitle: document.getElementById('screenSubtitle'),
   shipScreen: document.getElementById('shipScreen'),
   territoriesScreen: document.getElementById('territoriesScreen'),
-  researchScreen: document.getElementById('researchScreen'),
+  cityScreen: document.getElementById('cityScreen'),
+  reconScreen: document.getElementById('reconScreen'),
+  reconScreenAmount: document.getElementById('reconScreenAmount'),
   shipSystemsGrid: document.getElementById('shipSystemsGrid'),
   territoriesGrid: document.getElementById('territoriesGrid'),
+  cityGrid: document.getElementById('cityGrid'),
+  uniqueCityGrid: document.getElementById('uniqueCityGrid'),
   selectedEyebrow: document.getElementById('selectedEyebrow'),
   selectedStatus: document.getElementById('selectedStatus'),
   selectedName: document.getElementById('selectedName'),
@@ -179,6 +226,8 @@ function createInitialState() {
     mode: 'ship',
     selectedSystemKey: '',
     selectedTerritoryKey: '',
+    selectedCityKey: '',
+    selectedCityType: '',
     drones: {
       total: 3,
       free: 3,
@@ -222,7 +271,7 @@ function createTerritories() {
 }
 
 function switchMode(mode) {
-  if (!['ship', 'territories', 'research'].includes(mode)) {
+  if (!['ship', 'territories', 'city', 'recon'].includes(mode)) {
     return;
   }
 
@@ -251,6 +300,44 @@ function selectTerritory(key) {
   state.selectedTerritoryKey = key;
   render();
   saveGame();
+}
+
+function selectCityDistrict(key) {
+  if (!cityDistricts[key]) {
+    return;
+  }
+
+  state.mode = 'city';
+  state.selectedCityKey = key;
+  state.selectedCityType = 'district';
+  addLog('Вы осмотрели район: ' + cityDistricts[key].name + '.');
+}
+
+function selectCityActivity(districtKey, activityKey) {
+  const district = cityDistricts[districtKey];
+  const activity = cityActivities.find(function (item) {
+    return item.key === activityKey;
+  });
+
+  if (!district || !activity) {
+    return;
+  }
+
+  state.mode = 'city';
+  state.selectedCityKey = districtKey + ':' + activityKey;
+  state.selectedCityType = 'activity';
+  addLog('Активность пока недоступна: ' + activity.name + '.');
+}
+
+function selectCityUnique(key) {
+  if (!cityUniquePoints[key]) {
+    return;
+  }
+
+  state.mode = 'city';
+  state.selectedCityKey = key;
+  state.selectedCityType = 'unique';
+  addLog('Уникальная точка отмечена на карте: ' + cityUniquePoints[key].name + '.');
 }
 
 function repairSystem(key) {
@@ -317,7 +404,7 @@ function removeDrone(key) {
   territory.assignedDrones -= 1;
   state.drones.free += 1;
   state.drones.assigned -= 1;
-  addLog('Дрон снят с территории ' + blueprint.name + '.');
+  addLog('Дрон снят с пустоши ' + blueprint.name + '.');
 }
 
 function gatherTerritory(key) {
@@ -427,19 +514,21 @@ function render() {
   renderScreens();
   renderShipSystems();
   renderTerritories();
+  renderCity();
   renderSelectionPanel();
   renderLog();
 }
 
 function renderResources() {
   elements.turn.textContent = state.turn;
-  elements.credits.textContent = state.resources.credits;
-  elements.metal.textContent = state.resources.metal;
-  elements.water.textContent = state.resources.water;
   elements.energy.textContent = state.resources.energy;
-  elements.ether.textContent = state.resources.ether;
-  elements.data.textContent = state.resources.data;
+  elements.water.textContent = state.resources.water;
   elements.components.textContent = state.resources.components;
+  elements.metal.textContent = state.resources.metal;
+  elements.recon.textContent = state.resources.recon;
+  if (elements.reconScreenAmount) {
+    elements.reconScreenAmount.textContent = state.resources.recon;
+  }
   elements.headerFreeDrones.textContent = state.drones.free;
   elements.restoredSystems.textContent = countRestoredSystems();
 }
@@ -481,24 +570,30 @@ function renderDrones() {
 function renderScreens() {
   const isShip = state.mode === 'ship';
   const isTerritories = state.mode === 'territories';
-  const isResearch = state.mode === 'research';
+  const isCity = state.mode === 'city';
+  const isRecon = state.mode === 'recon';
 
   elements.shipScreen.classList.toggle('hidden', !isShip);
   elements.territoriesScreen.classList.toggle('hidden', !isTerritories);
-  elements.researchScreen.classList.toggle('hidden', !isResearch);
+  elements.cityScreen.classList.toggle('hidden', !isCity);
+  elements.reconScreen.classList.toggle('hidden', !isRecon);
 
   if (isShip) {
     elements.screenEyebrow.textContent = 'режим корабля';
     elements.screenTitle.textContent = 'Корабль / командный узел';
     elements.screenSubtitle.textContent = 'Внутренние системы корабля, которые нужно чинить.';
   } else if (isTerritories) {
-    elements.screenEyebrow.textContent = 'режим территорий';
-    elements.screenTitle.textContent = 'Прилегающие территории';
-    elements.screenSubtitle.textContent = 'Внешние участки вокруг места крушения для ручной добычи ресурсов.';
+    elements.screenEyebrow.textContent = 'режим пустошей';
+    elements.screenTitle.textContent = 'Пустоши вокруг места крушения';
+    elements.screenSubtitle.textContent = 'Внешние пустоши вокруг места крушения для ручной добычи ресурсов.';
+  } else if (isCity) {
+    elements.screenEyebrow.textContent = 'городская карта';
+    elements.screenTitle.textContent = 'Город Ашхаб-18';
+    elements.screenSubtitle.textContent = 'Районы и отмеченные точки города. Активности пока работают как заглушки.';
   } else {
-    elements.screenEyebrow.textContent = 'режим исследований';
-    elements.screenTitle.textContent = 'Исследования';
-    elements.screenSubtitle.textContent = 'Раздел пока недоступен.';
+    elements.screenEyebrow.textContent = 'разведка';
+    elements.screenTitle.textContent = 'Разведка';
+    elements.screenSubtitle.textContent = 'Разведка нужна для открытия новых пустошей.';
   }
 }
 
@@ -537,7 +632,7 @@ function renderTerritories() {
     card.className = 'game-card territory-card territory-' + i;
     card.classList.toggle('selected', state.mode === 'territories' && state.selectedTerritoryKey === key);
     card.innerHTML = '<button class="card-select" type="button" data-territory-key="' + key + '">' +
-      '<span class="card-kicker">территория</span>' +
+      '<span class="card-kicker">пустошь</span>' +
       '<strong>' + blueprint.name + '</strong>' +
       '<small>Ур. ' + territory.level + ' · дроны ' + territory.assignedDrones + ' / ' + territory.droneLimit + '</small>' +
       '<p>' + blueprint.biome + '</p>' +
@@ -553,6 +648,51 @@ function renderTerritories() {
   }
 }
 
+function renderCity() {
+  elements.cityGrid.innerHTML = '';
+  elements.uniqueCityGrid.innerHTML = '';
+  const districtKeys = Object.keys(cityDistricts);
+
+  for (let i = 0; i < districtKeys.length; i++) {
+    const key = districtKeys[i];
+    const district = cityDistricts[key];
+    const card = document.createElement('article');
+    card.className = 'game-card city-card';
+    card.classList.toggle('selected', state.mode === 'city' && state.selectedCityType === 'district' && state.selectedCityKey === key);
+    let activitiesHtml = '';
+
+    for (let j = 0; j < cityActivities.length; j++) {
+      const activity = cityActivities[j];
+      activitiesHtml += '<button type="button" data-city-district-key="' + key + '" data-city-activity-key="' + activity.key + '">' + activity.name + '</button>';
+    }
+
+    card.innerHTML = '<button class="card-select" type="button" data-city-district-key="' + key + '">' +
+      '<span class="card-kicker">район</span>' +
+      '<strong>' + district.name + '</strong>' +
+      '<small>Ашхаб-18 · статус: заглушка</small>' +
+      '<p>' + district.description + '</p>' +
+      '</button>' +
+      '<div class="compact-actions city-actions">' + activitiesHtml + '</div>';
+    elements.cityGrid.appendChild(card);
+  }
+
+  const uniqueKeys = Object.keys(cityUniquePoints);
+  for (let i = 0; i < uniqueKeys.length; i++) {
+    const key = uniqueKeys[i];
+    const point = cityUniquePoints[key];
+    const card = document.createElement('article');
+    card.className = 'game-card unique-card';
+    card.classList.toggle('selected', state.mode === 'city' && state.selectedCityType === 'unique' && state.selectedCityKey === key);
+    card.innerHTML = '<button class="card-select" type="button" data-city-unique-key="' + key + '">' +
+      '<span class="card-kicker">уникальная точка</span>' +
+      '<strong>' + point.name + '</strong>' +
+      '<small>Статус: заглушка</small>' +
+      '<p>' + point.description + '</p>' +
+      '</button>';
+    elements.uniqueCityGrid.appendChild(card);
+  }
+}
+
 function renderSelectionPanel() {
   elements.selectedDetails.innerHTML = '';
   elements.selectedActions.innerHTML = '';
@@ -561,8 +701,10 @@ function renderSelectionPanel() {
     renderSystemSelection();
   } else if (state.mode === 'territories') {
     renderTerritorySelection();
+  } else if (state.mode === 'city') {
+    renderCitySelection();
   } else {
-    renderResearchHelp();
+    renderReconHelp();
   }
 }
 
@@ -576,7 +718,7 @@ function renderSystemSelection() {
     elements.selectedBadge.textContent = 'Выберите карточку системы';
     elements.selectedDescription.textContent = 'На этом экране показаны внутренние модули корабля. Повреждённые системы можно перевести в состояние «частично работает», если хватает ресурсов.';
     addDetail('Доступно', '8 систем: обшивка, реактор, жизнеобеспечение, контуры и модули управления.');
-    addDetail('Ремонт', 'Тратит металл, энергию, компоненты, а для серверного узла также данные.');
+    addDetail('Ремонт', 'Тратит металл, энергию, компоненты, воду, а для серверного узла также разведданные.');
     return;
   }
 
@@ -605,18 +747,18 @@ function renderTerritorySelection() {
 
   if (!key || !state.territories[key]) {
     elements.selectedEyebrow.textContent = 'справка';
-    elements.selectedStatus.textContent = 'территории';
-    elements.selectedName.textContent = 'Внешние участки';
-    elements.selectedBadge.textContent = 'Выберите территорию';
-    elements.selectedDescription.textContent = 'Назначайте свободных дронов на участки вокруг места крушения. Сбор ресурса работает только вручную и только при назначенных дронах.';
-    addDetail('Дроны', 'Всего 3, лимит на территории — 3.');
+    elements.selectedStatus.textContent = 'пустоши';
+    elements.selectedName.textContent = 'Пустоши';
+    elements.selectedBadge.textContent = 'Выберите пустошь';
+    elements.selectedDescription.textContent = 'Назначайте свободных дронов на пустоши вокруг места крушения. Сбор ресурса работает только вручную и только при назначенных дронах.';
+    addDetail('Дроны', 'Всего 3, лимит на пустошь — 3.');
     addDetail('Добыча', '1 дрон даёт базовый выход, 2 — x2, 3 — x3.');
     return;
   }
 
   const blueprint = territoryBlueprints[key];
   const territory = state.territories[key];
-  elements.selectedEyebrow.textContent = 'выбранная территория';
+  elements.selectedEyebrow.textContent = 'выбранная пустошь';
   elements.selectedStatus.textContent = 'дроны ' + territory.assignedDrones + '/3';
   elements.selectedName.textContent = blueprint.name;
   elements.selectedBadge.textContent = 'Уровень ' + territory.level;
@@ -630,13 +772,97 @@ function renderTerritorySelection() {
   appendActionButton('Собрать ресурс', 'gatherKey', key, false);
 }
 
-function renderResearchHelp() {
+
+function renderCitySelection() {
+  if (!state.selectedCityKey || !state.selectedCityType) {
+    elements.selectedEyebrow.textContent = 'справка';
+    elements.selectedStatus.textContent = 'город';
+    elements.selectedName.textContent = 'Город Ашхаб-18';
+    elements.selectedBadge.textContent = 'Выберите район или точку';
+    elements.selectedDescription.textContent = 'Карта города показывает пять районов, стандартные активности и уникальные точки. Все действия пока являются заглушками.';
+    addDetail('Тип', 'карта города');
+    addDetail('Статус', 'заглушка');
+    return;
+  }
+
+  if (state.selectedCityType === 'district') {
+    const district = cityDistricts[state.selectedCityKey];
+    if (!district) {
+      state.selectedCityKey = '';
+      state.selectedCityType = '';
+      renderCitySelection();
+      return;
+    }
+
+    elements.selectedEyebrow.textContent = 'город';
+    elements.selectedStatus.textContent = 'заглушка';
+    elements.selectedName.textContent = district.name;
+    elements.selectedBadge.textContent = 'Тип: район';
+    elements.selectedDescription.textContent = district.description;
+    addDetail('Тип', 'район');
+    addDetail('Статус', 'заглушка');
+    return;
+  }
+
+  if (state.selectedCityType === 'activity') {
+    const parts = state.selectedCityKey.split(':');
+    const district = cityDistricts[parts[0]];
+    const activity = cityActivities.find(function (item) {
+      return item.key === parts[1];
+    });
+
+    if (!district || !activity) {
+      state.selectedCityKey = '';
+      state.selectedCityType = '';
+      renderCitySelection();
+      return;
+    }
+
+    elements.selectedEyebrow.textContent = 'город';
+    elements.selectedStatus.textContent = 'заглушка';
+    elements.selectedName.textContent = activity.name;
+    elements.selectedBadge.textContent = 'Тип: стандартная активность';
+    elements.selectedDescription.textContent = activity.description;
+    addDetail('Район', district.name);
+    addDetail('Тип', 'стандартная активность');
+    addDetail('Статус', 'заглушка');
+    return;
+  }
+
+  const point = cityUniquePoints[state.selectedCityKey];
+  if (!point) {
+    state.selectedCityKey = '';
+    state.selectedCityType = '';
+    renderCitySelection();
+    return;
+  }
+
+  elements.selectedEyebrow.textContent = 'город';
+  elements.selectedStatus.textContent = 'заглушка';
+  elements.selectedName.textContent = point.name;
+  elements.selectedBadge.textContent = 'Тип: уникальная точка';
+  elements.selectedDescription.textContent = point.description;
+  addDetail('Тип', 'уникальная точка');
+  addDetail('Статус', 'заглушка');
+}
+
+function renderReconHelp() {
   elements.selectedEyebrow.textContent = 'справка';
   elements.selectedStatus.textContent = 'заглушка';
-  elements.selectedName.textContent = 'Исследования';
-  elements.selectedBadge.textContent = 'Раздел недоступен';
-  elements.selectedDescription.textContent = 'Исследовательский раздел недоступен. Он не содержит действий и пока служит заглушкой будущего экрана.';
-  addDetail('Доступно сейчас', 'Корабль и Территории.');
+  elements.selectedName.textContent = 'Разведка';
+  elements.selectedBadge.textContent = 'Разведданные: ' + state.resources.recon;
+  elements.selectedDescription.textContent = 'Разведка нужна для открытия новых пустошей. Механика будет добавлена следующим шагом.';
+  addDetail('Запас разведданных', state.resources.recon);
+  addDetail('Статус', 'заглушка');
+}
+
+function migrateLogMessage(message) {
+  return String(message)
+    .replace(/территории/g, 'пустоши')
+    .replace(/территорию/g, 'пустошь')
+    .replace(/территория/g, 'пустошь')
+    .replace(/данных/g, 'разведданных')
+    .replace(/данные/g, 'разведданные');
 }
 
 function addDetail(term, value) {
@@ -771,13 +997,16 @@ function mergeSavedState(saved) {
 
   for (let i = 0; i < resourceKeys.length; i++) {
     const key = resourceKeys[i];
-    next.resources[key] = savedNumber(savedResources[key], initialResources[key]);
+    const legacyValue = key === 'recon' && savedResources.recon === undefined ? savedResources.data : savedResources[key];
+    next.resources[key] = savedNumber(legacyValue, initialResources[key]);
   }
 
   next.turn = savedNumber(saved.turn, 1);
-  next.mode = ['ship', 'territories', 'research'].includes(saved.mode) ? saved.mode : 'ship';
+  next.mode = ['ship', 'territories', 'city', 'recon'].includes(saved.mode) ? saved.mode : (saved.mode === 'research' ? 'recon' : 'ship');
   next.selectedSystemKey = shipSystemBlueprints[saved.selectedSystemKey] ? saved.selectedSystemKey : '';
   next.selectedTerritoryKey = territoryBlueprints[saved.selectedTerritoryKey] ? saved.selectedTerritoryKey : '';
+  next.selectedCityKey = saved.selectedCityKey || '';
+  next.selectedCityType = saved.selectedCityType || '';
 
   if (saved.drones) {
     next.drones.total = savedNumber(saved.drones.total, 3);
@@ -810,7 +1039,7 @@ function mergeSavedState(saved) {
 
   normalizeDrones(next);
   next.logMessages = Array.isArray(saved.logMessages) && saved.logMessages.length > 0
-    ? saved.logMessages.slice(0, maxLogMessages)
+    ? saved.logMessages.slice(0, maxLogMessages).map(migrateLogMessage)
     : ['Сохранение загружено. Продолжайте развитие базы.'];
 
   return next;
@@ -855,6 +1084,12 @@ document.addEventListener('click', function (event) {
 
   if (target.dataset.mode) {
     switchMode(target.dataset.mode);
+  } else if (target.dataset.cityActivityKey) {
+    selectCityActivity(target.dataset.cityDistrictKey, target.dataset.cityActivityKey);
+  } else if (target.dataset.cityUniqueKey) {
+    selectCityUnique(target.dataset.cityUniqueKey);
+  } else if (target.dataset.cityDistrictKey) {
+    selectCityDistrict(target.dataset.cityDistrictKey);
   } else if (target.dataset.systemKey) {
     selectSystem(target.dataset.systemKey);
   } else if (target.dataset.territoryKey) {

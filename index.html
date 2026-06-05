@@ -19,22 +19,21 @@
         <span class="cycle">День / цикл: <span id="turn">1</span> / 20</span>
       </div>
       <section class="resource-strip" aria-label="Ресурсы базы">
-        <article class="resource-card"><span>💳</span><small>Кредиты</small><strong id="credits">100</strong></article>
-        <article class="resource-card"><span>⛓️</span><small>Металл</small><strong id="metal">15</strong></article>
-        <article class="resource-card"><span>💧</span><small>Вода</small><strong id="water">10</strong></article>
         <article class="resource-card"><span>⚡</span><small>Энергия</small><strong id="energy">8</strong></article>
-        <article class="resource-card"><span>🜁</span><small>Эфир</small><strong id="ether">0</strong></article>
-        <article class="resource-card"><span>📡</span><small>Данные</small><strong id="data">0</strong></article>
+        <article class="resource-card"><span>💧</span><small>Вода</small><strong id="water">10</strong></article>
         <article class="resource-card"><span>🔩</span><small>Компоненты</small><strong id="components">3</strong></article>
+        <article class="resource-card"><span>⛓️</span><small>Металл</small><strong id="metal">15</strong></article>
+        <article class="resource-card"><span>📡</span><small>Разведданные</small><strong id="recon">0</strong></article>
       </section>
     </header>
 
     <div class="layout-grid">
       <aside class="side-panel nav-panel" aria-label="Навигация">
-        <h2>Режимы</h2>
+        <h2>Территории</h2>
         <button class="nav-button active" data-mode="ship" type="button">Корабль</button>
-        <button class="nav-button" data-mode="territories" type="button">Территории</button>
-        <button class="nav-button" data-mode="research" type="button">Исследования</button>
+        <button class="nav-button" data-mode="territories" type="button">Пустоши</button>
+        <button class="nav-button" data-mode="city" type="button">Город</button>
+        <button class="nav-button" data-mode="recon" type="button">Разведка</button>
 
         <section class="mini-panel">
           <h3>Дроны</h3>
@@ -82,17 +81,33 @@
                 <span class="ship-tail"></span>
               </div>
               <h3>Место крушения</h3>
-              <p>Отправляйте дронов на прилегающие участки и собирайте ресурсы вручную.</p>
+              <p>Отправляйте дронов в пустоши вокруг места крушения и собирайте ресурсы вручную.</p>
             </div>
             <div id="territoriesGrid" class="card-grid territories-grid"></div>
           </div>
         </section>
 
-        <section id="researchScreen" class="screen research-screen hidden">
+        <section id="cityScreen" class="screen city-screen hidden">
+          <div class="city-map">
+            <div class="city-intro">
+              <p class="eyebrow">карта города</p>
+              <h3>Ашхаб-18</h3>
+              <p>Пять районов города доступны для осмотра. Активности пока отмечены как заглушки.</p>
+            </div>
+            <div id="cityGrid" class="card-grid city-grid"></div>
+            <div class="unique-city-points">
+              <h3>Уникальные точки</h3>
+              <div id="uniqueCityGrid" class="card-grid unique-grid"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="reconScreen" class="screen recon-screen hidden">
           <div class="placeholder-card">
-            <p class="eyebrow">раздел исследований</p>
-            <h2>Исследовательский раздел недоступен</h2>
-            <p>Модуль исследований появится позже. Сейчас доступны ремонт корабля и ручная добыча на территориях.</p>
+            <p class="eyebrow">раздел разведки</p>
+            <h2>Разведка</h2>
+            <p>Разведка нужна для открытия новых пустошей. Механика будет добавлена следующим шагом.</p>
+            <p>Текущий запас разведданных: <strong id="reconScreenAmount">0</strong>.</p>
           </div>
         </section>
       </section>
