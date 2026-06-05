@@ -99,6 +99,7 @@ const resourceLabels = {
   water: 'вода',
   components: 'компоненты',
   metal: 'металл',
+  food: 'еда',
   recon: 'разведданные'
 };
 
@@ -107,7 +108,15 @@ const resourceGenitiveLabels = {
   water: 'воды',
   components: 'компонентов',
   metal: 'металла',
+  food: 'еды',
   recon: 'разведданных'
+};
+
+const territoryGatherActions = {
+  metal: 'Собрать металл',
+  water: 'Собрать воду',
+  components: 'Искать компоненты',
+  food: 'Собрать еду'
 };
 
 const shipSystemBlueprints = {
@@ -630,6 +639,9 @@ function addResources(gain) {
 
   for (let i = 0; i < keys.length; i++) {
     const resource = keys[i];
+    if (state.resources[resource] === undefined) {
+      state.resources[resource] = 0;
+    }
     state.resources[resource] += gain[resource];
   }
 }
@@ -720,13 +732,14 @@ function gatherTerritory(key) {
   }
 
   spendStamina();
-  const gain = getTerritoryGain(key);
+  const resource = territory.resource;
+  const gain = { [resource]: 1 };
   addResources(gain);
 
   if (selection) {
-    setNarrativeMessage(selection, 'Герой обследует отмеченный участок и забирает только то, что можно унести без долгой стоянки.');
+    setNarrativeMessage(selection, 'Герой собирает немного ресурса с открытой клетки и сразу возвращает добычу в общий запас.');
   }
-  addLog('Герой обследовал ' + territory.name + '. Получено: ' + formatGain(gain) + '.');
+  addLog('Герой выполнил действие «' + getGatherActionTitle(key) + '» на клетке ' + territory.name + '. Получено: ' + formatGain(gain) + '.');
 }
 
 function startTerritoryResearch(key) {
@@ -948,7 +961,12 @@ function formatSignedModifier(value) {
 
 function getTerritoryGain(key) {
   const territory = state.territories[key] || territoryBlueprints[key];
-  return { ...(territory.baseGain || {}) };
+
+  if (!territory || !territory.resource) {
+    return {};
+  }
+
+  return { [territory.resource]: 1 };
 }
 
 function getTerritoryOutputText(key) {
@@ -970,7 +988,7 @@ function getTerritoryResourceText(territory) {
 }
 
 function canGatherTerritory(territory) {
-  return territory.status === 'open' || territory.status === 'settled';
+  return (territory.status === 'open' || territory.status === 'settled') && Boolean(territoryGatherActions[territory.resource]);
 }
 
 function getMissingResources(cost) {
@@ -1545,7 +1563,7 @@ function renderObjectActionOptions(selection) {
   if (selection.kind === 'territory') {
     const territory = state.territories[selection.key];
     if (territory.status === 'open') {
-      appendActionOption('⛏️', formatActionTitle('Собрать ресурс', {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
+      appendActionOption('⛏️', formatActionTitle(getGatherActionTitle(selection.key), {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
       appendActionOption('🔎', formatActionTitle('Осмотреть внимательнее', {}), '', 'inspectTerritoryKey', selection.key, false);
     } else if (territory.status === 'discovered') {
       appendActionOption('🔍', 'Начать исследование', 'Выбор подхода откроется без броска', 'startResearchKey', selection.key, false);
@@ -1556,7 +1574,7 @@ function renderObjectActionOptions(selection) {
     } else if (territory.status === 'researching') {
       appendResearchApproachOptions(selection.key, territory);
     } else if (territory.status === 'settled') {
-      appendActionOption('⛏️', formatActionTitle('Собрать ресурс', {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
+      appendActionOption('⛏️', formatActionTitle(getGatherActionTitle(selection.key), {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
       appendActionOption('🔎', formatActionTitle('Осмотреть участок', {}), '', 'inspectTerritoryKey', selection.key, false);
     }
     appendBackOption();
@@ -1643,7 +1661,13 @@ function formatMaybeCost(cost) {
 
 
 function getGatherActionTitle(key) {
-  return 'Собрать ресурс';
+  const territory = state.territories[key] || territoryBlueprints[key];
+
+  if (!territory) {
+    return 'Собрать ресурс';
+  }
+
+  return territoryGatherActions[territory.resource] || 'Собрать ресурс';
 }
 
 function formatActionTitle(title, cost) {
