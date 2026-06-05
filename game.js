@@ -733,13 +733,17 @@ function gatherTerritory(key) {
 
   spendStamina();
   const resource = territory.resource;
-  const gain = { [resource]: 1 };
-  addResources(gain);
+  const check = resolveGatherCheck(resource);
+  const gain = { [resource]: check.gained };
+
+  if (check.gained > 0) {
+    addResources(gain);
+  }
 
   if (selection) {
-    setNarrativeMessage(selection, 'Герой собирает немного ресурса с открытой клетки и сразу возвращает добычу в общий запас.');
+    setNarrativeMessage(selection, buildGatherResultPanel(check));
   }
-  addLog('Герой выполнил действие «' + getGatherActionTitle(key) + '» на клетке ' + territory.name + '. Получено: ' + formatGain(gain) + '.');
+  addLog('Действие «' + getGatherActionTitle(key) + '» на клетке ' + territory.name + ' выполнено. Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Результат: ' + check.resultLabel + '. Получено: ' + formatGain(gain) + '. Потрачена 1 выносливость.');
 }
 
 function startTerritoryResearch(key) {
@@ -925,6 +929,30 @@ function getResearchProgressGain(check) {
   return 3;
 }
 
+function resolveGatherCheck(resource) {
+  const roll = roll2d6();
+  const result = getGatherCheckResult(roll.total);
+
+  return {
+    resource,
+    roll,
+    resultLabel: result.label,
+    gained: result.gained
+  };
+}
+
+function getGatherCheckResult(total) {
+  if (total === 2) return { label: 'Критический провал', gained: 0 };
+  if (total <= 5) return { label: 'Провал', gained: 0 };
+  if (total <= 8) return { label: 'Частичный успех', gained: 1 };
+  if (total <= 11) return { label: 'Успех', gained: 2 };
+  return { label: 'Критический успех', gained: 3 };
+}
+
+function buildGatherResultPanel(check) {
+  return 'Бросок 2d6: ' + check.roll.total + '. ' + check.resultLabel + '. Получено: ' + formatGain({ [check.resource]: check.gained }) + '.';
+}
+
 function buildResearchResultPanel(territory, approach, check, progressGain, opened) {
   if (opened) {
     return 'Клетка открыта: ' + territory.name + '.\n\n' +
@@ -959,24 +987,14 @@ function formatSignedModifier(value) {
   return value > 0 ? '+' + value : String(value);
 }
 
-function getTerritoryGain(key) {
+function getTerritoryOutputText(key) {
   const territory = state.territories[key] || territoryBlueprints[key];
 
   if (!territory || !territory.resource) {
-    return {};
-  }
-
-  return { [territory.resource]: 1 };
-}
-
-function getTerritoryOutputText(key) {
-  const gain = getTerritoryGain(key);
-
-  if (Object.keys(gain).length === 0) {
     return 'ресурс скрыт';
   }
 
-  return formatGain(gain) + ' за действие';
+  return 'проверка 2d6 за ' + resourceLabels[territory.resource];
 }
 
 function getTerritoryResourceText(territory) {
