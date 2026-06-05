@@ -1,6 +1,6 @@
 // Аурелия-18: разделы «Корабль», «Пустоши», «Город» и «Разведка».
-const saveKey = 'aurelia-18-save-v6';
-const legacySaveKeys = ['aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
+const saveKey = 'aurelia-18-save-v7';
+const legacySaveKeys = ['aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
 
@@ -139,51 +139,121 @@ const territoryBlueprints = {
 const cityDistricts = {
   caravanGate: {
     name: 'Караванные ворота',
-    description: 'Въездной пояс Ашхаб-18: стоянки караванов, досмотр грузов и пыльные навесы у стены.'
+    description: 'Въезд в город, стоянка караванов, проверка грузов, первые слухи.'
   },
   moistureMarket: {
     name: 'Рынок влаги',
-    description: 'Торговые ряды вокруг водных резервуаров, где жители сверяют пайки и слухи.'
+    description: 'Торговля водой, фильтрами, пайками и мелкими услугами.'
   },
   lowerWorkshops: {
     name: 'Нижние мастерские',
-    description: 'Тесные ремонтные боксы под городскими настилами, наполненные искрами и запахом металла.'
+    description: 'Ремонтные боксы, кустарные инженеры, детали и грязная работа.'
   },
   livingDomes: {
     name: 'Жилые купола',
-    description: 'Сектора купольных общежитий с переходами, фильтрами и семейными ячейками.'
+    description: 'Жилые секции, дешёвые бары, остановки, местные разговоры.'
   },
   industrialOutskirts: {
     name: 'Промышленная окраина',
-    description: 'Грубый край города с шумными цехами, складами и линиями переработки.'
+    description: 'Склады, электрохимические ванны, старые трубы и опасные подработки.'
   }
 };
 
 const cityActivities = [
-  { key: 'bar', name: 'Бар', description: 'Место для слухов, отдыха и случайных встреч.' },
-  { key: 'shop', name: 'Магазин', description: 'Закрытая пока точка снабжения и обмена.' },
-  { key: 'stall', name: 'Ларёк', description: 'Мелкая городская точка с быстрыми поручениями.' },
-  { key: 'sideJob', name: 'Подработка', description: 'Доска простых работ для тех, кто готов помочь району.' },
-  { key: 'caravanStop', name: 'Караванная остановка', description: 'Площадка ожидания внешних караванов.' },
-  { key: 'electrochemistry', name: 'Электрохимия', description: 'Мастерская аккумуляторов, электролитов и грубой переработки.' }
+  {
+    key: 'bar',
+    name: 'Бар',
+    description: 'Дешёвый полутёмный зал района: вода уходит быстро, зато слухи проходят через каждую стойку.',
+    action: 'Расспросить посетителей',
+    cost: { water: 1 },
+    result: { recon: 1 },
+    successLog: 'Бар: получен слух. Разведданные +1.',
+    failureLog: 'Недостаточно воды, чтобы задержаться в баре.'
+  },
+  {
+    key: 'shop',
+    name: 'Магазин',
+    description: 'Зарешеченная лавка снабжения района: фильтры, пайки и детали пока только отмечают в журнале.',
+    action: 'Посмотреть ассортимент',
+    cost: {},
+    resultText: 'Журнал: торговля будет добавлена позже.',
+    successLog: 'Магазин отмечен. Торговля будет добавлена позже.'
+  },
+  {
+    key: 'stall',
+    name: 'Ларёк',
+    description: 'Узкий прилавок района для быстрых обменов без лишних вопросов.',
+    action: 'Обменять металл на воду',
+    cost: { metal: 3 },
+    result: { water: 1 },
+    successLog: 'Ларёк: металл обменян на воду. Вода +1.',
+    failureLog: 'Недостаточно металла для обмена в ларьке.'
+  },
+  {
+    key: 'sideJob',
+    name: 'Подработка',
+    description: 'Доска мелких ремонтов района: подтянуть кабель, закрыть клапан, перепаять силовую коробку.',
+    action: 'Взяться за мелкий ремонт',
+    cost: { energy: 1 },
+    result: { components: 1 },
+    successLog: 'Подработка: мелкий ремонт выполнен. Компоненты +1.',
+    failureLog: 'Недостаточно энергии для мелкого ремонта.'
+  },
+  {
+    key: 'caravanStop',
+    name: 'Караванная остановка',
+    description: 'Площадка района, где караванщики ждут пропусков и меняют новости на воду.',
+    action: 'Расспросить караванщиков',
+    cost: { water: 1 },
+    result: { recon: 2 },
+    successLog: 'Караванная остановка: караванщики поделились маршрутом. Разведданные +2.',
+    failureLog: 'Недостаточно воды, чтобы разговорить караванщиков.'
+  },
+  {
+    key: 'electrochemistry',
+    name: 'Электрохимия',
+    description: 'Грязная ванна переработки района: кислотный пар, старый лом и мастера с закрытыми лицами.',
+    action: 'Переработать лом',
+    cost: { metal: 4, energy: 1 },
+    result: { components: 2 },
+    successLog: 'Электрохимия: лом переработан. Компоненты +2.',
+    failureLog: 'Недостаточно ресурсов для электрохимии. Нужно: металл 4, энергия 1.'
+  }
 ];
 
 const cityUniquePoints = {
   patrol: {
     name: 'Патруль',
-    description: 'Маршрут городского дозора, отмеченный на схеме Ашхаб-18.'
+    description: 'Городская охрана, проверки документов, контроль воды и грузов.',
+    action: 'Пройти проверку',
+    cost: {},
+    resultText: 'Журнал: патруль пропустит вас дальше.',
+    successLog: 'Патруль проверил вас и пропустил дальше.'
   },
   hippodrome: {
     name: 'Ипподром',
-    description: 'Песчаный круг для заездов и ставок, пока без игровой логики.'
+    description: 'Пыльная арена для гонок, ставок и споров между караванщиками.',
+    action: 'Осмотреть заезд',
+    cost: {},
+    result: { recon: 1 },
+    successLog: 'Вы послушали разговоры на ипподроме. Получено: разведданные +1.'
   },
   prison: {
     name: 'Тюрьма',
-    description: 'Охраняемый блок на краю административного сектора.'
+    description: 'Изолятор для должников, нарушителей режима и неудобных людей.',
+    action: 'Осмотреть периметр',
+    cost: {},
+    resultText: 'Журнал: сюжетные события будут добавлены позже.',
+    successLog: 'Тюрьма отмечена на карте. Сюжетные события будут добавлены позже.'
   },
   hospital: {
     name: 'Больница',
-    description: 'Медицинский купол с сортировкой пострадавших и карантинным шлюзом.'
+    description: 'Перегруженный медблок города, где лечат за воду, услуги и связи.',
+    action: 'Запросить помощь',
+    cost: { water: 2 },
+    resultText: 'Журнал: базовая помощь, персонаж появится позже.',
+    successLog: 'Медики оказали базовую помощь. Персонаж будет добавлен следующим шагом.',
+    failureLog: 'Недостаточно воды, чтобы запросить помощь в больнице.'
   }
 };
 
@@ -319,7 +389,7 @@ function selectCityDistrict(key) {
   state.mode = 'city';
   state.selectedCityKey = key;
   state.selectedCityType = 'district';
-  addLog('Вы осмотрели район: ' + cityDistricts[key].name + '.');
+  addLog('Вы вошли в район: ' + cityDistricts[key].name + '.');
 }
 
 function selectCityActivity(districtKey, activityKey) {
@@ -335,7 +405,7 @@ function selectCityActivity(districtKey, activityKey) {
   state.mode = 'city';
   state.selectedCityKey = districtKey + ':' + activityKey;
   state.selectedCityType = 'activity';
-  addLog('Активность пока недоступна: ' + activity.name + '.');
+  addLog('Вы выбрали активность: ' + activity.name + ' в районе ' + district.name + '.');
 }
 
 function selectCityUnique(key) {
@@ -347,6 +417,58 @@ function selectCityUnique(key) {
   state.selectedCityKey = key;
   state.selectedCityType = 'unique';
   addLog('Уникальная точка отмечена на карте: ' + cityUniquePoints[key].name + '.');
+}
+
+function performCityActivity(districtKey, activityKey) {
+  const district = cityDistricts[districtKey];
+  const activity = getCityActivity(activityKey);
+
+  if (!district || !activity) {
+    return;
+  }
+
+  state.mode = 'city';
+  state.selectedCityKey = districtKey + ':' + activityKey;
+  state.selectedCityType = 'activity';
+  performCityAction(activity);
+}
+
+function performCityUnique(key) {
+  const point = cityUniquePoints[key];
+
+  if (!point) {
+    return;
+  }
+
+  state.mode = 'city';
+  state.selectedCityKey = key;
+  state.selectedCityType = 'unique';
+  performCityAction(point);
+}
+
+function performCityAction(entry) {
+  const cost = entry.cost || {};
+  const missing = getMissingResources(cost);
+
+  if (missing.length > 0) {
+    addLog(entry.failureLog || 'Недостаточно ресурсов для действия. Нужно: ' + formatCost(cost) + '.');
+    return;
+  }
+
+  payCost(cost);
+  if (entry.result) {
+    addResources(entry.result);
+  }
+  addLog(entry.successLog);
+}
+
+function addResources(gain) {
+  const keys = Object.keys(gain);
+
+  for (let i = 0; i < keys.length; i++) {
+    const resource = keys[i];
+    state.resources[resource] += gain[resource];
+  }
 }
 
 function repairSystem(key) {
@@ -685,7 +807,7 @@ function renderScreens() {
   } else if (isCity) {
     elements.screenEyebrow.textContent = 'городская карта';
     elements.screenTitle.textContent = 'Город Ашхаб-18';
-    elements.screenSubtitle.textContent = 'Районы и отмеченные точки города. Активности пока работают как заглушки.';
+    elements.screenSubtitle.textContent = 'Районы, городские точки и ручные полулегальные активности Ашхаб-18.';
   } else {
     elements.screenEyebrow.textContent = 'разведка';
     elements.screenTitle.textContent = 'Разведка';
@@ -772,6 +894,7 @@ function renderCity() {
     const card = document.createElement('article');
     card.className = 'game-card city-card';
     card.classList.toggle('selected', state.mode === 'city' && state.selectedCityType === 'district' && state.selectedCityKey === key);
+    card.classList.toggle('has-selected-activity', state.mode === 'city' && state.selectedCityType === 'activity' && state.selectedCityKey.indexOf(key + ':') === 0);
     let activitiesHtml = '';
 
     for (let j = 0; j < cityActivities.length; j++) {
@@ -782,7 +905,7 @@ function renderCity() {
     card.innerHTML = '<button class="card-select" type="button" data-city-district-key="' + key + '">' +
       '<span class="card-kicker">район</span>' +
       '<strong>' + district.name + '</strong>' +
-      '<small>Ашхаб-18 · статус: заглушка</small>' +
+      '<small>Ашхаб-18 · район полулегальной карты</small>' +
       '<p>' + district.description + '</p>' +
       '</button>' +
       '<div class="compact-actions city-actions">' + activitiesHtml + '</div>';
@@ -799,7 +922,7 @@ function renderCity() {
     card.innerHTML = '<button class="card-select" type="button" data-city-unique-key="' + key + '">' +
       '<span class="card-kicker">уникальная точка</span>' +
       '<strong>' + point.name + '</strong>' +
-      '<small>Статус: заглушка</small>' +
+      '<small>Уникальная точка Ашхаб-18</small>' +
       '<p>' + point.description + '</p>' +
       '</button>';
     elements.uniqueCityGrid.appendChild(card);
@@ -942,11 +1065,11 @@ function renderCitySelection() {
   if (!state.selectedCityKey || !state.selectedCityType) {
     elements.selectedEyebrow.textContent = 'справка';
     elements.selectedStatus.textContent = 'город';
-    elements.selectedName.textContent = 'Город Ашхаб-18';
+    elements.selectedName.textContent = 'Ашхаб-18';
     elements.selectedBadge.textContent = 'Выберите район или точку';
-    elements.selectedDescription.textContent = 'Карта города показывает пять районов, стандартные активности и уникальные точки. Все действия пока являются заглушками.';
+    elements.selectedDescription.textContent = 'Первое крупное поселение планеты даёт слухи, простые обмены, подработку и будущие контакты, но не решает главную проблему экипажа.';
     addDetail('Тип', 'карта города');
-    addDetail('Статус', 'заглушка');
+    addDetail('Доступно', '5 районов, 6 стандартных активностей и 4 уникальные точки.');
     return;
   }
 
@@ -960,21 +1083,20 @@ function renderCitySelection() {
     }
 
     elements.selectedEyebrow.textContent = 'город';
-    elements.selectedStatus.textContent = 'заглушка';
+    elements.selectedStatus.textContent = 'район';
     elements.selectedName.textContent = district.name;
     elements.selectedBadge.textContent = 'Тип: район';
     elements.selectedDescription.textContent = district.description;
     addDetail('Тип', 'район');
-    addDetail('Статус', 'заглушка');
+    addDetail('Активности', cityActivities.map(function (activity) { return activity.name; }).join(', '));
+    addDetail('Подсказка', 'Выберите активность в районе.');
     return;
   }
 
   if (state.selectedCityType === 'activity') {
     const parts = state.selectedCityKey.split(':');
     const district = cityDistricts[parts[0]];
-    const activity = cityActivities.find(function (item) {
-      return item.key === parts[1];
-    });
+    const activity = getCityActivity(parts[1]);
 
     if (!district || !activity) {
       state.selectedCityKey = '';
@@ -983,14 +1105,15 @@ function renderCitySelection() {
       return;
     }
 
-    elements.selectedEyebrow.textContent = 'город';
-    elements.selectedStatus.textContent = 'заглушка';
+    elements.selectedEyebrow.textContent = 'городская активность';
+    elements.selectedStatus.textContent = 'активность';
     elements.selectedName.textContent = activity.name;
-    elements.selectedBadge.textContent = 'Тип: стандартная активность';
-    elements.selectedDescription.textContent = activity.description;
+    elements.selectedBadge.textContent = 'Район: ' + district.name;
+    elements.selectedDescription.textContent = activity.description + ' Локация учитывает шум и правила района: ' + district.name + '.';
     addDetail('Район', district.name);
-    addDetail('Тип', 'стандартная активность');
-    addDetail('Статус', 'заглушка');
+    addDetail('Стоимость', formatMaybeCost(activity.cost));
+    addDetail('Результат', formatCityResult(activity));
+    appendActionButton(activity.action, 'cityActionKey', state.selectedCityKey, false);
     return;
   }
 
@@ -1002,13 +1125,38 @@ function renderCitySelection() {
     return;
   }
 
-  elements.selectedEyebrow.textContent = 'город';
-  elements.selectedStatus.textContent = 'заглушка';
+  elements.selectedEyebrow.textContent = 'городская точка';
+  elements.selectedStatus.textContent = 'уникальная';
   elements.selectedName.textContent = point.name;
   elements.selectedBadge.textContent = 'Тип: уникальная точка';
   elements.selectedDescription.textContent = point.description;
   addDetail('Тип', 'уникальная точка');
-  addDetail('Статус', 'заглушка');
+  addDetail('Стоимость', formatMaybeCost(point.cost));
+  addDetail('Результат', formatCityResult(point));
+  appendActionButton(point.action, 'cityUniqueActionKey', state.selectedCityKey, false);
+}
+
+
+function getCityActivity(key) {
+  return cityActivities.find(function (item) {
+    return item.key === key;
+  });
+}
+
+function formatMaybeCost(cost) {
+  if (!cost || Object.keys(cost).length === 0) {
+    return 'нет';
+  }
+
+  return formatCost(cost);
+}
+
+function formatCityResult(entry) {
+  if (entry.result) {
+    return formatGain(entry.result);
+  }
+
+  return entry.resultText || 'Запись в журнал.';
 }
 
 function renderReconHelp() {
@@ -1274,6 +1422,11 @@ document.addEventListener('click', function (event) {
 
   if (target.dataset.mode) {
     switchMode(target.dataset.mode);
+  } else if (target.dataset.cityActionKey) {
+    const parts = target.dataset.cityActionKey.split(':');
+    performCityActivity(parts[0], parts[1]);
+  } else if (target.dataset.cityUniqueActionKey) {
+    performCityUnique(target.dataset.cityUniqueActionKey);
   } else if (target.dataset.cityActivityKey) {
     selectCityActivity(target.dataset.cityDistrictKey, target.dataset.cityActivityKey);
   } else if (target.dataset.cityUniqueKey) {
