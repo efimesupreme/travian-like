@@ -3,7 +3,7 @@ const saveKey = 'aurelia-18-save-v18';
 const legacySaveKeys = ['aurelia-18-save-v17', 'aurelia-18-save-v16', 'aurelia-18-save-v15', 'aurelia-18-save-v14', 'aurelia-18-save-v13', 'aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
-const typewriterDelay = 22;
+const typewriterDelay = 8;
 const typewriterCursor = '|';
 const staminaActionCost = 1;
 
@@ -1087,27 +1087,6 @@ function performResearchApproach(key, approachKey) {
   researchTerritory(key, approachKey);
 }
 
-function inspectTerritory(key, message) {
-  const territory = state.territories[key];
-
-  if (!territory) {
-    return;
-  }
-
-  const selection = getCurrentSelection();
-
-  if (!hasEnoughStamina(selection)) {
-    return;
-  }
-
-  spendStamina();
-  if (selection) {
-    setNarrativeMessage(selection, message);
-  }
-  saveGame();
-  render();
-}
-
 
 function ensureResearchEvent(key) {
   const territory = state.territories[key];
@@ -1654,8 +1633,7 @@ function renderSelectionPanel() {
       return;
     }
 
-    elements.selectedActions.innerHTML = '';
-    renderObjectActionOptions(currentSelection);
+    startActionTypewriter(currentSelection, panelKey);
   });
 }
 
@@ -1905,10 +1883,8 @@ function renderObjectActionOptions(selection) {
     const territory = state.territories[selection.key];
     if (territory.status === 'open' || territory.status === 'depleted') {
       appendActionOption('⛏️', formatActionTitle(getGatherActionTitle(selection.key), {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
-      appendActionOption('🔎', formatActionTitle('Осмотреть внимательнее', {}), '', 'inspectTerritoryKey', selection.key, false);
     } else if (territory.status === 'discovered') {
       appendResearchApproachOptions(selection.key, territory);
-      appendActionOption('🔎', formatActionTitle('Осмотреть сигнал', {}), '', 'inspectTerritoryKey', selection.key, false);
     } else if (territory.status === 'hidden') {
       appendDiscoverApproachOptions(selection.key, territory);
     }
@@ -2051,11 +2027,22 @@ function migrateLogMessage(message) {
     .replace(/данные/g, 'разведданные');
 }
 
+let actionRenderCollector = null;
+
 function addActionLead(text) {
+  if (actionRenderCollector) {
+    actionRenderCollector.push({ type: 'lead', text });
+    return;
+  }
+
+  elements.selectedActions.appendChild(createActionLead(text));
+}
+
+function createActionLead(text) {
   const lead = document.createElement('p');
   lead.className = 'action-lead';
   lead.textContent = text;
-  elements.selectedActions.appendChild(lead);
+  return lead;
 }
 
 function appendBackOption() {
@@ -2070,13 +2057,142 @@ function getRetreatNote() {
 }
 
 function appendActionOption(icon, title, note, datasetKey, key, disabled) {
+  if (actionRenderCollector) {
+    actionRenderCollector.push({ type: 'option', icon, title, note, datasetKey, key, disabled });
+    return;
+  }
+
+  elements.selectedActions.appendChild(createActionButton({ icon, title, note, datasetKey, key, disabled }, title, note, disabled));
+}
+
+function createActionButton(entry, titleText, noteText, disabled) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'action-choice';
-  button.dataset[datasetKey] = key;
+  button.dataset[entry.datasetKey] = entry.key;
   button.disabled = disabled;
-  button.innerHTML = '<span class="action-title">' + icon + ' ' + title + '</span>' + (note ? '<span class="action-note">' + note + '</span>' : '');
+
+  const title = document.createElement('span');
+  title.className = 'action-title';
+  title.textContent = entry.icon + ' ' + titleText;
+  button.appendChild(title);
+
+  if (entry.note) {
+    const note = document.createElement('span');
+    note.className = 'action-note';
+    note.textContent = noteText;
+    button.appendChild(note);
+  }
+
+  return button;
+}
+
+function collectObjectActionEntries(selection) {
+  actionRenderCollector = [];
+  renderObjectActionOptions(selection);
+  const entries = actionRenderCollector;
+  actionRenderCollector = null;
+  return entries;
+}
+
+function startActionTypewriter(selection, panelKey) {
+  const entries = collectObjectActionEntries(selection);
+  elements.selectedActions.innerHTML = '';
+
+  const token = typewriterState.token;
+  typewriterState.currentKey = panelKey;
+  typewriterState.isTyping = true;
+
+  let entryIndex = 0;
+  function typeNextEntry() {
+    if (token !== typewriterState.token || typewriterState.currentKey !== panelKey) {
+      return;
+    }
+
+    if (entryIndex >= entries.length) {
+      typewriterState.isTyping = false;
+      return;
+    }
+
+    const entry = entries[entryIndex];
+    entryIndex += 1;
+
+    if (entry.type === 'lead') {
+      typeTextNode(createActionLead(''), entry.text, token, panelKey, typeNextEntry);
+      return;
+    }
+
+    typeActionButton(entry, token, panelKey, typeNextEntry);
+  }
+
+  typeNextEntry();
+}
+
+function typeTextNode(node, text, token, panelKey, onComplete) {
+  elements.selectedActions.appendChild(node);
+
+  let index = 0;
+  function typeNextCharacter() {
+    if (token !== typewriterState.token || typewriterState.currentKey !== panelKey || !typewriterState.isTyping) {
+      return;
+    }
+
+    index += 1;
+    node.textContent = text.slice(0, index) + (index < text.length ? typewriterCursor : '');
+
+    if (index >= text.length) {
+      onComplete();
+      return;
+    }
+
+    typewriterState.timerId = window.setTimeout(typeNextCharacter, typewriterDelay);
+  }
+
+  typewriterState.timerId = window.setTimeout(typeNextCharacter, typewriterDelay);
+}
+
+function typeActionButton(entry, token, panelKey, onComplete) {
+  const button = createActionButton(entry, '', '', true);
   elements.selectedActions.appendChild(button);
+
+  const titleNode = button.querySelector('.action-title');
+  const noteNode = button.querySelector('.action-note');
+  const fullTitle = entry.icon + ' ' + entry.title;
+  const fullNote = entry.note || '';
+  const fullText = fullNote ? fullTitle + '\n' + fullNote : fullTitle;
+
+  let index = 0;
+  function typeNextCharacter() {
+    if (token !== typewriterState.token || typewriterState.currentKey !== panelKey || !typewriterState.isTyping) {
+      return;
+    }
+
+    index += 1;
+    const visibleText = fullText.slice(0, index);
+    const parts = visibleText.split('\n');
+    titleNode.textContent = parts[0] + (index < fullText.length && parts.length === 1 ? typewriterCursor : '');
+
+    if (noteNode) {
+      noteNode.textContent = parts[1] || '';
+      if (index < fullText.length && parts.length > 1) {
+        noteNode.textContent += typewriterCursor;
+      }
+    }
+
+    if (index >= fullText.length) {
+      titleNode.textContent = fullTitle;
+      if (noteNode) {
+        noteNode.textContent = fullNote;
+      }
+      button.disabled = entry.disabled;
+      onComplete();
+      return;
+    }
+
+    typewriterState.timerId = window.setTimeout(typeNextCharacter, typewriterDelay);
+  }
+
+  typewriterState.timerId = window.setTimeout(typeNextCharacter, typewriterDelay);
 }
 
 function setNarrativeMessage(selection, message) {
@@ -2432,9 +2548,6 @@ document.addEventListener('click', function (event) {
     exploreHiddenTerritory(parts[0], parts[1]);
   } else if (target.dataset.discoverTerritoryKey) {
     exploreHiddenTerritory(target.dataset.discoverTerritoryKey, 'direct');
-  } else if (target.dataset.inspectTerritoryKey) {
-    const territory = state.territories[target.dataset.inspectTerritoryKey];
-    inspectTerritory(target.dataset.inspectTerritoryKey, getTerritoryInspectDescription(territory));
   }
 });
 
