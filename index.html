@@ -123,7 +123,7 @@
               <div class="city-intro">
                 <p class="eyebrow">карта города</p>
                 <h3>Ашхаб-18</h3>
-                <p>Первое крупное поселение планеты живёт на воде, ремонтах и караванных слухах. Здесь можно найти простые обмены, подработку и контакты для будущих квестов.</p>
+                <p>Первый крупный инфраструктурный узел планеты держится на воде, ремонтах и старых маршрутах. Здесь можно найти простые обмены, техническую подработку и отметки для будущих задач.</p>
               </div>
               <div id="cityGrid" class="card-grid city-grid"></div>
               <div class="unique-city-points">
@@ -187,10 +187,17 @@
           <h2 id="selectedName">Корабль</h2>
           <p id="selectedBadge" class="level-badge">Выберите систему</p>
           <p id="selectedDescription" class="description"></p>
+          <p id="selectedNarrative" class="narrative-message"></p>
           <dl id="selectedDetails" class="info-list"></dl>
           <div class="primary-hero-actions">
-            <button id="inspectSelected" type="button" data-inspect-selected="true">Осмотреть</button>
-            <button id="showObjectActions" type="button" data-show-object-actions="true">Действовать</button>
+            <button class="action-choice" id="inspectSelected" type="button" data-inspect-selected="true">
+              <span class="action-title">🔍 Осмотреть</span>
+              <span class="action-note">Без расхода ресурсов · добавить описание</span>
+            </button>
+            <button class="action-choice" id="showObjectActions" type="button" data-show-object-actions="true">
+              <span class="action-title">⚙️ Действовать</span>
+              <span class="action-note">Раскрыть варианты выбранного объекта</span>
+            </button>
           </div>
           <div id="selectedActions" class="panel-actions"></div>
         </section>

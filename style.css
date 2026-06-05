@@ -2463,3 +2463,90 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Compact text RPG feed in the right hero action panel. */
+.narrative-feed {
+  background:
+    linear-gradient(180deg, rgba(5, 12, 22, 0.96), rgba(7, 16, 28, 0.98));
+  scrollbar-color: rgba(116, 215, 255, 0.42) rgba(5, 12, 22, 0.7);
+}
+
+.narrative-message {
+  margin: 10px 0 12px;
+  padding: 10px 11px;
+  border-left: 2px solid rgba(244, 170, 94, 0.76);
+  border-radius: 10px;
+  background: rgba(244, 170, 94, 0.07);
+  color: #f4e8d6;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.action-lead {
+  margin: 0 0 6px;
+  color: #d9f5ff;
+  font-size: 0.84rem;
+  letter-spacing: 0.04em;
+}
+
+.primary-hero-actions,
+.panel-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.primary-hero-actions .action-choice,
+.panel-actions .action-choice {
+  width: 100%;
+  padding: 8px 6px;
+  border: 0;
+  border-bottom: 1px solid rgba(116, 215, 255, 0.18);
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.primary-hero-actions .action-choice:hover,
+.primary-hero-actions .action-choice:focus-visible,
+.panel-actions .action-choice:hover,
+.panel-actions .action-choice:focus-visible {
+  border-color: rgba(116, 215, 255, 0.5);
+  background: rgba(116, 215, 255, 0.09);
+  outline: none;
+  transform: translateX(2px);
+}
+
+.primary-hero-actions .action-choice:active,
+.panel-actions .action-choice:active {
+  background: rgba(244, 170, 94, 0.12);
+  transform: translateX(1px);
+}
+
+.primary-hero-actions .action-choice:disabled,
+.panel-actions .action-choice:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+}
+
+.action-title,
+.action-note {
+  display: block;
+}
+
+.action-title {
+  color: #e8fbff;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.action-note {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
