@@ -747,7 +747,7 @@ function gatherTerritory(key) {
 
   spendStamina();
   const resource = territory.resource;
-  const check = resolveGatherCheck(resource);
+  const check = resolveGatherCheck(resource, territory);
   const wasDepleted = territory.status === 'depleted';
   let actualGain = 0;
 
@@ -966,9 +966,9 @@ function getResearchProgressGain(check) {
   return 3;
 }
 
-function resolveGatherCheck(resource) {
+function resolveGatherCheck(resource, territory) {
   const roll = roll2d6();
-  const result = getGatherCheckResult(roll.total);
+  const result = getGatherCheckResult(roll.total, territory);
 
   return {
     resource,
@@ -978,12 +978,15 @@ function resolveGatherCheck(resource) {
   };
 }
 
-function getGatherCheckResult(total) {
+function getGatherCheckResult(total, territory) {
+  const yieldMin = Math.max(0, savedNumber(territory.yieldMin, 1));
+  const yieldMax = Math.max(yieldMin, savedNumber(territory.yieldMax, yieldMin));
+
   if (total === 2) return { label: 'Критический провал', gained: 0 };
   if (total <= 5) return { label: 'Провал', gained: 0 };
-  if (total <= 8) return { label: 'Частичный успех', gained: 1 };
-  if (total <= 11) return { label: 'Успех', gained: 2 };
-  return { label: 'Критический успех', gained: 3 };
+  if (total <= 8) return { label: 'Частичный успех', gained: yieldMin };
+  if (total <= 11) return { label: 'Успех', gained: Math.max(yieldMin, yieldMax - 1) };
+  return { label: 'Критический успех', gained: yieldMax };
 }
 
 function buildGatherResultPanel(check, actualGain, remaining, depletedNow) {
