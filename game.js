@@ -1,10 +1,19 @@
 // Аурелия-18: единая оболочка сцен «Герой», «Пустоши», «Корабль» и «Город».
-const saveKey = 'aurelia-18-save-v9';
-const legacySaveKeys = ['aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
+const saveKey = 'aurelia-18-save-v13';
+const legacySaveKeys = ['aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
 const typewriterDelay = 22;
 const typewriterCursor = '|';
+const staminaActionCost = 1;
+
+const initialHeroCondition = {
+  health: 100,
+  maxHealth: 100,
+  stamina: 80,
+  maxStamina: 100,
+  credits: 5000
+};
 
 const initialHero = {
   name: 'Герой',
@@ -298,6 +307,9 @@ let state = createInitialState();
 
 const elements = {
   turn: document.getElementById('turn'),
+  health: document.getElementById('health'),
+  stamina: document.getElementById('stamina'),
+  credits: document.getElementById('credits'),
   energy: document.getElementById('energy'),
   water: document.getElementById('water'),
   components: document.getElementById('components'),
@@ -334,6 +346,7 @@ const typewriterState = {
 function createInitialState() {
   return {
     resources: { ...initialResources },
+    heroCondition: { ...initialHeroCondition },
     turn: 1,
     mode: 'hero',
     selectedSystemKey: '',
@@ -506,9 +519,13 @@ function performCityUnique(key) {
 
 function performCityAction(entry) {
   const cost = entry.cost || {};
-  const missing = getMissingResources(cost);
-
   const selection = getCurrentSelection();
+
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
+  const missing = getMissingResources(cost);
   if (missing.length > 0) {
     if (selection) {
       setNarrativeMessage(selection, 'Герой останавливается на пороге действия: ресурсов не хватает, и интерфейс не даёт подтвердить расход.');
@@ -517,6 +534,7 @@ function performCityAction(entry) {
     return;
   }
 
+  spendStamina();
   payCost(cost);
   if (entry.result) {
     addResources(entry.result);
@@ -545,7 +563,13 @@ function repairSystem(key) {
   }
 
   const selection = getCurrentSelection();
+
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
   if (system.status !== 'повреждено') {
+    spendStamina();
     if (selection) {
       setNarrativeMessage(selection, 'Герой проверяет запасные контуры и останавливается: улучшение этой системы пока отмечено как будущая заглушка.');
     }
@@ -562,6 +586,7 @@ function repairSystem(key) {
     return;
   }
 
+  spendStamina();
   payCost(blueprint.repairCost);
   system.status = 'частично работает';
   if (selection) {
@@ -579,6 +604,12 @@ function diagnoseSystem(key) {
   }
 
   const selection = getCurrentSelection();
+
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
+  spendStamina();
   if (selection) {
     setNarrativeMessage(selection, 'Герой запускает короткую диагностику. Экран выдаёт рваный список ошибок, но без новых решений: подробная диагностика пока остаётся заглушкой.');
   }
@@ -588,6 +619,8 @@ function diagnoseSystem(key) {
 function returnToSelectedPanel() {
   const selection = getCurrentSelection();
   if (!selection) return;
+  state.actionPanelMode = 'actions';
+  clearNarrativeMessage();
   addLog('Герой отступил от объекта: ' + selection.name + '.');
   saveGame();
   render();
@@ -602,6 +635,11 @@ function gatherTerritory(key) {
   }
 
   const selection = getCurrentSelection();
+
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
   if (!territory.isOpen) {
     if (selection) {
       setNarrativeMessage(selection, 'Герой видит только серый контур зоны. Сначала её нужно исследовать или открыть за разведданные.');
@@ -610,6 +648,7 @@ function gatherTerritory(key) {
     return;
   }
 
+  spendStamina();
   const gain = getTerritoryGain(key);
   const gainKeys = Object.keys(gain);
 
@@ -634,6 +673,10 @@ function scoutTerritoryPersonally(key) {
 
   const selection = getCurrentSelection();
 
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
   if (state.resources.water < 2 && state.resources.energy < 1) {
     if (selection) { setNarrativeMessage(selection, 'Пустошь ждёт за пределом безопасного маршрута, но запасы не позволяют идти сейчас.'); }
     addLog('Недостаточно воды и энергии для личной разведки. Нужно: вода 2, энергия 1.');
@@ -652,6 +695,7 @@ function scoutTerritoryPersonally(key) {
     return;
   }
 
+  spendStamina();
   state.resources.water -= 2;
   state.resources.energy -= 1;
   state.resources.recon += 2;
@@ -670,6 +714,11 @@ function openTerritory(key) {
   }
 
   const selection = getCurrentSelection();
+
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
   if (state.resources.recon < blueprint.openCost) {
     if (selection) {
       setNarrativeMessage(selection, 'Герой сверяет обрывки телеметрии, но данных слишком мало: контур зоны остаётся закрытым.');
@@ -678,6 +727,7 @@ function openTerritory(key) {
     return;
   }
 
+  spendStamina();
   state.resources.recon -= blueprint.openCost;
   territory.isOpen = true;
   if (selection) {
@@ -753,6 +803,23 @@ function payCost(cost) {
   }
 }
 
+function hasEnoughStamina(selection) {
+  if (state.heroCondition.stamina >= staminaActionCost) {
+    return true;
+  }
+
+  if (selection) {
+    state.actionPanelMode = 'exhausted';
+    setNarrativeMessage(selection, 'Герой слишком вымотан для этого действия.');
+  }
+  addLog('Недостаточно выносливости.');
+  return false;
+}
+
+function spendStamina() {
+  state.heroCondition.stamina = Math.max(0, state.heroCondition.stamina - staminaActionCost);
+}
+
 function addLog(message) {
   state.logMessages.unshift(message);
   state.logMessages = state.logMessages.slice(0, maxLogMessages);
@@ -774,6 +841,9 @@ function render() {
 
 function renderResources() {
   elements.turn.textContent = state.turn;
+  elements.health.textContent = state.heroCondition.health + ' / ' + state.heroCondition.maxHealth;
+  elements.stamina.textContent = state.heroCondition.stamina + ' / ' + state.heroCondition.maxStamina;
+  elements.credits.textContent = state.heroCondition.credits;
   elements.energy.textContent = state.resources.energy + ' / 10';
   elements.water.textContent = state.resources.water + ' / 20';
   elements.components.textContent = state.resources.components + ' / 20';
@@ -1229,11 +1299,16 @@ function getTerritoryNarrative(key, inspected) {
 function renderObjectActionOptions(selection) {
   addActionLead('Твои действия:');
 
+  if (state.actionPanelMode === 'exhausted' && state.narrativeObjectId === selection.id) {
+    appendBackOption();
+    return;
+  }
+
   if (selection.kind === 'hero') {
-    appendActionOption('🛌', 'Отдохнуть', 'Без расхода ресурсов · короткая передышка', 'heroAction', 'rest', false);
-    appendActionOption('🎒', 'Проверить экипировку', 'Без расхода ресурсов · осмотреть личные слоты', 'heroAction', 'equipment', false);
-    appendActionOption('💭', 'Проверить мысли', 'Без расхода ресурсов · заглянуть во внутренний список', 'heroAction', 'thoughts', false);
-    appendActionOption('📦', 'Проверить предметы', 'Без расхода ресурсов · сверить пустые ячейки', 'heroAction', 'items', false);
+    appendActionOption('🛌', formatActionTitle('Отдохнуть', {}), 'Короткая передышка', 'heroAction', 'rest', false);
+    appendActionOption('🎒', formatActionTitle('Проверить экипировку', {}), 'Осмотреть личные слоты', 'heroAction', 'equipment', false);
+    appendActionOption('💭', formatActionTitle('Проверить мысли', {}), 'Заглянуть во внутренний список', 'heroAction', 'thoughts', false);
+    appendActionOption('📦', formatActionTitle('Проверить предметы', {}), 'Сверить пустые ячейки', 'heroAction', 'items', false);
     appendBackOption();
     return;
   }
@@ -1241,11 +1316,12 @@ function renderObjectActionOptions(selection) {
   if (selection.kind === 'system') {
     const system = state.shipSystems[selection.key];
     const repairTitle = system.status === 'повреждено' ? 'Починить систему' : 'Улучшить систему';
+    const repairCost = system.status === 'повреждено' ? shipSystemBlueprints[selection.key].repairCost : {};
     const repairNote = system.status === 'повреждено'
-      ? 'Расход: ' + formatCost(shipSystemBlueprints[selection.key].repairCost)
-      : 'Без расхода ресурсов · улучшения будут добавлены позже';
-    appendActionOption('🔧', repairTitle, repairNote, 'repairKey', selection.key, false);
-    appendActionOption('🔍', 'Провести диагностику', 'Без расхода ресурсов', 'diagnosticKey', selection.key, false);
+      ? ''
+      : 'Улучшения будут добавлены позже';
+    appendActionOption('🔧', formatActionTitle(repairTitle, repairCost), repairNote, 'repairKey', selection.key, false);
+    appendActionOption('📟', formatActionTitle('Провести диагностику', {}), '', 'diagnosticKey', selection.key, false);
     appendBackOption();
     return;
   }
@@ -1253,10 +1329,10 @@ function renderObjectActionOptions(selection) {
   if (selection.kind === 'territory') {
     const territory = state.territories[selection.key];
     if (territory.isOpen) {
-      appendActionOption('⛏️', 'Собрать ресурс', 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
+      appendActionOption('💧', formatActionTitle(getGatherActionTitle(selection.key), {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
     } else {
-      appendActionOption('🥾', 'Исследовать лично', 'Расход: вода 2, энергия 1 · результат: разведданные +2', 'scoutHeroKey', selection.key, state.resources.water < 2 || state.resources.energy < 1);
-      appendActionOption('📡', 'Открыть пустошь', 'Расход: разведданные ' + territoryBlueprints[selection.key].openCost, 'openTerritoryKey', selection.key, state.resources.recon < territoryBlueprints[selection.key].openCost);
+      appendActionOption('🥾', formatActionTitle('Исследовать лично', { water: 2, energy: 1 }), 'Результат: разведданные +2', 'scoutHeroKey', selection.key, false);
+      appendActionOption('📡', formatActionTitle('Открыть пустошь', { recon: territoryBlueprints[selection.key].openCost }), '', 'openTerritoryKey', selection.key, false);
     }
     appendBackOption();
     return;
@@ -1265,7 +1341,7 @@ function renderObjectActionOptions(selection) {
   if (selection.kind === 'district') {
     for (let i = 0; i < cityActivities.length; i++) {
       const activity = cityActivities[i];
-      appendActionOption('⚙️', activity.action, formatActionCost(activity.cost) + ' · результат: ' + formatCityResult(activity), 'cityActionKey', selection.key + ':' + activity.key, false);
+      appendActionOption('⚙️', formatActionTitle(activity.action, activity.cost), 'Результат: ' + formatCityResult(activity), 'cityActionKey', selection.key + ':' + activity.key, false);
     }
     appendBackOption();
     return;
@@ -1273,14 +1349,14 @@ function renderObjectActionOptions(selection) {
 
   if (selection.kind === 'activity') {
     const activity = getCityActivity(selection.key.split(':')[1]);
-    appendActionOption('⚙️', activity.action, formatActionCost(activity.cost) + ' · результат: ' + formatCityResult(activity), 'cityActionKey', selection.key, false);
+    appendActionOption('⚙️', formatActionTitle(activity.action, activity.cost), 'Результат: ' + formatCityResult(activity), 'cityActionKey', selection.key, false);
     appendBackOption();
     return;
   }
 
   if (selection.kind === 'unique') {
     const point = cityUniquePoints[selection.key];
-    appendActionOption('⚙️', point.action, formatActionCost(point.cost) + ' · результат: ' + formatCityResult(point), 'cityUniqueActionKey', selection.key, false);
+    appendActionOption('⚙️', formatActionTitle(point.action, point.cost), 'Результат: ' + formatCityResult(point), 'cityUniqueActionKey', selection.key, false);
     appendBackOption();
   }
 }
@@ -1290,6 +1366,12 @@ function performHeroAction(action) {
   state.actionPanelMode = 'actions';
 
   const selection = getCurrentSelection();
+
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
+  spendStamina();
   const narratives = {
     rest: 'Герой садится у холодной переборки и несколько минут слушает, как корабль скрипит под песком. Отдых пока остаётся короткой паузой без отдельной механики.',
     equipment: 'Пальцы проходят по креплениям и пустым слотам. Снаряжение держится, но список экипировки всё ещё почти пуст.',
@@ -1323,12 +1405,33 @@ function formatMaybeCost(cost) {
   return formatCost(cost);
 }
 
-function formatActionCost(cost) {
-  if (!cost || Object.keys(cost).length === 0) {
-    return 'Без расхода ресурсов';
+
+function getGatherActionTitle(key) {
+  const resourceText = territoryBlueprints[key].resourceText;
+  const titles = {
+    'металл': 'Собрать металл',
+    'вода': 'Собрать воду',
+    'энергия': 'Собрать энергию',
+    'компоненты': 'Собрать компоненты',
+    'разведданные': 'Собрать разведданные',
+    'вода и компоненты': 'Собрать воду и компоненты',
+    'металл и компоненты': 'Собрать металл и компоненты',
+    'случайно: металл, компоненты или разведданные': 'Собрать случайный ресурс'
+  };
+
+  return titles[resourceText] || 'Собрать ресурс';
+}
+
+function formatActionTitle(title, cost) {
+  const parts = ['-' + staminaActionCost + ' выносливость'];
+  const keys = cost ? Object.keys(cost) : [];
+
+  for (let i = 0; i < keys.length; i++) {
+    const resource = keys[i];
+    parts.push('-' + cost[resource] + ' ' + resourceLabels[resource]);
   }
 
-  return 'Расход: ' + formatCost(cost);
+  return title + ' (' + parts.join(', ') + ')';
 }
 
 function formatCityResult(entry) {
@@ -1363,7 +1466,7 @@ function addActionLead(text) {
 }
 
 function appendBackOption() {
-  appendActionOption('↩️', 'Отступить', getRetreatNote(), 'backSelected', 'true', false);
+  appendActionOption('↩️', 'Отступить', '', 'backSelected', 'true', false);
 }
 
 function getRetreatNote() {
@@ -1379,7 +1482,7 @@ function appendActionOption(icon, title, note, datasetKey, key, disabled) {
   button.className = 'action-choice';
   button.dataset[datasetKey] = key;
   button.disabled = disabled;
-  button.innerHTML = '<span class="action-title">' + icon + ' ' + title + '</span><span class="action-note">' + note + '</span>';
+  button.innerHTML = '<span class="action-title">' + icon + ' ' + title + '</span>' + (note ? '<span class="action-note">' + note + '</span>' : '');
   elements.selectedActions.appendChild(button);
 }
 
@@ -1531,6 +1634,18 @@ function mergeSavedState(saved) {
     next.resources[key] = savedNumber(legacyValue, initialResources[key]);
   }
 
+  const savedCondition = saved.heroCondition && typeof saved.heroCondition === 'object'
+    ? { ...saved.heroCondition }
+    : (saved.condition && typeof saved.condition === 'object' ? { ...saved.condition } : {});
+  if (savedCondition.health === undefined && saved.health !== undefined) savedCondition.health = saved.health;
+  if (savedCondition.stamina === undefined && saved.stamina !== undefined) savedCondition.stamina = saved.stamina;
+  if (savedCondition.credits === undefined && saved.credits !== undefined) savedCondition.credits = saved.credits;
+  next.heroCondition.health = clampSavedNumber(savedCondition.health, initialHeroCondition.health, 0, initialHeroCondition.maxHealth);
+  next.heroCondition.maxHealth = initialHeroCondition.maxHealth;
+  next.heroCondition.stamina = clampSavedNumber(savedCondition.stamina, initialHeroCondition.stamina, 0, initialHeroCondition.maxStamina);
+  next.heroCondition.maxStamina = initialHeroCondition.maxStamina;
+  next.heroCondition.credits = Math.max(0, savedNumber(savedCondition.credits, initialHeroCondition.credits));
+
   next.turn = savedNumber(saved.turn, 1);
   next.mode = ['hero', 'territories', 'ship', 'city'].includes(saved.mode) ? saved.mode : (['recon', 'drones', 'map', 'research', 'Разведка', 'Дроны', 'Карта', 'карта'].includes(saved.mode) ? 'territories' : 'hero');
   next.selectedSystemKey = shipSystemBlueprints[saved.selectedSystemKey] ? saved.selectedSystemKey : '';
@@ -1601,6 +1716,11 @@ function mergeSavedHero(savedHero) {
 function savedNumber(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
+}
+
+function clampSavedNumber(value, fallback, min, max) {
+  const number = savedNumber(value, fallback);
+  return Math.min(max, Math.max(min, number));
 }
 
 function restartGame() {
