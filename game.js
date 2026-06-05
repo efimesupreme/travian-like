@@ -172,7 +172,7 @@ const shipSystemBlueprints = {
 
 const territoryStatusLabels = {
   hidden: 'скрыта',
-  discovered: 'обнаружена',
+  discovered: 'Обнаружена',
   open: 'открыта',
   depleted: 'истощённая'
 };
@@ -240,30 +240,60 @@ const territoryBlueprints = {
     name: 'Слабый сигнал',
     status: 'discovered',
     description: 'Аварийный приёмник ловит короткий неустойчивый импульс.',
-    resource: '',
-    baseGain: {},
+    resource: 'components',
+    yieldMin: 1,
+    yieldMax: 2,
+    capacity: 10,
+    baseGain: { components: 1 },
+    remaining: 10,
+    action: 'Искать компоненты',
     progress: 0,
     requiredProgress: 4
   },
-  farWasteland: {
-    id: 'farWasteland',
-    name: 'Дальняя пустошь',
-    status: 'hidden',
-    description: 'Неизвестная зона за пределами уверенного обзора.',
-    resource: '',
-    baseGain: {},
+  oldFallLine: {
+    id: 'oldFallLine',
+    name: 'Старая линия падения',
+    status: 'discovered',
+    description: 'По песку тянется длинный след давнего падения: под коркой могут лежать тяжёлые фрагменты.',
+    resource: 'metal',
+    yieldMin: 2,
+    yieldMax: 4,
+    capacity: 30,
+    baseGain: { metal: 2 },
+    remaining: 30,
+    action: 'Пройти вдоль линии падения',
     progress: 0,
-    requiredProgress: 5
+    requiredProgress: 2
   },
-  oldRoad: {
-    id: 'oldRoad',
-    name: 'Старая дорога',
-    status: 'hidden',
-    description: 'Возможный маршрут или след старой инфраструктуры.',
-    resource: '',
-    baseGain: {},
+  tornCargoContainer: {
+    id: 'tornCargoContainer',
+    name: 'Разорванный грузовой контейнер',
+    status: 'discovered',
+    description: 'На краю обзора виден вскрытый грузовой модуль; часть креплений ещё уходит под песок.',
+    resource: 'components',
+    yieldMin: 1,
+    yieldMax: 3,
+    capacity: 14,
+    baseGain: { components: 1 },
+    remaining: 14,
+    action: 'Проверить контейнер',
     progress: 0,
-    requiredProgress: 5
+    requiredProgress: 3
+  },
+  coolingCrack: {
+    id: 'coolingCrack',
+    name: 'Охладительная трещина',
+    status: 'discovered',
+    description: 'Из узкой трещины ночью выходит холодный пар, а утром на кромке остаются блестящие капли.',
+    resource: 'water',
+    yieldMin: 1,
+    yieldMax: 3,
+    capacity: 22,
+    baseGain: { water: 1 },
+    remaining: 22,
+    action: 'Собрать конденсат',
+    progress: 0,
+    requiredProgress: 3
   }
 };
 
@@ -1076,6 +1106,14 @@ function getTerritoryOpenSummaryLines(territory) {
   ];
 }
 
+function getTerritoryProgressRemaining(territory) {
+  const required = Math.max(1, savedNumber(territory.requiredProgress, 1));
+  const progress = clampSavedNumber(territory.progress, 0, 0, required);
+  const remaining = Math.max(0, required - progress);
+
+  return remaining + ' / ' + required;
+}
+
 function getTerritoryRemaining(territory) {
   return Math.max(0, savedNumber(territory.remaining, 0));
 }
@@ -1288,7 +1326,6 @@ function renderTerritories() {
         '<em>' + getTerritoryStockText(territory) + '</em>';
     } else if (territory.status === 'discovered') {
       detailsHtml += '<p>' + territory.description + '</p>' +
-        '<em>Ресурс скрыт</em>' +
         '<em>Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '</em>';
     } else {
       detailsHtml += '<p>Неизвестная область за пределами уверенного обзора.</p>' +
@@ -1587,10 +1624,10 @@ function getTerritoryPanelDescription(territory) {
 
   if (territory.status === 'discovered') {
     if (state.activeResearchEvent && state.activeResearchEvent.territoryKey === territory.id) {
-      return territory.description + ' Исследование уже начато: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
+      return territory.description + ' Статус: Обнаружена. Исследование уже начато: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
     }
 
-    return territory.description + ' Точные свойства ещё не подтверждены.';
+    return territory.description + ' Статус: Обнаружена. До открытия осталось: ' + getTerritoryProgressRemaining(territory) + '.';
   }
 
   if (territory.status === 'depleted') {
@@ -1607,10 +1644,10 @@ function getTerritoryInspectDescription(territory) {
 
   if (territory.status === 'discovered') {
     if (state.activeResearchEvent && state.activeResearchEvent.territoryKey === territory.id) {
-      return territory.description + ' Прогресс исследования: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
+      return territory.description + ' Статус: Обнаружена. Прогресс исследования: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
     }
 
-    return territory.description + ' Сигнал или контур достаточно устойчив, чтобы начать исследование.';
+    return territory.description + ' Статус: Обнаружена. До открытия осталось: ' + getTerritoryProgressRemaining(territory) + '.';
   }
 
   return 'Песок, дальний рельеф и помехи скрывают детали. Зона пока не даёт точных данных.';
