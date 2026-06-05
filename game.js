@@ -162,7 +162,7 @@ const shipSystemBlueprints = {
 };
 
 const territoryStatusLabels = {
-  hidden: 'скрыта',
+  hidden: 'Скрыта',
   discovered: 'Обнаружена',
   open: 'открыта',
   depleted: 'истощённая'
@@ -289,6 +289,40 @@ const territoryBlueprints = {
     difficulty: 9,
     progress: 0,
     requiredProgress: 3
+  },
+  buriedServiceBlock: {
+    id: 'buriedServiceBlock',
+    name: 'Закопанный сервисный блок',
+    status: 'hidden',
+    description: 'Под песком скрыт старый сервисный блок с уцелевшими техническими ячейками.',
+    resource: 'components',
+    yieldMin: 1,
+    yieldMax: 2,
+    capacity: 12,
+    baseGain: { components: 1 },
+    remaining: 12,
+    action: 'Искать компоненты',
+    discoverProgressRequired: 1,
+    difficulty: 9,
+    progress: 0,
+    requiredProgress: 3
+  },
+  saltDepression: {
+    id: 'saltDepression',
+    name: 'Соляная впадина',
+    status: 'hidden',
+    description: 'Белёсая впадина в рельефе может удерживать влагу под соляной коркой.',
+    resource: 'water',
+    yieldMin: 1,
+    yieldMax: 2,
+    capacity: 18,
+    baseGain: { water: 1 },
+    remaining: 18,
+    action: 'Собрать воду',
+    discoverProgressRequired: 1,
+    difficulty: 8,
+    progress: 0,
+    requiredProgress: 2
   }
 };
 
@@ -1068,6 +1102,10 @@ function getTerritoryProgressRemaining(territory) {
   return remaining + ' / ' + required;
 }
 
+function getTerritoryDiscoverProgressRequired(territory) {
+  return Math.max(1, savedNumber(territory.discoverProgressRequired, 1));
+}
+
 function getTerritoryRemaining(territory) {
   return Math.max(0, savedNumber(territory.remaining, 0));
 }
@@ -1282,9 +1320,7 @@ function renderTerritories() {
       detailsHtml += '<p>' + territory.description + '</p>' +
         '<em>Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '</em>';
     } else {
-      detailsHtml += '<p>Неизвестная область за пределами уверенного обзора.</p>' +
-        '<em>Ресурс скрыт</em>' +
-        '<em>Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '</em>';
+      detailsHtml += '<em>Исследований до обнаружения: ' + getTerritoryDiscoverProgressRequired(territory) + '</em>';
     }
 
     card.innerHTML = '<button class="card-select" type="button" data-territory-key="' + key + '">' +
@@ -1481,7 +1517,7 @@ function getCurrentSelection() {
       id: 'territory:' + key,
       kind: 'territory',
       key,
-      name: territory.name,
+      name: territory.status === 'hidden' ? 'Неизвестная зона' : territory.name,
       type: territoryStatusLabels[territory.status] + ' пустошь',
       description: getTerritoryPanelDescription(territory),
       inspectDescription: getTerritoryInspectDescription(territory)
@@ -1573,7 +1609,7 @@ function getShipNarrative(key, inspected) {
 
 function getTerritoryPanelDescription(territory) {
   if (territory.status === 'hidden') {
-    return 'За границей обзора остаётся тёмный участок карты. Приборы дают только слабую форму рельефа без ресурса.';
+    return 'Статус: Скрыта. Исследований до обнаружения: ' + getTerritoryDiscoverProgressRequired(territory) + '.';
   }
 
   if (territory.status === 'discovered') {
@@ -1596,7 +1632,7 @@ function getTerritoryInspectDescription(territory) {
     return territory.description + ' Статус: Обнаружена. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
   }
 
-  return 'Песок, дальний рельеф и помехи скрывают детали. Зона пока не даёт точных данных.';
+  return 'Статус: Скрыта. Исследований до обнаружения: ' + getTerritoryDiscoverProgressRequired(territory) + '.';
 }
 
 function renderObjectActionOptions(selection) {
