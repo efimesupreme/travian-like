@@ -10,15 +10,19 @@
   <main class="game-shell">
     <span id="turn" class="sr-only">1</span>
 
-    <header class="mobile-topbar" aria-label="Верхняя панель игры">
-      <div>
-        <p class="eyebrow">мобильный интерфейс</p>
+    <header class="mobile-topbar hud-panel" aria-label="Верхняя панель игры">
+      <button class="topbar-icon" type="button" aria-label="Открыть меню">☰</button>
+      <div class="topbar-title">
+        <p class="eyebrow">аварийный HUD</p>
         <h1>Аурелия-18</h1>
       </div>
-      <button id="mobileNewGame" class="secondary-reset compact-reset" type="button">Новая игра</button>
+      <div class="topbar-controls">
+        <button id="mobileNewGame" class="secondary-reset compact-reset" type="button">Новая игра</button>
+        <button class="topbar-icon" type="button" aria-label="Настройки">⚙</button>
+      </div>
     </header>
 
-    <section class="mobile-status-grid" aria-label="Состояние и ресурсы героя">
+    <section class="mobile-status-grid hud-panel" aria-label="Состояние и ресурсы героя">
       <article class="mobile-stat-card"><span>❤️</span><small>Здоровье</small><strong id="mobileHealth">100 / 100</strong></article>
       <article class="mobile-stat-card"><span>🫁</span><small>Выносливость</small><strong id="mobileStamina">80 / 100</strong></article>
       <article class="mobile-stat-card"><span>💧</span><small>Вода</small><strong id="mobileWater">10 / 20</strong></article>
@@ -46,7 +50,7 @@
       </aside>
 
       <div class="center-column">
-        <section class="content-card" aria-label="Сцена">
+        <section class="content-card scene-frame" aria-label="Сцена">
           <div class="map-header scene-caption" aria-live="polite">
             <div>
               <p class="eyebrow">Сцена</p>
@@ -153,19 +157,19 @@
 
         </section>
 
-        <section class="log-panel" aria-label="Журнал событий">
+        <section class="log-panel hud-panel" aria-label="Журнал событий">
           <div class="log-heading">
             <div>
-              <p class="eyebrow">нижний блок</p>
+              <p class="eyebrow">бортовая запись</p>
               <h2>Журнал событий</h2>
             </div>
-            <small>Последние 10 записей</small>
+            <button id="toggleLog" class="log-toggle" type="button" aria-expanded="true">Свернуть</button>
           </div>
           <ul id="log"></ul>
         </section>
       </div>
 
-      <aside class="side-panel info-panel" aria-label="Действия героя">
+      <aside class="side-panel info-panel hud-panel" aria-label="Действия героя">
         <h2>Действия героя</h2>
 
         <div class="hero-topline" aria-label="Состояние, ресурсы и портрет героя">

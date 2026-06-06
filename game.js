@@ -663,7 +663,8 @@ const elements = {
   uniqueCityGrid: document.getElementById('uniqueCityGrid'),
   selectedName: document.getElementById('selectedName'),
   selectedDescription: document.getElementById('selectedDescription'),
-  selectedActions: document.getElementById('selectedActions')
+  selectedActions: document.getElementById('selectedActions'),
+  toggleLog: document.getElementById('toggleLog')
 };
 
 const reducedMotionQuery = window.matchMedia
@@ -1444,6 +1445,7 @@ function renderNavigation() {
 }
 
 function renderScreens() {
+  document.body.dataset.scene = state.mode;
   const isHero = state.mode === 'hero';
   const isShip = state.mode === 'ship';
   const isTerritories = state.mode === 'territories';
@@ -2060,10 +2062,19 @@ function createActionButton(entry, titleText, noteText, disabled) {
   button.dataset[entry.datasetKey] = entry.key;
   button.disabled = disabled;
 
+  const titleParts = splitActionTitle(titleText);
+
   const title = document.createElement('span');
   title.className = 'action-title';
-  title.textContent = entry.icon + ' ' + titleText;
+  title.textContent = entry.icon + ' ' + titleParts.label;
   button.appendChild(title);
+
+  if (titleParts.cost) {
+    const cost = document.createElement('span');
+    cost.className = 'action-cost';
+    cost.textContent = titleParts.cost;
+    button.appendChild(cost);
+  }
 
   if (entry.note) {
     const note = document.createElement('span');
@@ -2073,6 +2084,17 @@ function createActionButton(entry, titleText, noteText, disabled) {
   }
 
   return button;
+}
+
+function splitActionTitle(text) {
+  const source = String(text || '');
+  const match = source.match(/^(.*?)\s*\(([^()]*)\)\s*$/);
+
+  if (!match) {
+    return { label: source, cost: '' };
+  }
+
+  return { label: match[1], cost: match[2] };
 }
 
 function collectObjectActionEntries(selection) {
@@ -2145,7 +2167,8 @@ function typeActionButton(entry, token, panelKey, onComplete) {
 
   const titleNode = button.querySelector('.action-title');
   const noteNode = button.querySelector('.action-note');
-  const fullTitle = entry.icon + ' ' + entry.title;
+  const fullTitleParts = splitActionTitle(entry.title);
+  const fullTitle = entry.icon + ' ' + fullTitleParts.label + (fullTitleParts.cost ? ' [' + fullTitleParts.cost + ']' : '');
   const fullNote = entry.note || '';
   const fullText = fullNote ? fullTitle + '\n' + fullNote : fullTitle;
 
@@ -2198,9 +2221,36 @@ function renderLog() {
 
   for (let i = 0; i < state.logMessages.length; i++) {
     const item = document.createElement('li');
-    item.textContent = state.logMessages[i];
+
+    const time = document.createElement('span');
+    time.className = 'log-time';
+    time.textContent = 'T-' + String(i).padStart(2, '0');
+    item.appendChild(time);
+
+    const icon = document.createElement('span');
+    icon.className = 'log-icon';
+    icon.textContent = getLogIcon(state.logMessages[i]);
+    item.appendChild(icon);
+
+    const text = document.createElement('span');
+    text.className = 'log-text';
+    text.textContent = state.logMessages[i];
+    item.appendChild(text);
+
     elements.log.appendChild(item);
   }
+}
+
+function getLogIcon(message) {
+  const text = String(message).toLowerCase();
+
+  if (text.includes('недостаточно') || text.includes('повреждено')) return '⚠';
+  if (text.includes('вода')) return '💧';
+  if (text.includes('металл')) return '⛓';
+  if (text.includes('еда')) return '🍖';
+  if (text.includes('компонент')) return '🔩';
+  if (text.includes('кораб') || text.includes('систем')) return '◆';
+  return '▸';
 }
 
 function countOpenTerritories() {
@@ -2545,5 +2595,14 @@ document.addEventListener('click', function (event) {
 
 document.getElementById('newGame').addEventListener('click', restartGame);
 document.getElementById('mobileNewGame').addEventListener('click', restartGame);
+
+if (elements.toggleLog) {
+  elements.toggleLog.addEventListener('click', function () {
+    const panel = elements.toggleLog.closest('.log-panel');
+    const isCollapsed = panel.classList.toggle('collapsed');
+    elements.toggleLog.textContent = isCollapsed ? 'Развернуть' : 'Свернуть';
+    elements.toggleLog.setAttribute('aria-expanded', String(!isCollapsed));
+  });
+}
 
 loadGame();
