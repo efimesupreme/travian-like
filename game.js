@@ -95,6 +95,15 @@ const resourceLabels = {
   recon: 'разведданные'
 };
 
+const compactResourceLabels = {
+  energy: '⚡',
+  water: '💧',
+  components: '⚙',
+  metal: '⛓️',
+  food: '🍖',
+  recon: 'разведданные'
+};
+
 const resourceGenitiveLabels = {
   energy: 'энергии',
   water: 'воды',
@@ -984,7 +993,7 @@ function gatherTerritory(key) {
   if (selection) {
     setNarrativeMessage(selection, buildGatherResultPanel(check, actualGain, remaining, depletedNow));
   }
-  addLog('Действие «' + getGatherActionTitle(key) + '» на клетке ' + territory.name + ' выполнено. Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Результат: ' + check.resultLabel + '. Получено: ' + formatGain(gain) + '. Осталось в клетке: ' + remaining + '. Потрачена 1 выносливость.');
+  addLog('Действие «' + getGatherActionTitle(key) + '» на клетке ' + territory.name + ' выполнено. Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Результат: ' + check.resultLabel + '. Получено: ' + formatGain(gain) + '. Осталось в клетке: ' + remaining + '. Потрачено 1 🫁.');
 
   if (depletedNow) {
     addLog('Запас клетки исчерпан. Зона стала истощённой: ' + territory.name + '.');
@@ -1028,7 +1037,7 @@ function exploreHiddenTerritory(key, approachKey) {
     setNarrativeMessage(currentSelection, buildDiscoverResultPanel(territory, check, progressGain, discovered, approach));
   }
 
-  addLog('Исследование неизвестной зоны выполнено. Подход: ' + approach.title + '. Характеристика: ' + check.statLabel + ' ' + check.statValue + '. Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Итог: ' + check.total + '. Сложность: ' + check.difficulty + '. Результат: ' + check.resultLabel + '. Исследование до обнаружения: ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired + '. Потрачена 1 выносливость.');
+  addLog('Исследование неизвестной зоны выполнено. Подход: ' + approach.title + '. Характеристика: ' + check.statLabel + ' ' + check.statValue + '. Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Итог: ' + check.total + '. Сложность: ' + check.difficulty + '. Результат: ' + check.resultLabel + '. Исследование до обнаружения: ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired + '. Потрачено 1 🫁.');
 
   if (discovered) {
     addLog('Зона обнаружена: ' + territory.name + '.');
@@ -1072,7 +1081,7 @@ function researchTerritory(key, approachKey) {
     setNarrativeMessage(currentSelection, buildResearchResultPanel(territory, check, progressGain, opened, approach));
   }
 
-  addLog('Подход к исследованию зоны «' + territory.name + '»: ' + approach.title + '. Использованная характеристика: ' + check.statLabel + ' ' + check.statValue + '. Потрачена 1 выносливость.');
+  addLog('Подход к исследованию зоны «' + territory.name + '»: ' + approach.title + '. Использованная характеристика: ' + check.statLabel + ' ' + check.statValue + '. Потрачено 1 🫁.');
   addLog('Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Итог с бонусом: ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + ' против сложности ' + check.difficulty + '.');
   addLog('Результат исследования: ' + check.resultLabel + '.');
   addLog('Добавленный прогресс исследования: +' + progressGain + '. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.');
@@ -1967,7 +1976,7 @@ function formatMaybeCost(cost) {
     return 'нет';
   }
 
-  return formatCost(cost);
+  return formatCompactCost(cost);
 }
 
 
@@ -1981,13 +1990,28 @@ function getGatherActionTitle(key) {
   return territory.action || territoryGatherActions[territory.resource] || 'Собрать ресурс';
 }
 
-function formatActionTitle(title, cost) {
-  const parts = ['-' + staminaActionCost + ' выносливость'];
-  const keys = cost ? Object.keys(cost) : [];
+function getCompactResourceLabel(resource) {
+  return compactResourceLabels[resource] || resourceLabels[resource] || resource;
+}
+
+function formatCompactCost(cost) {
+  const parts = [];
+  const keys = Object.keys(cost || {});
 
   for (let i = 0; i < keys.length; i++) {
     const resource = keys[i];
-    parts.push('-' + cost[resource] + ' ' + resourceLabels[resource]);
+    parts.push('-' + cost[resource] + ' ' + getCompactResourceLabel(resource));
+  }
+
+  return parts.join(', ');
+}
+
+function formatActionTitle(title, cost) {
+  const parts = ['-' + staminaActionCost + ' 🫁'];
+  const extraCost = formatCompactCost(cost);
+
+  if (extraCost) {
+    parts.push(extraCost);
   }
 
   return title + ' (' + parts.join(', ') + ')';
