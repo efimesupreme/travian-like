@@ -649,6 +649,9 @@ const elements = {
   components: document.getElementById('components'),
   metal: document.getElementById('metal'),
   food: document.getElementById('food'),
+  mobileStrength: document.getElementById('mobileStrength'),
+  mobileWisdom: document.getElementById('mobileWisdom'),
+  mobileAgility: document.getElementById('mobileAgility'),
   mobileHealth: document.getElementById('mobileHealth'),
   mobileStamina: document.getElementById('mobileStamina'),
   mobileEnergy: document.getElementById('mobileEnergy'),
@@ -1434,13 +1437,18 @@ function renderResources() {
   elements.components.textContent = componentsText;
   elements.metal.textContent = metalText;
   elements.food.textContent = foodText;
-  elements.mobileHealth.textContent = healthText;
-  elements.mobileStamina.textContent = staminaText;
+  const hero = state.hero || createHero();
+  const heroStats = hero.stats || {};
+  elements.mobileStrength.textContent = savedNumber(heroStats.strength, 1);
+  elements.mobileWisdom.textContent = savedNumber(heroStats.wisdom, 1);
+  elements.mobileAgility.textContent = savedNumber(heroStats.agility, 1);
+  elements.mobileHealth.textContent = healthText.replace(/ /g, '');
+  elements.mobileStamina.textContent = staminaText.replace(/ /g, '');
   elements.mobileEnergy.textContent = energyText;
-  elements.mobileWater.textContent = waterText;
-  elements.mobileComponents.textContent = componentsText;
-  elements.mobileMetal.textContent = metalText;
-  elements.mobileFood.textContent = foodText;
+  elements.mobileWater.textContent = waterText.replace(/ /g, '');
+  elements.mobileComponents.textContent = componentsText.replace(/ /g, '');
+  elements.mobileMetal.textContent = metalText.replace(/ /g, '');
+  elements.mobileFood.textContent = foodText.replace(/ /g, '');
   elements.recon.textContent = state.resources.recon;
   elements.restoredSystems.textContent = countRestoredSystems();
 }
@@ -2090,8 +2098,15 @@ function createActionButton(entry, titleText, noteText, disabled) {
 
   const title = document.createElement('span');
   title.className = 'action-title';
-  title.textContent = entry.icon + ' ' + titleParts.label + (titleParts.cost ? ' [' + titleParts.cost + ']' : '');
+  title.textContent = entry.icon + ' ' + titleParts.label;
   button.appendChild(title);
+
+  if (titleParts.cost) {
+    const cost = document.createElement('span');
+    cost.className = 'action-cost';
+    cost.textContent = titleParts.cost;
+    button.appendChild(cost);
+  }
 
   if (entry.note) {
     const note = document.createElement('span');
@@ -2184,8 +2199,9 @@ function typeActionButton(entry, token, panelKey, onComplete) {
 
   const titleNode = button.querySelector('.action-title');
   const noteNode = button.querySelector('.action-note');
+  const costNode = button.querySelector('.action-cost');
   const fullTitleParts = splitActionTitle(entry.title);
-  const fullTitle = entry.icon + ' ' + fullTitleParts.label + (fullTitleParts.cost ? ' [' + fullTitleParts.cost + ']' : '');
+  const fullTitle = entry.icon + ' ' + fullTitleParts.label;
   const fullNote = entry.note || '';
   const fullText = fullNote ? fullTitle + '\n' + fullNote : fullTitle;
 
@@ -2209,6 +2225,9 @@ function typeActionButton(entry, token, panelKey, onComplete) {
 
     if (index >= fullText.length) {
       titleNode.textContent = fullTitle;
+      if (costNode) {
+        costNode.textContent = fullTitleParts.cost;
+      }
       if (noteNode) {
         noteNode.textContent = fullNote;
       }

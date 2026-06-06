@@ -4675,3 +4675,337 @@ button:focus-visible {
     display: none;
   }
 }
+
+/* Mobile layout pass for the compact Aurelia-18 mockup: vertical HUD, scene, actions and fixed one-line log. */
+@media (max-width: 767px) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+  }
+
+  .game-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 430px;
+    height: 100dvh;
+    min-height: 0;
+    padding: 5px 6px 34px;
+    overflow: hidden;
+  }
+
+  .mobile-status-grid.mobile-hero-hud {
+    display: grid;
+    grid-template-columns: 48px minmax(82px, 0.78fr) minmax(0, 1fr);
+    gap: 7px;
+    align-items: stretch;
+    margin: 0 0 5px;
+    padding: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(103, 196, 221, 0.24);
+    border-radius: 3px;
+    background:
+      linear-gradient(180deg, rgba(19, 22, 22, 0.98), rgba(5, 8, 10, 0.99)),
+      repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 11px);
+  }
+
+  .mobile-hero-portrait {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 58px;
+    border: 1px solid rgba(137, 111, 76, 0.42);
+    border-radius: 3px;
+    background: radial-gradient(circle at 50% 28%, rgba(103, 196, 221, 0.16), transparent 34px), rgba(3, 6, 8, 0.72);
+    box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.62);
+  }
+
+  .mobile-hero-silhouette {
+    position: relative;
+    width: 34px;
+    height: 44px;
+    border: 1px solid rgba(238, 161, 74, 0.34);
+    border-radius: 16px 16px 7px 7px;
+    background:
+      radial-gradient(circle at 50% 24%, #d6c3a2 0 7px, transparent 8px),
+      linear-gradient(180deg, rgba(80, 105, 116, 0.92), rgba(21, 26, 27, 0.96));
+  }
+
+  .mobile-hero-silhouette span {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 6px;
+    height: 16px;
+    border-radius: 9px 9px 3px 3px;
+    background: linear-gradient(180deg, rgba(103, 196, 221, 0.68), rgba(36, 46, 45, 0.9));
+  }
+
+  .mobile-hero-stats,
+  .mobile-hero-resources {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .mobile-hero-stats {
+    gap: 4px;
+    padding: 3px 0;
+  }
+
+  .mobile-hero-stats p,
+  .mobile-hero-resources p {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 0;
+    color: #d8c8ad;
+    line-height: 1.05;
+    white-space: nowrap;
+  }
+
+  .mobile-hero-stats p {
+    gap: 4px;
+    font-size: clamp(10px, 2.9vw, 12px);
+  }
+
+  .mobile-hero-stats span {
+    overflow: hidden;
+    color: var(--hud-muted);
+    text-overflow: ellipsis;
+  }
+
+  .mobile-hero-stats strong,
+  .mobile-hero-resources strong {
+    color: #efe0c8;
+    font-weight: 700;
+  }
+
+  .mobile-hero-resources {
+    gap: 2px;
+    padding-left: 7px;
+    border-left: 1px solid rgba(137, 111, 76, 0.34);
+  }
+
+  .mobile-hero-resources p {
+    justify-content: flex-start;
+    gap: 5px;
+    color: var(--hud-blue);
+    font-size: clamp(10px, 2.8vw, 11.5px);
+  }
+
+  .layout-grid {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 5px;
+    min-height: 0;
+    margin-top: 0;
+    overflow: hidden;
+  }
+
+  .center-column {
+    display: contents;
+  }
+
+  .nav-panel {
+    order: 1;
+    flex: 0 0 auto;
+  }
+
+  .content-card,
+  .scene-frame {
+    order: 2;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .scene-caption {
+    display: none;
+  }
+
+  .screen {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-top: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .hero-screen,
+  .ship-screen,
+  .crash-map,
+  .city-map,
+  .recon-card {
+    min-height: 100%;
+  }
+
+  .info-panel {
+    order: 3;
+    flex: 0 0 auto;
+    max-height: 34dvh;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .info-panel > h2 {
+    margin: 0 0 5px;
+    font-size: 15px;
+  }
+
+  .selected-object {
+    padding: 6px 8px;
+  }
+
+  .selected-object h2,
+  .selected-object .description {
+    display: none;
+  }
+
+  .narrative-feed .panel-actions .action-choice,
+  .narrative-feed .panel-actions button {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    padding: 6px 0 !important;
+  }
+
+  .narrative-feed .panel-actions .action-cost {
+    display: block;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    max-width: 56px;
+    padding: 0;
+    border: 0;
+    color: var(--hud-blue);
+    font-size: 11px;
+    background: transparent;
+  }
+
+  .narrative-feed .panel-actions .action-choice::after,
+  .narrative-feed .panel-actions button::after {
+    grid-column: 3;
+  }
+
+  .log-panel {
+    position: fixed;
+    right: max(6px, calc((100vw - 430px) / 2 + 6px));
+    bottom: max(4px, env(safe-area-inset-bottom));
+    left: max(6px, calc((100vw - 430px) / 2 + 6px));
+    z-index: 40;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px;
+    align-items: center;
+    min-height: 26px;
+    margin: 0;
+    padding: 3px 7px;
+    overflow: hidden;
+    border-color: rgba(103, 196, 221, 0.36);
+    box-shadow: 0 -8px 22px rgba(0, 0, 0, 0.48), inset 0 0 14px rgba(0, 0, 0, 0.64);
+  }
+
+  .log-heading {
+    display: contents;
+    padding: 0;
+    border: 0;
+  }
+
+  .log-heading h2 {
+    gap: 0;
+    margin: 0;
+    color: var(--hud-brass-hot);
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .log-heading h2::before,
+  .log-heading h2::after,
+  .log-toggle {
+    display: none;
+  }
+
+  .log-heading h2::after {
+    content: ':';
+  }
+
+  .log-panel ul {
+    display: block;
+    min-width: 0;
+    max-height: none;
+    margin: 0;
+    overflow: hidden;
+    border: 0;
+    background: transparent;
+  }
+
+  .log-panel li {
+    display: none;
+  }
+
+  .log-panel li:first-child {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr);
+    gap: 4px;
+    align-items: center;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    color: #d4cec0;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .log-time {
+    display: none;
+  }
+
+  .log-icon {
+    font-size: 11px;
+  }
+
+  .log-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 380px) {
+  .mobile-status-grid.mobile-hero-hud {
+    grid-template-columns: 44px minmax(72px, 0.7fr) minmax(0, 1fr);
+    gap: 5px;
+    padding: 5px;
+  }
+
+  .mobile-hero-resources {
+    gap: 1px;
+    padding-left: 5px;
+  }
+}
+
+@media (max-width: 767px) {
+  .log-heading h2::before {
+    display: none;
+  }
+
+  .log-heading h2::after {
+    display: inline;
+    width: auto;
+    height: auto;
+    content: ':';
+    background: none;
+  }
+}
