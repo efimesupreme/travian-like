@@ -10,6 +10,24 @@
   <main class="game-shell">
     <span id="turn" class="sr-only">1</span>
 
+    <header class="mobile-topbar" aria-label="Верхняя панель игры">
+      <div>
+        <p class="eyebrow">мобильный интерфейс</p>
+        <h1>Аурелия-18</h1>
+      </div>
+      <button id="mobileNewGame" class="secondary-reset compact-reset" type="button">Новая игра</button>
+    </header>
+
+    <section class="mobile-status-grid" aria-label="Состояние и ресурсы героя">
+      <article class="mobile-stat-card"><span>❤️</span><small>Здоровье</small><strong id="mobileHealth">100 / 100</strong></article>
+      <article class="mobile-stat-card"><span>🫁</span><small>Выносливость</small><strong id="mobileStamina">80 / 100</strong></article>
+      <article class="mobile-stat-card"><span>💧</span><small>Вода</small><strong id="mobileWater">10 / 20</strong></article>
+      <article class="mobile-stat-card"><span>⛓️</span><small>Металл</small><strong id="mobileMetal">15 / 20</strong></article>
+      <article class="mobile-stat-card"><span>🔩</span><small>Компоненты</small><strong id="mobileComponents">3 / 20</strong></article>
+      <article class="mobile-stat-card"><span>🍖</span><small>Еда</small><strong id="mobileFood">0 / 20</strong></article>
+      <article class="mobile-stat-card mobile-energy-card"><span>⚡</span><small>Баланс энергии</small><strong id="mobileEnergy">8</strong></article>
+    </section>
+
     <div class="layout-grid">
       <aside class="side-panel nav-panel" aria-label="Выбор сцены">
         <h2>Выбор сцены</h2>
@@ -164,10 +182,11 @@
             <section class="hero-resources" aria-label="Ресурсы героя">
               <h3>Ресурсы героя</h3>
               <div class="resource-list">
-                <p><span>⚡ Энергия:</span> <strong id="energy">8 / 10</strong></p>
+                <p><span>⚡ Баланс энергии:</span> <strong id="energy">8</strong></p>
                 <p><span>💧 Вода:</span> <strong id="water">10 / 20</strong></p>
                 <p><span>🔩 Компоненты:</span> <strong id="components">3 / 20</strong></p>
                 <p><span>⛓️ Металл:</span> <strong id="metal">15 / 20</strong></p>
+                <p><span>🍖 Еда:</span> <strong id="food">0 / 20</strong></p>
                 <p><span>📡 Разведданные:</span> <strong id="recon">0</strong></p>
               </div>
             </section>
