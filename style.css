@@ -5009,3 +5009,110 @@ button:focus-visible {
     background: none;
   }
 }
+
+/* Targeted mobile HUD fixes: stable action panel, wider portrait and labeled resources. */
+@media (max-width: 767px) {
+  .mobile-status-grid.mobile-hero-hud {
+    grid-template-columns: 96px minmax(68px, 0.58fr) minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .mobile-hero-portrait {
+    min-height: 58px;
+  }
+
+  .mobile-hero-silhouette {
+    width: 76px;
+    height: 44px;
+    border-radius: 18px 18px 8px 8px;
+    background:
+      radial-gradient(circle at 38% 24%, #d6c3a2 0 7px, transparent 8px),
+      linear-gradient(90deg, rgba(80, 105, 116, 0.92), rgba(21, 26, 27, 0.96));
+  }
+
+  .mobile-hero-silhouette span {
+    left: 28px;
+    right: 8px;
+    bottom: 6px;
+    height: 16px;
+  }
+
+  .mobile-hero-stats {
+    padding-right: 5px;
+  }
+
+  .mobile-hero-resources {
+    align-items: stretch;
+    padding-left: 5px;
+  }
+
+  .mobile-hero-resources p {
+    display: grid;
+    grid-template-columns: 15px minmax(0, 1fr) auto;
+    gap: 3px;
+    align-items: baseline;
+    justify-content: start;
+    text-align: left;
+  }
+
+  .mobile-resource-icon {
+    justify-self: start;
+    color: var(--hud-blue);
+    font-size: clamp(9.5px, 2.7vw, 11px);
+    line-height: 1;
+  }
+
+  .mobile-resource-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--hud-muted);
+    font-size: clamp(8.4px, 2.35vw, 10px);
+    line-height: 1.05;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-hero-resources strong {
+    justify-self: start;
+    font-size: clamp(10px, 2.85vw, 11.5px);
+    line-height: 1.05;
+    text-align: left;
+  }
+
+  .info-panel {
+    flex: 0 0 clamp(154px, 28dvh, 196px);
+    height: clamp(154px, 28dvh, 196px);
+    max-height: none;
+    overflow: hidden;
+  }
+
+  .selected-object {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .narrative-feed .panel-actions {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .mobile-status-grid.mobile-hero-hud {
+    grid-template-columns: 88px minmax(62px, 0.52fr) minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .mobile-hero-silhouette {
+    width: 70px;
+  }
+
+  .mobile-hero-resources p {
+    grid-template-columns: 13px minmax(0, 1fr) auto;
+    gap: 2px;
+  }
+}
