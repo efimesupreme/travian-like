@@ -4592,3 +4592,86 @@ button:focus-visible {
   .territory-15 { right: 1%; top: 50%; }
   .territory-16 { left: 48%; top: 74%; }
 }
+
+/* Mobile-only action list refinement: keep the existing panel, but remove heavy row cards. */
+@media (max-width: 767px) {
+  .narrative-feed .panel-actions {
+    gap: 0;
+  }
+
+  .narrative-feed .panel-actions .action-choice,
+  .narrative-feed .panel-actions button {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 8px;
+    align-items: center;
+    min-height: 0;
+    padding: 8px 0 !important;
+    border: 0;
+    border-bottom: 1px solid rgba(137, 111, 76, 0.34);
+    border-radius: 0;
+    color: #e4d9c8;
+    background: transparent;
+    box-shadow: none;
+    text-align: left;
+    transform: none;
+  }
+
+  .narrative-feed .panel-actions .action-choice:last-child,
+  .narrative-feed .panel-actions button:last-child {
+    border-bottom-color: transparent;
+  }
+
+  .narrative-feed .panel-actions .action-choice:hover,
+  .narrative-feed .panel-actions .action-choice:focus-visible,
+  .narrative-feed .panel-actions button:hover,
+  .narrative-feed .panel-actions button:focus-visible {
+    border-color: rgba(137, 111, 76, 0.34);
+    border-bottom-color: rgba(103, 196, 221, 0.45);
+    background: rgba(103, 196, 221, 0.055);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .narrative-feed .panel-actions .action-choice::after {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    color: rgba(103, 196, 221, 0.78);
+    content: '›';
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .narrative-feed .panel-actions .action-title,
+  .narrative-feed .panel-actions .action-note {
+    grid-column: 1;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .narrative-feed .panel-actions .action-title {
+    overflow: hidden;
+    color: #ead9bd;
+    font-size: clamp(12px, 3.45vw, 14px);
+    font-weight: 700;
+    line-height: 1.22;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .narrative-feed .panel-actions .action-note {
+    margin-top: 1px;
+    color: #939a95;
+    font-size: clamp(10.5px, 3.05vw, 12px);
+    line-height: 1.22;
+  }
+
+  .narrative-feed .panel-actions .action-cost {
+    display: none;
+  }
+}
