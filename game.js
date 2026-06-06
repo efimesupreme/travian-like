@@ -82,6 +82,7 @@ const initialResources = {
   water: 10,
   components: 3,
   metal: 15,
+  food: 0,
   recon: 0
 };
 
@@ -638,6 +639,14 @@ const elements = {
   water: document.getElementById('water'),
   components: document.getElementById('components'),
   metal: document.getElementById('metal'),
+  food: document.getElementById('food'),
+  mobileHealth: document.getElementById('mobileHealth'),
+  mobileStamina: document.getElementById('mobileStamina'),
+  mobileEnergy: document.getElementById('mobileEnergy'),
+  mobileWater: document.getElementById('mobileWater'),
+  mobileComponents: document.getElementById('mobileComponents'),
+  mobileMetal: document.getElementById('mobileMetal'),
+  mobileFood: document.getElementById('mobileFood'),
   recon: document.getElementById('recon'),
   restoredSystems: document.getElementById('restoredSystems'),
   log: document.getElementById('log'),
@@ -1399,13 +1408,29 @@ function render() {
 
 function renderResources() {
   elements.turn.textContent = state.turn;
-  elements.health.textContent = state.heroCondition.health + ' / ' + state.heroCondition.maxHealth;
-  elements.stamina.textContent = state.heroCondition.stamina + ' / ' + state.heroCondition.maxStamina;
+  const healthText = state.heroCondition.health + ' / ' + state.heroCondition.maxHealth;
+  const staminaText = state.heroCondition.stamina + ' / ' + state.heroCondition.maxStamina;
+  const energyText = String(state.resources.energy);
+  const waterText = state.resources.water + ' / 20';
+  const componentsText = state.resources.components + ' / 20';
+  const metalText = state.resources.metal + ' / 20';
+  const foodText = (state.resources.food || 0) + ' / 20';
+
+  elements.health.textContent = healthText;
+  elements.stamina.textContent = staminaText;
   elements.credits.textContent = state.heroCondition.credits;
-  elements.energy.textContent = state.resources.energy + ' / 10';
-  elements.water.textContent = state.resources.water + ' / 20';
-  elements.components.textContent = state.resources.components + ' / 20';
-  elements.metal.textContent = state.resources.metal + ' / 20';
+  elements.energy.textContent = energyText;
+  elements.water.textContent = waterText;
+  elements.components.textContent = componentsText;
+  elements.metal.textContent = metalText;
+  elements.food.textContent = foodText;
+  elements.mobileHealth.textContent = healthText;
+  elements.mobileStamina.textContent = staminaText;
+  elements.mobileEnergy.textContent = energyText;
+  elements.mobileWater.textContent = waterText;
+  elements.mobileComponents.textContent = componentsText;
+  elements.mobileMetal.textContent = metalText;
+  elements.mobileFood.textContent = foodText;
   elements.recon.textContent = state.resources.recon;
   elements.restoredSystems.textContent = countRestoredSystems();
 }
@@ -2519,5 +2544,6 @@ document.addEventListener('click', function (event) {
 });
 
 document.getElementById('newGame').addEventListener('click', restartGame);
+document.getElementById('mobileNewGame').addEventListener('click', restartGame);
 
 loadGame();
