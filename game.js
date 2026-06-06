@@ -2060,7 +2060,7 @@ function createActionLead(text) {
 }
 
 function appendBackOption() {
-  appendActionOption('↩️', 'Отступить', '', 'backSelected', 'true', false);
+  // Действие возврата скрыто из списка действий героя, чтобы панель оставалась компактной.
 }
 
 function getRetreatNote() {
@@ -2090,15 +2090,8 @@ function createActionButton(entry, titleText, noteText, disabled) {
 
   const title = document.createElement('span');
   title.className = 'action-title';
-  title.textContent = entry.icon + ' ' + titleParts.label;
+  title.textContent = entry.icon + ' ' + titleParts.label + (titleParts.cost ? ' [' + titleParts.cost + ']' : '');
   button.appendChild(title);
-
-  if (titleParts.cost) {
-    const cost = document.createElement('span');
-    cost.className = 'action-cost';
-    cost.textContent = titleParts.cost;
-    button.appendChild(cost);
-  }
 
   if (entry.note) {
     const note = document.createElement('span');
