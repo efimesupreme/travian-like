@@ -3996,12 +3996,12 @@ button:focus-visible {
 
   .mobile-topbar {
     display: grid;
-    grid-template-columns: 36px minmax(0, 1fr) 36px;
-    gap: 6px;
+    grid-template-columns: 30px minmax(0, 1fr) 30px;
+    gap: 5px;
     align-items: center;
-    min-height: 52px;
-    margin-bottom: 6px;
-    padding: 5px 6px;
+    min-height: 40px;
+    margin-bottom: 4px;
+    padding: 3px 5px;
     border: 1px solid var(--hud-line);
     border-radius: 3px;
     background:
@@ -4011,7 +4011,7 @@ button:focus-visible {
 
   .mobile-topbar::before {
     position: absolute;
-    inset: 3px 44px auto;
+    inset: 2px 38px auto;
     height: 1px;
     content: '';
     background: linear-gradient(90deg, transparent, rgba(199, 131, 61, 0.7), transparent);
@@ -4020,7 +4020,7 @@ button:focus-visible {
   .topbar-title h1 {
     margin: 0;
     color: #e7d1ad;
-    font-size: clamp(28px, 8vw, 34px);
+    font-size: clamp(22px, 6.4vw, 27px);
     font-weight: 800;
     letter-spacing: 0.075em;
     line-height: 1;
@@ -4030,13 +4030,13 @@ button:focus-visible {
   }
 
   .topbar-icon {
-    width: 36px;
-    min-height: 36px;
+    width: 30px;
+    min-height: 30px;
     padding: 0;
     border: 1px solid rgba(103, 196, 221, 0.22);
     border-radius: 2px;
     color: #9ccbd4;
-    font-size: 18px;
+    font-size: 15px;
     background: linear-gradient(180deg, rgba(25, 30, 31, 0.96), rgba(4, 7, 9, 0.98));
     box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7);
   }
@@ -4045,7 +4045,7 @@ button:focus-visible {
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 0;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     padding: 0;
     overflow: hidden;
     border: 1px solid rgba(103, 196, 221, 0.22);
@@ -4058,11 +4058,11 @@ button:focus-visible {
   .mobile-stat-card {
     grid-column: span 4;
     display: grid;
-    grid-template-columns: 18px minmax(0, 1fr);
+    grid-template-columns: 16px minmax(0, 1fr);
     grid-template-rows: auto auto;
-    gap: 0 5px;
-    min-height: 43px;
-    padding: 6px 7px;
+    gap: 0 4px;
+    min-height: 34px;
+    padding: 4px 5px;
     border: 0;
     border-right: 1px solid rgba(137, 111, 76, 0.36);
     border-bottom: 1px solid rgba(137, 111, 76, 0.36);
@@ -4077,20 +4077,20 @@ button:focus-visible {
 
   .mobile-stat-card:nth-child(n+4) {
     grid-column: span 3;
-    min-height: 41px;
+    min-height: 32px;
     border-bottom: 0;
   }
 
   .mobile-stat-card span {
     grid-row: 1 / span 2;
     align-self: center;
-    font-size: 15px;
+    font-size: 13px;
     filter: saturate(0.68) brightness(0.95);
   }
 
   .mobile-stat-card small {
     color: var(--hud-muted);
-    font-size: 10.5px;
+    font-size: 8.5px;
     font-weight: 700;
     letter-spacing: 0.035em;
     line-height: 1.1;
@@ -4099,8 +4099,8 @@ button:focus-visible {
 
   .mobile-stat-card strong {
     color: #e2d8c9;
-    font-size: 15px;
-    line-height: 1.08;
+    font-size: 12.5px;
+    line-height: 1.02;
   }
 
   .mobile-energy-card {
@@ -4216,15 +4216,15 @@ button:focus-visible {
   .crash-map,
   .city-map,
   .recon-card {
-    min-height: 370px;
-    padding: 8px;
+    min-height: 185px;
+    padding: 6px;
     border: 1px solid rgba(103, 196, 221, 0.22);
     border-radius: 3px;
     box-shadow: inset 0 0 0 1px rgba(199, 131, 61, 0.1), inset 0 0 70px rgba(0, 0, 0, 0.68);
   }
 
   .crash-map {
-    min-height: 430px;
+    min-height: 215px;
     background-image:
       linear-gradient(180deg, rgba(3, 5, 6, 0.15), rgba(3, 5, 6, 0.62)),
       radial-gradient(circle at 52% 46%, rgba(207, 121, 45, 0.22), transparent 145px),
@@ -4565,11 +4565,11 @@ button:focus-visible {
   }
 
   .mobile-stat-card small {
-    font-size: 9.5px;
+    font-size: 8px;
   }
 
   .mobile-stat-card strong {
-    font-size: 13px;
+    font-size: 11.5px;
   }
 
   .action-cost {
