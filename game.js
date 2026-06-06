@@ -2594,7 +2594,10 @@ document.addEventListener('click', function (event) {
 });
 
 document.getElementById('newGame').addEventListener('click', restartGame);
-document.getElementById('mobileNewGame').addEventListener('click', restartGame);
+const mobileNewGameButton = document.getElementById('mobileNewGame');
+if (mobileNewGameButton) {
+  mobileNewGameButton.addEventListener('click', restartGame);
+}
 
 if (elements.toggleLog) {
   elements.toggleLog.addEventListener('click', function () {

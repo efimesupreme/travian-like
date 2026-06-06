@@ -13,13 +13,9 @@
     <header class="mobile-topbar hud-panel" aria-label="Верхняя панель игры">
       <button class="topbar-icon" type="button" aria-label="Открыть меню">☰</button>
       <div class="topbar-title">
-        <p class="eyebrow">аварийный HUD</p>
         <h1>Аурелия-18</h1>
       </div>
-      <div class="topbar-controls">
-        <button id="mobileNewGame" class="secondary-reset compact-reset" type="button">Новая игра</button>
-        <button class="topbar-icon" type="button" aria-label="Настройки">⚙</button>
-      </div>
+      <button class="topbar-icon" type="button" aria-label="Настройки">⚙</button>
     </header>
 
     <section class="mobile-status-grid hud-panel" aria-label="Состояние и ресурсы героя">
@@ -27,7 +23,7 @@
       <article class="mobile-stat-card"><span>🫁</span><small>Выносливость</small><strong id="mobileStamina">80 / 100</strong></article>
       <article class="mobile-stat-card"><span>💧</span><small>Вода</small><strong id="mobileWater">10 / 20</strong></article>
       <article class="mobile-stat-card"><span>⛓️</span><small>Металл</small><strong id="mobileMetal">15 / 20</strong></article>
-      <article class="mobile-stat-card"><span>🔩</span><small>Компоненты</small><strong id="mobileComponents">3 / 20</strong></article>
+      <article class="mobile-stat-card"><span>⚙</span><small>Компоненты</small><strong id="mobileComponents">3 / 20</strong></article>
       <article class="mobile-stat-card"><span>🍖</span><small>Еда</small><strong id="mobileFood">0 / 20</strong></article>
       <article class="mobile-stat-card mobile-energy-card"><span>⚡</span><small>Баланс энергии</small><strong id="mobileEnergy">8</strong></article>
     </section>
@@ -53,7 +49,6 @@
         <section class="content-card scene-frame" aria-label="Сцена">
           <div class="map-header scene-caption" aria-live="polite">
             <div>
-              <p class="eyebrow">Сцена</p>
               <h2 id="screenTitle">Герой</h2>
               <span id="screenSubtitle" class="map-subtitle">Состояние, характеристики и личные слоты героя.</span>
             </div>
@@ -160,7 +155,6 @@
         <section class="log-panel hud-panel" aria-label="Журнал событий">
           <div class="log-heading">
             <div>
-              <p class="eyebrow">бортовая запись</p>
               <h2>Журнал событий</h2>
             </div>
             <button id="toggleLog" class="log-toggle" type="button" aria-expanded="true">Свернуть</button>
