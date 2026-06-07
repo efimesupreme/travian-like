@@ -95,6 +95,28 @@ const baseResourceLimits = {
 };
 const storageResourceKeys = Object.keys(baseResourceLimits);
 
+const shipStorageLimitEffects = {
+  waterLoop: {
+    resources: ['water'],
+    stabilized: 10,
+    improved: 20,
+    label: 'воды'
+  },
+  storage: {
+    resources: ['metal', 'components'],
+    stabilized: 10,
+    improved: 20,
+    label: 'металла и компонентов'
+  },
+  hydroponics: {
+    resources: ['food'],
+    stabilized: 10,
+    improved: 20,
+    label: 'еды'
+  }
+};
+
+
 const resourceLabels = {
   energy: 'энергия',
   water: 'вода',
@@ -677,7 +699,7 @@ const cityUniquePoints = {
   }
 };
 
-let state = createInitialState();
+let state = null;
 
 const elements = {
   turn: document.getElementById('turn'),
@@ -738,11 +760,31 @@ function isStorageResource(resourceKey) {
   return Object.prototype.hasOwnProperty.call(baseResourceLimits, resourceKey);
 }
 
-function getResourceLimit(resourceKey) {
-  return savedNumber(baseResourceLimits[resourceKey], 0);
+function getResourceLimit(resourceKey, shipSystems) {
+  let limit = savedNumber(baseResourceLimits[resourceKey], 0);
+  const systems = shipSystems || (state ? state.shipSystems : null);
+
+  if (!systems) {
+    return limit;
+  }
+
+  const effectKeys = Object.keys(shipStorageLimitEffects);
+  for (let i = 0; i < effectKeys.length; i++) {
+    const systemKey = effectKeys[i];
+    const effect = shipStorageLimitEffects[systemKey];
+    if (!effect.resources.includes(resourceKey)) {
+      continue;
+    }
+
+    const system = systems[systemKey];
+    const status = system ? system.status : shipSystemBlueprints[systemKey].status;
+    limit += Math.max(0, savedNumber(effect[status], 0));
+  }
+
+  return limit;
 }
 
-function normalizeResources(resources) {
+function normalizeResources(resources, shipSystems) {
   const normalized = { ...initialResources, ...(resources || {}) };
   const resourceKeys = Object.keys(initialResources);
 
@@ -753,10 +795,47 @@ function normalizeResources(resources) {
 
   for (let i = 0; i < storageResourceKeys.length; i++) {
     const key = storageResourceKeys[i];
-    normalized[key] = Math.min(getResourceLimit(key), Math.max(0, savedNumber(normalized[key], initialResources[key] || 0)));
+    normalized[key] = Math.min(getResourceLimit(key, shipSystems), Math.max(0, savedNumber(normalized[key], initialResources[key] || 0)));
   }
 
   return normalized;
+}
+
+function getShipStorageLimitBonus(systemKey, status) {
+  const effect = shipStorageLimitEffects[systemKey];
+  if (!effect) {
+    return 0;
+  }
+
+  return Math.max(0, savedNumber(effect[status], 0));
+}
+
+function getShipStorageLimitEffectLine(systemKey, status) {
+  const effect = shipStorageLimitEffects[systemKey];
+  const bonus = getShipStorageLimitBonus(systemKey, status);
+
+  if (!effect || bonus <= 0) {
+    return '';
+  }
+
+  return 'Эффект: лимит ' + effect.label + ' +' + bonus;
+}
+
+function getShipStorageLimitLog(systemKey) {
+  const effect = shipStorageLimitEffects[systemKey];
+  if (!effect) {
+    return '';
+  }
+
+  const limitParts = [];
+  for (let i = 0; i < effect.resources.length; i++) {
+    const resource = effect.resources[i];
+    limitParts.push(getResourceLimit(resource));
+  }
+
+  const sameLimit = limitParts.every(function (limit) { return limit === limitParts[0]; });
+  const limitText = sameLimit ? limitParts[0] : limitParts.join('/');
+  return 'Лимит ' + effect.label + ': ' + limitText;
 }
 
 function didGainHitResourceLimit(plannedGain, actualGain) {
@@ -774,7 +853,7 @@ function didGainHitResourceLimit(plannedGain, actualGain) {
 
 function createInitialState() {
   const next = {
-    resources: normalizeResources({ ...initialResources }),
+    resources: { ...initialResources },
     heroCondition: { ...initialHeroCondition },
     turn: 1,
     mode: 'hero',
@@ -793,7 +872,7 @@ function createInitialState() {
     logMessages: ['Аварийный интерфейс Аурелии-18 запущен. Выберите сцену и объект для действий Героя.']
   };
 
-  next.resources = normalizeResources(next.resources);
+  next.resources = normalizeResources(next.resources, next.shipSystems);
   return next;
 }
 
@@ -1023,7 +1102,7 @@ function addResources(gain) {
   const actualGain = {};
   const keys = Object.keys(gain || {});
 
-  state.resources = normalizeResources(state.resources);
+  state.resources = normalizeResources(state.resources, state.shipSystems);
   for (let i = 0; i < keys.length; i++) {
     const resource = keys[i];
     const requested = Math.max(0, savedNumber(gain[resource], 0));
@@ -1042,7 +1121,7 @@ function addResources(gain) {
       actualGain[resource] = requested;
     }
   }
-  state.resources = normalizeResources(state.resources);
+  state.resources = normalizeResources(state.resources, state.shipSystems);
 
   return actualGain;
 }
@@ -1094,6 +1173,7 @@ function repairSystem(key) {
     system.status = stage.nextStatus;
     system.progress = 0;
     system.requiredProgress = getShipRequiredProgress(system.status);
+    state.resources = normalizeResources(state.resources, state.shipSystems);
   }
 
   const currentSelection = getCurrentSelection();
@@ -1106,6 +1186,9 @@ function repairSystem(key) {
 
   if (advanced) {
     addLog(stage.transitionLabel + ': ' + blueprint.name + '. Новый статус: ' + getShipStatusLabel(system.status) + '.');
+    if (getShipStorageLimitBonus(key, system.status) !== getShipStorageLimitBonus(key, previousStatus)) {
+      addLog(getShipStorageLimitLog(key));
+    }
   }
 }
 
@@ -1646,7 +1729,7 @@ function payCost(cost) {
     const resource = keys[i];
     state.resources[resource] -= cost[resource];
   }
-  state.resources = normalizeResources(state.resources);
+  state.resources = normalizeResources(state.resources, state.shipSystems);
 }
 
 function normalizeHeroCondition(condition) {
@@ -1723,7 +1806,7 @@ function renderResources() {
   elements.turn.textContent = state.turn;
   const healthText = state.heroCondition.health + ' / ' + state.heroCondition.maxHealth;
   const staminaText = state.heroCondition.stamina + ' / ' + state.heroCondition.maxStamina;
-  state.resources = normalizeResources(state.resources);
+  state.resources = normalizeResources(state.resources, state.shipSystems);
   const energyText = String(state.resources.energy);
   const waterText = state.resources.water + ' / ' + getResourceLimit('water');
   const componentsText = state.resources.components + ' / ' + getResourceLimit('components');
@@ -1876,6 +1959,21 @@ function renderShipSystems() {
       '</button>';
     elements.shipSystemsGrid.appendChild(card);
   }
+}
+
+function getShipSelectionDescription(key, blueprint, system) {
+  const lines = [
+    'Статус: ' + getShipStatusLabel(system.status) + '.',
+    blueprint.description,
+    getShipProgressText(system) + '.'
+  ];
+  const effectLine = getShipStorageLimitEffectLine(key, system.status);
+
+  if (effectLine) {
+    lines.push(effectLine);
+  }
+
+  return lines.join('\n');
 }
 
 function renderTerritories() {
@@ -2097,7 +2195,7 @@ function getCurrentSelection() {
       key,
       name: blueprint.name,
       type: 'система корабля',
-      description: 'Статус: ' + getShipStatusLabel(system.status) + '.\n' + blueprint.description + '\n' + getShipProgressText(system) + '.',
+      description: getShipSelectionDescription(key, blueprint, system),
       inspectDescription: 'Статус: ' + getShipStatusLabel(system.status) + '. ' + blueprint.description + ' ' + getShipProgressText(system) + '.'
     };
   }
@@ -2837,7 +2935,7 @@ function getGenitiveName(name) {
 
 
 function saveGame() {
-  state.resources = normalizeResources(state.resources);
+  state.resources = normalizeResources(state.resources, state.shipSystems);
   state.heroCondition = normalizeHeroCondition(state.heroCondition);
   localStorage.setItem(saveKey, JSON.stringify(state));
 }
@@ -2886,8 +2984,6 @@ function mergeSavedState(saved) {
     const legacyValue = key === 'recon' && savedResources.recon === undefined ? savedResources.data : savedResources[key];
     next.resources[key] = savedNumber(legacyValue, initialResources[key]);
   }
-  next.resources = normalizeResources(next.resources);
-
   const savedCondition = saved.heroCondition && typeof saved.heroCondition === 'object'
     ? { ...saved.heroCondition }
     : (saved.condition && typeof saved.condition === 'object' ? { ...saved.condition } : {});
@@ -2931,6 +3027,7 @@ function mergeSavedState(saved) {
     }
     normalizeShipSystem(next.shipSystems[key]);
   }
+  next.resources = normalizeResources(next.resources, next.shipSystems);
 
   const savedTerritories = saved.territories || saved.sites || {};
   const territoryKeys = Object.keys(next.territories);
@@ -3127,4 +3224,5 @@ if (mobileCityQuery.addEventListener) {
   mobileCityQuery.addListener(handleMobileCityLockChange);
 }
 
+state = createInitialState();
 loadGame();
