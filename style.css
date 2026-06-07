@@ -5116,3 +5116,133 @@ button:focus-visible {
     gap: 2px;
   }
 }
+
+/* Targeted mobile composition update: hero vitals belong to the left hero state,
+   scene yields vertical space to a taller action panel, fixed log remains visible. */
+@media (max-width: 767px) {
+  .mobile-status-grid.mobile-hero-hud {
+    grid-template-columns: 68px minmax(118px, 0.9fr) minmax(0, 1fr);
+    gap: 4px;
+    margin-bottom: 4px;
+    padding: 4px;
+  }
+
+  .mobile-hero-portrait {
+    min-height: 48px;
+  }
+
+  .mobile-hero-silhouette {
+    width: 58px;
+    height: 36px;
+    border-radius: 14px 14px 6px 6px;
+  }
+
+  .mobile-hero-silhouette span {
+    left: 22px;
+    right: 7px;
+    bottom: 5px;
+    height: 13px;
+  }
+
+  .mobile-hero-stats {
+    gap: 1px;
+    justify-content: center;
+    padding: 0 4px 0 0;
+  }
+
+  .mobile-hero-stats p {
+    justify-content: flex-start;
+    gap: 4px;
+    font-size: clamp(10px, 2.65vw, 11.5px);
+    line-height: 1.08;
+    text-align: left;
+  }
+
+  .mobile-hero-stats span {
+    flex: 0 1 auto;
+    min-width: 0;
+    color: var(--hud-muted);
+    text-align: left;
+  }
+
+  .mobile-hero-stats strong {
+    flex: 0 0 auto;
+    color: #efe0c8;
+    font-size: clamp(10px, 2.7vw, 11.5px);
+    line-height: 1.08;
+  }
+
+  .mobile-hero-vital span,
+  .mobile-hero-vital strong {
+    color: #e6d4b8;
+  }
+
+  .mobile-hero-resources {
+    gap: 1px;
+    justify-content: center;
+    padding-left: 5px;
+  }
+
+  .mobile-hero-resources p {
+    grid-template-columns: 13px minmax(0, 1fr) auto;
+    gap: 2px;
+    align-items: baseline;
+    color: var(--hud-blue);
+    font-size: clamp(9.5px, 2.55vw, 11px);
+    line-height: 1.08;
+  }
+
+  .mobile-resource-name {
+    font-size: clamp(8px, 2.15vw, 9.5px);
+  }
+
+  .mobile-hero-resources strong {
+    justify-self: end;
+    font-size: clamp(9.5px, 2.55vw, 11px);
+    text-align: right;
+  }
+
+  .content-card,
+  .scene-frame {
+    flex: 1 1 0;
+  }
+
+  .screen {
+    flex: 1 1 0;
+  }
+
+  .hero-screen,
+  .ship-screen,
+  .crash-map,
+  .city-map,
+  .recon-card {
+    min-height: 0;
+    padding: 6px;
+  }
+
+  .info-panel {
+    flex: 0 0 clamp(216px, 38dvh, 286px);
+    height: clamp(216px, 38dvh, 286px);
+    max-height: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .mobile-status-grid.mobile-hero-hud {
+    grid-template-columns: 62px minmax(108px, 0.86fr) minmax(0, 1fr);
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .mobile-hero-silhouette {
+    width: 54px;
+  }
+
+  .mobile-hero-resources {
+    padding-left: 4px;
+  }
+
+  .mobile-hero-resources p {
+    grid-template-columns: 12px minmax(0, 1fr) auto;
+  }
+}
