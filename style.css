@@ -6101,3 +6101,117 @@ button:focus-visible {
     font-size: 0.68rem;
   }
 }
+
+/* Mobile hero action buttons: keep DOM order as four stable grid zones. */
+@media (max-width: 767px) {
+  .primary-hero-actions .action-choice,
+  .panel-actions .action-choice,
+  .narrative-feed .panel-actions .action-choice,
+  .narrative-feed .panel-actions button.action-choice {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) max-content 14px;
+    gap: 2px 8px;
+    align-items: center;
+    min-height: 58px;
+    padding: 7px 8px !important;
+    overflow-wrap: normal;
+  }
+
+  .primary-hero-actions .action-choice::after,
+  .panel-actions .action-choice::after,
+  .narrative-feed .panel-actions .action-choice::after,
+  .narrative-feed .panel-actions button.action-choice::after {
+    display: none;
+    content: none;
+  }
+
+  .primary-hero-actions .action-icon,
+  .panel-actions .action-icon,
+  .narrative-feed .panel-actions .action-icon {
+    display: block;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+    justify-self: center;
+    width: 38px;
+    min-width: 0;
+    min-height: 0;
+    font-size: 26px;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .primary-hero-actions .action-main,
+  .panel-actions .action-main,
+  .narrative-feed .panel-actions .action-main {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-content: center;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .primary-hero-actions .action-title,
+  .primary-hero-actions .action-note,
+  .panel-actions .action-title,
+  .panel-actions .action-note,
+  .narrative-feed .panel-actions .action-title,
+  .narrative-feed .panel-actions .action-note,
+  .narrative-feed .panel-actions .action-check {
+    min-width: 0;
+    overflow: hidden;
+    overflow-wrap: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .primary-hero-actions .action-title,
+  .panel-actions .action-title,
+  .narrative-feed .panel-actions .action-title {
+    grid-row: 1;
+  }
+
+  .primary-hero-actions .action-note,
+  .panel-actions .action-note,
+  .narrative-feed .panel-actions .action-note,
+  .narrative-feed .panel-actions .action-check {
+    grid-row: 2;
+  }
+
+  .primary-hero-actions .action-cost,
+  .panel-actions .action-cost,
+  .narrative-feed .panel-actions .action-cost {
+    display: block;
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    align-self: center;
+    justify-self: end;
+    min-width: max-content;
+    max-width: none;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    color: var(--hud-blue);
+    font-size: 11px;
+    line-height: 1.15;
+    text-align: right;
+    text-overflow: clip;
+    white-space: nowrap;
+    word-break: keep-all;
+    background: transparent;
+  }
+
+  .primary-hero-actions .action-chevron,
+  .panel-actions .action-chevron,
+  .narrative-feed .panel-actions .action-chevron {
+    display: block;
+    grid-column: 4;
+    grid-row: 1 / span 2;
+    align-self: center;
+    justify-self: end;
+    color: rgba(148, 169, 191, 0.66);
+    font-size: 20px;
+    line-height: 1;
+  }
+}
