@@ -5929,16 +5929,28 @@ button:focus-visible {
   }
 }
 
-/* Compact three-cell action rows for the right hero action panel. */
+/* Compact grid action rows for the hero action panel. */
+.narrative-feed .panel-actions {
+  display: grid;
+  gap: 8px;
+}
+
 .narrative-feed .panel-actions .action-choice,
 .narrative-feed .panel-actions button.action-choice {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) max-content;
+  grid-template-columns: 48px minmax(0, 1fr) max-content 12px;
   gap: 8px;
   align-items: center;
-  min-height: 50px;
+  width: 100%;
+  min-height: 64px;
   padding: 8px 10px !important;
+  border: 1px solid rgba(116, 215, 255, 0.18);
+  border-radius: 12px;
+  color: var(--text);
   text-align: left;
+  background: rgba(8, 18, 31, 0.48);
+  box-shadow: none;
+  overflow-wrap: normal;
 }
 
 .narrative-feed .panel-actions .action-choice::after,
@@ -5947,26 +5959,36 @@ button:focus-visible {
   content: none;
 }
 
+.narrative-feed .panel-actions .action-choice:hover,
+.narrative-feed .panel-actions .action-choice:focus-visible,
+.narrative-feed .panel-actions button.action-choice:hover,
+.narrative-feed .panel-actions button.action-choice:focus-visible {
+  border-color: rgba(116, 215, 255, 0.52);
+  background: rgba(116, 215, 255, 0.09);
+  transform: none;
+}
+
 .narrative-feed .panel-actions .action-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  min-width: 42px;
-  font-size: 1.8rem;
+  width: 48px;
+  min-width: 48px;
+  height: 100%;
+  min-height: 48px;
+  font-size: 2rem;
   line-height: 1;
 }
 
 .narrative-feed .panel-actions .action-main {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
 .narrative-feed .panel-actions .action-title,
 .narrative-feed .panel-actions .action-note,
 .narrative-feed .panel-actions .action-check {
-  grid-column: auto;
   min-width: 0;
   max-width: 100%;
   padding: 0;
@@ -5978,8 +6000,8 @@ button:focus-visible {
 
 .narrative-feed .panel-actions .action-title {
   overflow: hidden;
-  color: #ead9bd;
-  font-size: 0.88rem;
+  color: #e8fbff;
+  font-size: 0.96rem;
   font-weight: 700;
   line-height: 1.22;
   text-overflow: ellipsis;
@@ -5989,45 +6011,80 @@ button:focus-visible {
 .narrative-feed .panel-actions .action-note,
 .narrative-feed .panel-actions .action-check {
   margin-top: 0;
-  color: #9da7a5;
-  font-size: 0.74rem;
-  line-height: 1.22;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.25;
 }
 
 .narrative-feed .panel-actions .action-cost {
   display: block;
-  grid-column: auto;
-  grid-row: auto;
   align-self: center;
   justify-self: end;
   max-width: none;
   padding: 0;
   border: 0;
-  color: var(--hud-blue, var(--tech-blue));
-  font-size: 0.76rem;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
   line-height: 1.2;
   text-align: right;
   white-space: nowrap;
   background: transparent;
 }
 
-@media (max-width: 380px) {
+.narrative-feed .panel-actions .action-chevron {
+  align-self: center;
+  justify-self: end;
+  color: rgba(148, 169, 191, 0.66);
+  font-size: 1.28rem;
+  line-height: 1;
+}
+
+@media (max-width: 760px) {
   .narrative-feed .panel-actions .action-choice,
   .narrative-feed .panel-actions button.action-choice {
-    grid-template-columns: 34px minmax(0, 1fr) max-content;
-    gap: 6px;
-    padding-right: 4px !important;
-    padding-left: 0 !important;
+    grid-template-columns: 44px minmax(0, 1fr) max-content 10px;
+    min-height: 58px;
+    padding: 7px 8px !important;
   }
 
   .narrative-feed .panel-actions .action-icon {
-    width: 34px;
-    min-width: 34px;
-    font-size: 1.55rem;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.9rem;
   }
 
   .narrative-feed .panel-actions .action-title {
-    font-size: 0.78rem;
+    font-size: 0.92rem;
+  }
+
+  .narrative-feed .panel-actions .action-note,
+  .narrative-feed .panel-actions .action-check {
+    font-size: 0.74rem;
+  }
+
+  .narrative-feed .panel-actions .action-cost {
+    font-size: 0.76rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .narrative-feed .panel-actions .action-choice,
+  .narrative-feed .panel-actions button.action-choice {
+    grid-template-columns: 38px minmax(0, 1fr) max-content 8px;
+    gap: 6px;
+  }
+
+  .narrative-feed .panel-actions .action-icon {
+    width: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    font-size: 1.65rem;
+  }
+
+  .narrative-feed .panel-actions .action-title {
+    font-size: 0.84rem;
   }
 
   .narrative-feed .panel-actions .action-note,

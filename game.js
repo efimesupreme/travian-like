@@ -1473,7 +1473,7 @@ function getTerritoryOutputText(key) {
     return getTerritoryYieldText(territory) + ' ' + resourceGenitiveLabels[territory.resource];
   }
 
-  return 'проверка 2d6 за ' + resourceLabels[territory.resource];
+  return 'Сбор ресурса: ' + resourceLabels[territory.resource];
 }
 
 function getTerritoryResourceText(territory) {
@@ -1501,6 +1501,10 @@ function getTerritoryOpenSummaryLines(territory) {
     'Добыча: ' + getTerritoryYieldText(territory),
     getTerritoryStockText(territory)
   ];
+}
+
+function getTerritoryShortSummaryLine(territory) {
+  return 'Ресурс: ' + getTerritoryResourceText(territory) + ' · ' + getTerritoryStockText(territory);
 }
 
 function getTerritoryProgressRemaining(territory) {
@@ -2074,14 +2078,10 @@ function getTerritoryPanelDescription(territory) {
   }
 
   if (territory.status === 'discovered') {
-    return territory.description + ' Статус: Обнаружена. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
+    return territory.description + '\nИсследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
   }
 
-  if (territory.status === 'depleted') {
-    return territory.description + '\n' + getTerritoryOpenSummaryLines(territory).join('\n');
-  }
-
-  return territory.description + '\n' + getTerritoryOpenSummaryLines(territory).join('\n');
+  return territory.description + '\n' + getTerritoryShortSummaryLine(territory);
 }
 
 function getTerritoryInspectDescription(territory) {
@@ -2128,7 +2128,7 @@ function renderObjectActionOptions(selection) {
   if (selection.kind === 'territory') {
     const territory = state.territories[selection.key];
     if (territory.status === 'open' || territory.status === 'depleted') {
-      appendActionOption('⛏️', formatActionTitle(getGatherActionTitle(selection.key), {}), getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
+      appendActionOption(getGatherActionIcon(territory), formatActionTitle(getGatherActionTitle(selection.key), {}), getGatherActionNote(territory), 'gatherKey', selection.key, false);
     } else if (territory.status === 'discovered') {
       appendResearchApproachOptions(selection.key, territory);
     } else if (territory.status === 'hidden') {
@@ -2167,7 +2167,7 @@ function appendResearchApproachOptions(key, territory) {
   for (let i = 0; i < approachKeys.length; i++) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
-    appendActionOption('🔍', formatActionTitle(approach.title, {}), (heroStatLabels[approach.statKey] || 'Характеристика') + ' ' + territory.difficulty + ' · исследование ' + territory.progress + ' / ' + territory.requiredProgress, 'researchApproachKey', key + ':' + approachKey, false);
+    appendActionOption('🔍', formatActionTitle('Исследовать зону', {}), (heroStatLabels[approach.statKey] || 'Характеристика') + ' ' + territory.difficulty, 'researchApproachKey', key + ':' + approachKey, false);
   }
 }
 
@@ -2178,7 +2178,7 @@ function appendDiscoverApproachOptions(key, territory) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
     const statLabel = heroStatLabels[approach.statKey] || 'Характеристика';
-    appendActionOption('🔍', formatActionTitle(approach.title, {}), statLabel + ' ' + territory.difficulty + ' · поиск ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired, 'discoverApproachKey', key + ':' + approachKey, false);
+    appendActionOption('🔍', formatActionTitle('Исследовать зону', {}), statLabel + ' ' + territory.difficulty, 'discoverApproachKey', key + ':' + approachKey, false);
   }
 }
 
@@ -2226,6 +2226,36 @@ function formatMaybeCost(cost) {
   return formatCompactCost(cost);
 }
 
+
+function getGatherActionIcon(territory) {
+  if (!territory) {
+    return '⛏️';
+  }
+
+  const icons = {
+    water: '💧',
+    metal: '⛓️',
+    components: '⚙️',
+    food: '🍖'
+  };
+
+  return icons[territory.resource] || '⛏️';
+}
+
+function getGatherActionNote(territory) {
+  if (!territory) {
+    return 'Собрать доступный ресурс';
+  }
+
+  const notes = {
+    water: 'Пополнить запасы воды',
+    metal: 'Поиск металла и обломков',
+    components: 'Поиск металла и компонентов',
+    food: 'Пополнить запасы еды'
+  };
+
+  return notes[territory.resource] || 'Собрать доступный ресурс';
+}
 
 function getGatherActionTitle(key) {
   const territory = state.territories[key] || territoryBlueprints[key];
@@ -2324,13 +2354,8 @@ function migrateLogMessage(message) {
 
 let actionRenderCollector = null;
 
-function addActionLead(text) {
-  if (actionRenderCollector) {
-    actionRenderCollector.push({ type: 'lead', text });
-    return;
-  }
-
-  elements.selectedActions.appendChild(createActionLead(text));
+function addActionLead() {
+  // Обычные списки действий начинаются сразу с кнопок без вводной строки.
 }
 
 function createActionLead(text) {
@@ -2393,12 +2418,16 @@ function createActionButton(entry, titleText, noteText, disabled) {
 
   button.appendChild(main);
 
-  if (fullTitleParts.cost) {
-    const cost = document.createElement('span');
-    cost.className = 'action-cost';
-    cost.textContent = titleParts.cost;
-    button.appendChild(cost);
-  }
+  const cost = document.createElement('span');
+  cost.className = 'action-cost';
+  cost.textContent = fullTitleParts.cost ? titleParts.cost : '—';
+  button.appendChild(cost);
+
+  const chevron = document.createElement('span');
+  chevron.className = 'action-chevron';
+  chevron.setAttribute('aria-hidden', 'true');
+  chevron.textContent = '›';
+  button.appendChild(chevron);
 
   return button;
 }
