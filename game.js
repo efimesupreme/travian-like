@@ -127,6 +127,36 @@ const shipStatusLabels = {
   improved: 'Улучшена'
 };
 
+const shipRepairStages = {
+  disabled: {
+    action: 'Аварийно починить',
+    transitionLabel: 'Система аварийно починена',
+    nextStatus: 'damaged',
+    statKey: 'strength',
+    difficulty: 8,
+    requiredProgress: 3,
+    cost: { metal: 4, components: 1 }
+  },
+  damaged: {
+    action: 'Стабилизировать',
+    transitionLabel: 'Система стабилизирована',
+    nextStatus: 'stabilized',
+    statKey: 'agility',
+    difficulty: 8,
+    requiredProgress: 2,
+    cost: { metal: 2, components: 1 }
+  },
+  stabilized: {
+    action: 'Улучшить',
+    transitionLabel: 'Система улучшена',
+    nextStatus: 'improved',
+    statKey: 'wisdom',
+    difficulty: 9,
+    requiredProgress: 4,
+    cost: { metal: 2, components: 3 }
+  }
+};
+
 
 const shipSystemBlueprints = {
   reactor: {
@@ -725,9 +755,9 @@ function createSystems() {
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    systems[key] = {
+    systems[key] = normalizeShipSystem({
       status: shipSystemBlueprints[key].status
-    };
+    });
   }
 
   return systems;
@@ -954,19 +984,74 @@ function addResources(gain) {
 }
 
 function repairSystem(key) {
-  if (!state.shipSystems[key]) {
+  const system = state.shipSystems[key];
+  const blueprint = shipSystemBlueprints[key];
+
+  if (!system || !blueprint) {
     return;
   }
 
-  addLog('Действия с системой будут добавлены позже.');
+  normalizeShipSystem(system);
+  const stage = getShipRepairStage(system);
+  const selection = getCurrentSelection();
+
+  if (!stage) {
+    const message = 'Система улучшена и работает в усиленном режиме.';
+    if (selection) {
+      setNarrativeMessage(selection, message);
+    }
+    addLog(message + ' ' + blueprint.name + '.');
+    return;
+  }
+
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
+  const missing = getMissingResources(stage.cost);
+  if (missing.length > 0) {
+    const message = 'Недостаточно ресурсов для действия «' + stage.action + '». Не хватает: ' + missing.join(', ') + '. Нужно: ' + formatActionCostText(stage.cost) + '.';
+    if (selection) {
+      setNarrativeMessage(selection, message);
+    }
+    addLog(message);
+    return;
+  }
+
+  spendStamina();
+  payCost(stage.cost);
+
+  const previousStatus = system.status;
+  const check = resolveShipRepairCheck(stage);
+  const progressGain = getShipRepairProgressGain(check);
+  const requiredProgress = stage.requiredProgress;
+  system.requiredProgress = requiredProgress;
+  system.progress = Math.min(requiredProgress, savedNumber(system.progress, 0) + progressGain);
+
+  const advanced = system.progress >= requiredProgress;
+  if (advanced) {
+    system.status = stage.nextStatus;
+    system.progress = 0;
+    system.requiredProgress = getShipRequiredProgress(system.status);
+  }
+
+  const currentSelection = getCurrentSelection();
+  state.actionPanelMode = 'actions';
+  if (currentSelection) {
+    setNarrativeMessage(currentSelection, buildShipRepairResultPanel(blueprint, system, stage, check, progressGain, advanced, previousStatus));
+  }
+
+  addLog('Работа с системой «' + blueprint.name + '»: ' + stage.action + '. Использованная характеристика: ' + check.statLabel + ' ' + check.statValue + '. Потрачено: ' + formatActionCostText(stage.cost) + '.');
+  addLog('Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Итог с бонусом: ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + ' против сложности ' + check.difficulty + '.');
+  addLog('Результат ремонта: ' + check.resultLabel + '. Добавленный прогресс: +' + progressGain + '. Прогресс этапа: ' + system.progress + ' / ' + system.requiredProgress + '.');
+
+  if (advanced) {
+    addLog(stage.transitionLabel + ': ' + blueprint.name + '. Новый статус: ' + getShipStatusLabel(system.status) + '.');
+  }
 }
 
 function diagnoseSystem(key) {
-  if (!state.shipSystems[key]) {
-    return;
-  }
-
-  addLog('Действия с системой будут добавлены позже.');
+  selectSystem(key);
 }
 
 function returnToSelectedPanel() {
@@ -1146,6 +1231,104 @@ function ensureResearchEvent(key) {
   };
 
   return state.activeResearchEvent;
+}
+
+function normalizeShipSystem(system) {
+  if (!system || typeof system !== 'object') {
+    return { status: 'damaged', progress: 0, requiredProgress: getShipRequiredProgress('damaged') };
+  }
+
+  if (!shipStatusLabels[system.status]) {
+    system.status = 'damaged';
+  }
+
+  const requiredProgress = getShipRequiredProgress(system.status);
+  system.requiredProgress = requiredProgress;
+  system.progress = clampSavedNumber(system.progress, 0, 0, requiredProgress);
+
+  if (system.status === 'improved') {
+    system.progress = 0;
+  }
+
+  return system;
+}
+
+function getShipRepairStage(system) {
+  return system ? shipRepairStages[system.status] : null;
+}
+
+function getShipRequiredProgress(status) {
+  const stage = shipRepairStages[status];
+  return stage ? stage.requiredProgress : 0;
+}
+
+function resolveShipRepairCheck(stage) {
+  const roll = roll2d6();
+  const statKey = stage.statKey || 'strength';
+  const statLabel = heroStatLabels[statKey] || 'Характеристика';
+  const statValue = getHeroStatValue(statKey);
+  const total = roll.total + statValue;
+  const difficulty = Math.max(1, savedNumber(stage.difficulty, 8));
+  const result = getShipRepairCheckResult(roll.total, total, difficulty);
+
+  return {
+    roll,
+    statKey,
+    statLabel,
+    statValue,
+    total,
+    difficulty,
+    resultLabel: result.label,
+    progressGain: result.progressGain
+  };
+}
+
+function getShipRepairCheckResult(naturalTotal, total, difficulty) {
+  if (naturalTotal === 2) return { label: 'Критический провал', progressGain: 0 };
+  if (naturalTotal === 12) return { label: 'Критический успех', progressGain: 3 };
+  if (total < difficulty) return { label: 'Провал', progressGain: 0 };
+  if (total === difficulty) return { label: 'Частичный успех', progressGain: 1 };
+  return { label: 'Успех', progressGain: 2 };
+}
+
+function getShipRepairProgressGain(check) {
+  return Math.max(0, savedNumber(check.progressGain, 0));
+}
+
+function buildShipRepairResultPanel(blueprint, system, stage, check, progressGain, advanced, previousStatus) {
+  const statusLine = advanced
+    ? stage.transitionLabel + ': ' + blueprint.name + '. Новый статус: ' + getShipStatusLabel(system.status) + '.'
+    : 'Статус: ' + getShipStatusLabel(previousStatus) + '.';
+  const progressLine = advanced
+    ? 'Прогресс этапа заполнен и сброшен для следующей работы.'
+    : 'Прогресс: ' + system.progress + ' / ' + system.requiredProgress + '.';
+
+  return stage.action + ': ' + blueprint.name + '.\n\n' +
+    buildResearchRollLine(check) + '\n' +
+    'Результат проверки: ' + check.resultLabel + '. Добавленный прогресс: +' + progressGain + '.\n' +
+    progressLine + '\n' +
+    statusLine;
+}
+
+function getShipProgressText(system) {
+  normalizeShipSystem(system);
+  if (system.status === 'improved') {
+    return 'Система улучшена и работает в усиленном режиме';
+  }
+
+  return 'Прогресс: ' + system.progress + ' / ' + system.requiredProgress;
+}
+
+function formatActionCostText(cost) {
+  const parts = ['-1 выносливость'];
+  const keys = Object.keys(cost || {});
+
+  for (let i = 0; i < keys.length; i++) {
+    const resource = keys[i];
+    parts.push('-' + cost[resource] + ' ' + (resourceLabels[resource] || resource));
+  }
+
+  return parts.join(', ');
 }
 
 function roll2d6() {
@@ -1597,6 +1780,7 @@ function renderShipSystems() {
       '<span class="card-kicker">система корабля</span>' +
       '<strong>' + blueprint.name + '</strong>' +
       '<small>Статус: ' + getShipStatusLabel(system.status) + '</small>' +
+      '<small>' + getShipProgressText(system) + '</small>' +
       '<em>Роль: ' + blueprint.role + '</em>' +
       '<p>' + blueprint.description + '</p>' +
       '</button>';
@@ -1809,8 +1993,8 @@ function getCurrentSelection() {
       key,
       name: blueprint.name,
       type: 'система корабля',
-      description: 'Статус: ' + getShipStatusLabel(system.status) + '.\n' + blueprint.description,
-      inspectDescription: 'Статус: ' + getShipStatusLabel(system.status) + '. ' + blueprint.description
+      description: 'Статус: ' + getShipStatusLabel(system.status) + '.\n' + blueprint.description + '\n' + getShipProgressText(system) + '.',
+      inspectDescription: 'Статус: ' + getShipStatusLabel(system.status) + '. ' + blueprint.description + ' ' + getShipProgressText(system) + '.'
     };
   }
 
@@ -1932,7 +2116,17 @@ function renderObjectActionOptions(selection) {
   }
 
   if (selection.kind === 'system') {
-    addActionLead('Действия с системой будут добавлены позже');
+    const system = state.shipSystems[selection.key];
+    normalizeShipSystem(system);
+    const stage = getShipRepairStage(system);
+
+    if (!stage) {
+      addActionLead('Система улучшена и работает в усиленном режиме.');
+      return;
+    }
+
+    addActionLead(getShipProgressText(system) + '. Проверка: 2d6 + ' + (heroStatLabels[stage.statKey] || 'характеристика') + ' против сложности ' + stage.difficulty + '.');
+    appendActionOption('🛠️', stage.action + ' (' + formatActionCostText(stage.cost) + ')', 'Результат: прогресс этапа ' + system.progress + ' / ' + system.requiredProgress, 'repairKey', selection.key, false);
     return;
   }
 
@@ -2512,7 +2706,10 @@ function mergeSavedState(saved) {
       next.shipSystems[key].status = shipStatusLabels[savedSystems[key].status]
         ? savedSystems[key].status
         : next.shipSystems[key].status;
+      next.shipSystems[key].progress = savedNumber(savedSystems[key].progress, next.shipSystems[key].progress);
+      next.shipSystems[key].requiredProgress = savedNumber(savedSystems[key].requiredProgress, next.shipSystems[key].requiredProgress);
     }
+    normalizeShipSystem(next.shipSystems[key]);
   }
 
   const savedTerritories = saved.territories || saved.sites || {};
