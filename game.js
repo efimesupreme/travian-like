@@ -8,6 +8,11 @@ const typewriterCursor = '|';
 const staminaActionCost = 1;
 const restStaminaRecovery = 20;
 const livingBlockSystemKey = 'habitation';
+const scannerSystemKey = 'scanner';
+const scannerResearchDifficultyEffects = {
+  stabilized: 1,
+  improved: 2
+};
 const livingBlockRestRecovery = {
   disabled: 10,
   damaged: restStaminaRecovery,
@@ -853,6 +858,38 @@ function getRestNarrative() {
   return livingBlockRestNarratives[status] || livingBlockRestNarratives.damaged;
 }
 
+function getScannerStatus(shipSystems) {
+  const systems = shipSystems || (state ? state.shipSystems : null);
+  const system = systems ? systems[scannerSystemKey] : null;
+
+  return system ? system.status : '';
+}
+
+function getScannerResearchDifficultyBonus(shipSystems) {
+  const status = getScannerStatus(shipSystems);
+
+  return Math.max(0, savedNumber(scannerResearchDifficultyEffects[status], 0));
+}
+
+function getEffectiveDifficulty(baseDifficulty, bonus) {
+  return Math.max(1, savedNumber(baseDifficulty, 1) - Math.max(0, savedNumber(bonus, 0)));
+}
+
+function getResearchEffectiveDifficulty(baseDifficulty, shipSystems) {
+  return getEffectiveDifficulty(baseDifficulty, getScannerResearchDifficultyBonus(shipSystems));
+}
+
+function formatEffectiveDifficulty(baseDifficulty, effectiveDifficulty) {
+  const base = Math.max(1, savedNumber(baseDifficulty, 1));
+  const effective = Math.max(1, savedNumber(effectiveDifficulty, base));
+
+  if (effective < base) {
+    return 'Сложность: ' + effective + ' (-' + (base - effective) + ')';
+  }
+
+  return 'Сложность: ' + effective;
+}
+
 function getLivingBlockRestEffectLine(systemKey, status) {
   if (systemKey !== livingBlockSystemKey) {
     return '';
@@ -1506,7 +1543,8 @@ function resolveResearchCheck(approach, territory) {
   const statLabel = heroStatLabels[statKey] || 'Характеристика';
   const statValue = getHeroStatValue(statKey);
   const total = roll.total + statValue;
-  const difficulty = Math.max(1, savedNumber(territory && territory.difficulty, 1));
+  const baseDifficulty = Math.max(1, savedNumber(territory && territory.difficulty, 1));
+  const difficulty = getResearchEffectiveDifficulty(baseDifficulty);
   const result = getResearchCheckResult(roll.total, total, difficulty);
 
   return {
@@ -1515,6 +1553,7 @@ function resolveResearchCheck(approach, territory) {
     statLabel,
     statValue,
     total,
+    baseDifficulty,
     difficulty,
     resultLabel: result.label,
     progressGain: result.progressGain
@@ -1541,7 +1580,8 @@ function resolveDiscoverCheck(approach, territory) {
   const statLabel = heroStatLabels[statKey] || 'Характеристика';
   const statValue = getHeroStatValue(statKey);
   const total = roll.total + statValue;
-  const difficulty = Math.max(1, savedNumber(territory && territory.difficulty, 8));
+  const baseDifficulty = Math.max(1, savedNumber(territory && territory.difficulty, 8));
+  const difficulty = getResearchEffectiveDifficulty(baseDifficulty);
   const result = getDiscoverCheckResult(roll.total, total, difficulty);
 
   return {
@@ -1550,6 +1590,7 @@ function resolveDiscoverCheck(approach, territory) {
     statLabel,
     statValue,
     total,
+    baseDifficulty,
     difficulty,
     resultLabel: result.label,
     progressGain: result.progressGain
@@ -2400,7 +2441,10 @@ function appendResearchApproachOptions(key, territory) {
   for (let i = 0; i < approachKeys.length; i++) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
-    appendActionOption('🔍', formatActionTitle('Исследовать зону', {}), (heroStatLabels[approach.statKey] || 'Характеристика') + ' ' + territory.difficulty, 'researchApproachKey', key + ':' + approachKey, false);
+    const baseDifficulty = Math.max(1, savedNumber(territory.difficulty, 1));
+    const difficulty = getResearchEffectiveDifficulty(baseDifficulty);
+    const statLabel = heroStatLabels[approach.statKey] || 'Характеристика';
+    appendActionOption('🔍', formatActionTitle('Исследовать зону', {}), statLabel + ' · ' + formatEffectiveDifficulty(baseDifficulty, difficulty), 'researchApproachKey', key + ':' + approachKey, false);
   }
 }
 
@@ -2411,7 +2455,9 @@ function appendDiscoverApproachOptions(key, territory) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
     const statLabel = heroStatLabels[approach.statKey] || 'Характеристика';
-    appendActionOption('🔍', formatActionTitle('Исследовать зону', {}), statLabel + ' ' + territory.difficulty, 'discoverApproachKey', key + ':' + approachKey, false);
+    const baseDifficulty = Math.max(1, savedNumber(territory.difficulty, 8));
+    const difficulty = getResearchEffectiveDifficulty(baseDifficulty);
+    appendActionOption('🔍', formatActionTitle('Исследовать зону', {}), statLabel + ' · ' + formatEffectiveDifficulty(baseDifficulty, difficulty), 'discoverApproachKey', key + ':' + approachKey, false);
   }
 }
 
