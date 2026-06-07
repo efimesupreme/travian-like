@@ -5889,6 +5889,32 @@ button:focus-visible {
     -webkit-line-clamp: unset;
   }
 
+  .selected-object.territory-selection h2,
+  .selected-object.territory-selection .description {
+    display: block;
+  }
+
+  .selected-object.territory-selection h2 {
+    margin-bottom: 3px;
+    overflow: hidden;
+    font-size: 13px;
+    line-height: 1.18;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .selected-object.territory-selection .description {
+    display: -webkit-box;
+    max-height: none;
+    margin-bottom: 5px;
+    overflow: hidden;
+    font-size: 11.5px;
+    line-height: 1.25;
+    white-space: pre-line;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
   .narrative-feed .panel-actions .action-cost {
     max-width: 118px;
     white-space: nowrap;
