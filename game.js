@@ -1490,14 +1490,6 @@ function renderHeroScreen() {
   const hero = state.hero || createHero();
   elements.heroScreen.innerHTML =
     '<article class="hero-scene-card" aria-label="Карточка героя">' +
-      '<div class="hero-card-header">' +
-        '<div>' +
-          '<span class="card-kicker">карточка героя</span>' +
-          '<h3>' + hero.name + '</h3>' +
-          '<p class="hero-status">Статус: ' + hero.status + '</p>' +
-        '</div>' +
-        '<button type="button" data-hero-select="true">Выбрать Героя</button>' +
-      '</div>' +
       '<div class="hero-compact-layout">' +
         '<div class="hero-info-column">' +
           renderHeroStats(hero.stats) +
@@ -1540,9 +1532,8 @@ function renderHeroSlots(title, slots, labels, className) {
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    const label = labels ? labels[key] : 'Слот ' + (i + 1);
     const value = Array.isArray(slots) ? slots[key] : slots[key];
-    html += '<div class="hero-slot"><span>' + label + '</span><strong>' + (value || 'пусто') + '</strong></div>';
+    html += '<div class="hero-slot"><strong>' + (value || 'пусто') + '</strong></div>';
   }
 
   return html + '</div></section>';
