@@ -5872,3 +5872,59 @@ button:focus-visible {
     box-shadow: none;
   }
 }
+
+/* Compact mobile action text: keep selected ship-system context visible above the action. */
+@media (max-width: 767px) {
+  .selected-object.system-selection h2,
+  .selected-object.system-selection .description {
+    display: block;
+  }
+
+  .selected-object.system-selection .description {
+    max-height: none;
+    margin-bottom: 6px;
+    overflow: visible;
+    font-size: 12px;
+    line-height: 1.28;
+    -webkit-line-clamp: unset;
+  }
+
+  .narrative-feed .panel-actions .action-cost {
+    max-width: 118px;
+    white-space: nowrap;
+  }
+
+  .game-shell {
+    padding-bottom: 54px;
+  }
+
+  .log-panel {
+    align-items: start;
+    min-height: 42px;
+  }
+
+  .log-panel ul {
+    max-height: 2.8em;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .log-panel li,
+  .log-panel li:first-child {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr);
+    gap: 4px;
+    align-items: center;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    font-size: 11px;
+    line-height: 1.28;
+  }
+
+  .log-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

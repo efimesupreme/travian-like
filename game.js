@@ -96,6 +96,7 @@ const resourceLabels = {
 };
 
 const compactResourceLabels = {
+  stamina: '🫁',
   energy: '⚡',
   water: '💧',
   components: '⚙',
@@ -706,7 +707,8 @@ const elements = {
   selectedName: document.getElementById('selectedName'),
   selectedDescription: document.getElementById('selectedDescription'),
   selectedActions: document.getElementById('selectedActions'),
-  toggleLog: document.getElementById('toggleLog')
+  toggleLog: document.getElementById('toggleLog'),
+  selectedObject: document.querySelector('.selected-object')
 };
 
 const reducedMotionQuery = window.matchMedia
@@ -1041,9 +1043,7 @@ function repairSystem(key) {
     setNarrativeMessage(currentSelection, buildShipRepairResultPanel(blueprint, system, stage, check, progressGain, advanced, previousStatus));
   }
 
-  addLog('Работа с системой «' + blueprint.name + '»: ' + stage.action + '. Использованная характеристика: ' + check.statLabel + ' ' + check.statValue + '. Потрачено: ' + formatActionCostText(stage.cost) + '.');
-  addLog('Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Итог с бонусом: ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + ' против сложности ' + check.difficulty + '.');
-  addLog('Результат ремонта: ' + check.resultLabel + '. Добавленный прогресс: +' + progressGain + '. Прогресс этапа: ' + system.progress + ' / ' + system.requiredProgress + '.');
+  addLog(formatCompactCheckResult(check, 'прогресс +' + progressGain));
 
   if (advanced) {
     addLog(stage.transitionLabel + ': ' + blueprint.name + '. Новый статус: ' + getShipStatusLabel(system.status) + '.');
@@ -1109,7 +1109,7 @@ function gatherTerritory(key) {
   if (selection) {
     setNarrativeMessage(selection, buildGatherResultPanel(check, actualGain, remaining, depletedNow));
   }
-  addLog('Действие «' + getGatherActionTitle(key) + '» на клетке ' + territory.name + ' выполнено. Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Результат: ' + check.resultLabel + '. Получено: ' + formatGain(gain) + '. Осталось в клетке: ' + remaining + '. Потрачено 1 🫁.');
+  addLog(formatCompactGatherResult(check, gain));
 
   if (depletedNow) {
     addLog('Запас клетки исчерпан. Зона стала истощённой: ' + territory.name + '.');
@@ -1153,7 +1153,7 @@ function exploreHiddenTerritory(key, approachKey) {
     setNarrativeMessage(currentSelection, buildDiscoverResultPanel(territory, check, progressGain, discovered, approach));
   }
 
-  addLog('Исследование неизвестной зоны выполнено. Подход: ' + approach.title + '. Характеристика: ' + check.statLabel + ' ' + check.statValue + '. Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Итог: ' + check.total + '. Сложность: ' + check.difficulty + '. Результат: ' + check.resultLabel + '. Исследование до обнаружения: ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired + '. Потрачено 1 🫁.');
+  addLog(formatCompactCheckResult(check, 'прогресс +' + progressGain));
 
   if (discovered) {
     addLog('Зона обнаружена: ' + territory.name + '.');
@@ -1197,10 +1197,7 @@ function researchTerritory(key, approachKey) {
     setNarrativeMessage(currentSelection, buildResearchResultPanel(territory, check, progressGain, opened, approach));
   }
 
-  addLog('Подход к исследованию зоны «' + territory.name + '»: ' + approach.title + '. Использованная характеристика: ' + check.statLabel + ' ' + check.statValue + '. Потрачено 1 🫁.');
-  addLog('Бросок 2d6: ' + check.roll.d6_1 + ' + ' + check.roll.d6_2 + ' = ' + check.roll.total + '. Итог с бонусом: ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + ' против сложности ' + check.difficulty + '.');
-  addLog('Результат исследования: ' + check.resultLabel + '.');
-  addLog('Добавленный прогресс исследования: +' + progressGain + '. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.');
+  addLog(formatCompactCheckResult(check, 'прогресс +' + progressGain));
 
   if (opened) {
     addLog('Зона открыта: ' + territory.name + '.');
@@ -1296,18 +1293,11 @@ function getShipRepairProgressGain(check) {
 }
 
 function buildShipRepairResultPanel(blueprint, system, stage, check, progressGain, advanced, previousStatus) {
-  const statusLine = advanced
-    ? stage.transitionLabel + ': ' + blueprint.name + '. Новый статус: ' + getShipStatusLabel(system.status) + '.'
-    : 'Статус: ' + getShipStatusLabel(previousStatus) + '.';
-  const progressLine = advanced
-    ? 'Прогресс этапа заполнен и сброшен для следующей работы.'
-    : 'Прогресс: ' + system.progress + ' / ' + system.requiredProgress + '.';
+  if (advanced) {
+    return stage.transitionLabel + '. Статус: ' + getShipStatusLabel(system.status) + '.';
+  }
 
-  return stage.action + ': ' + blueprint.name + '.\n\n' +
-    buildResearchRollLine(check) + '\n' +
-    'Результат проверки: ' + check.resultLabel + '. Добавленный прогресс: +' + progressGain + '.\n' +
-    progressLine + '\n' +
-    statusLine;
+  return stage.action + ': ' + formatCompactCheckResult(check, 'прогресс +' + progressGain) + '. Статус: ' + getShipStatusLabel(previousStatus) + '.';
 }
 
 function getShipProgressText(system) {
@@ -1320,15 +1310,7 @@ function getShipProgressText(system) {
 }
 
 function formatActionCostText(cost) {
-  const parts = ['-1 выносливость'];
-  const keys = Object.keys(cost || {});
-
-  for (let i = 0; i < keys.length; i++) {
-    const resource = keys[i];
-    parts.push('-' + cost[resource] + ' ' + (resourceLabels[resource] || resource));
-  }
-
-  return parts.join(', ');
+  return formatCompactCost(cost, { includeStamina: true });
 }
 
 function roll2d6() {
@@ -1443,38 +1425,34 @@ function getGatherCheckResult(total, territory) {
 
 function buildGatherResultPanel(check, actualGain, remaining, depletedNow) {
   const lines = [
-    'Бросок 2d6: ' + check.roll.total + '. ' + check.resultLabel + '. Получено: ' + formatGain({ [check.resource]: actualGain }) + '. Остаток запаса: ' + remaining + '.'
+    formatCompactGatherResult(check, { [check.resource]: actualGain }) + '. Остаток: ' + remaining + '.'
   ];
 
   if (depletedNow) {
-    lines.push('Запас клетки исчерпан. Зона стала истощённой.');
+    lines.push('Запас исчерпан. Зона истощена.');
   }
 
   return lines.join(' ');
 }
 
 function buildResearchResultPanel(territory, check, progressGain, opened, approach) {
-  const approachLine = 'Подход: ' + approach.title + '.';
-  const resultLine = buildResearchRollLine(check) + ' ' + check.resultLabel + '. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
-  const progressLine = 'Прогресс: +' + progressGain + '.';
+  const summary = formatCompactCheckResult(check, 'прогресс +' + progressGain) + '. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
 
   if (opened) {
-    return approach.resultText + '\n\n' + approachLine + '\n' + resultLine + '\n' + progressLine + '\n\nЗона открыта: ' + territory.name + '.';
+    return approach.resultText + '\n' + summary + ' Зона открыта: ' + territory.name + '.';
   }
 
-  return approach.resultText + '\n\n' + approachLine + '\n' + resultLine + ' ' + progressLine;
+  return approach.resultText + '\n' + summary;
 }
 
 function buildDiscoverResultPanel(territory, check, progressGain, discovered, approach) {
-  const approachLine = 'Подход: ' + approach.title + '.';
-  const resultLine = buildResearchRollLine(check) + ' ' + check.resultLabel + '. Исследование до обнаружения: ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired + '.';
-  const progressLine = 'Прогресс: +' + progressGain + '.';
+  const summary = formatCompactCheckResult(check, 'прогресс +' + progressGain) + '. Поиск: ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired + '.';
 
   if (discovered) {
-    return approach.resultText + '\n\n' + approachLine + '\n' + resultLine + '\n' + progressLine + '\n\nЗона обнаружена: ' + territory.name + '.';
+    return approach.resultText + '\n' + summary + ' Зона обнаружена: ' + territory.name + '.';
   }
 
-  return approach.resultText + '\n\n' + approachLine + '\n' + resultLine + ' ' + progressLine;
+  return approach.resultText + '\n' + summary;
 }
 
 function getResearchApproach(approachKey) {
@@ -1482,7 +1460,7 @@ function getResearchApproach(approachKey) {
 }
 
 function buildResearchRollLine(check) {
-  return 'Бросок 2d6: ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + ' против сложности ' + check.difficulty + '.';
+  return formatCompactCheckResult(check);
 }
 
 function formatSignedModifier(value) {
@@ -1882,6 +1860,7 @@ function renderSelectionPanel() {
   const panelKey = selection.id + ':' + panelText;
 
   elements.selectedName.textContent = selection.name;
+  updateSelectedObjectClass(selection);
 
   if (reducedMotionQuery.matches) {
     stopTypewriter(panelKey);
@@ -1912,11 +1891,24 @@ function renderSelectionPanel() {
   });
 }
 
+function updateSelectedObjectClass(selection) {
+  if (!elements.selectedObject) return;
+  elements.selectedObject.classList.toggle('system-selection', Boolean(selection && selection.kind === 'system'));
+}
+
 function getSelectionPanelText(selection) {
   if (state.narrativeObjectId === selection.id && state.narrativeMessage) {
+    if (selection.kind === 'system') {
+      return getSelectionBaseDescription(selection) + '\n' + state.narrativeMessage;
+    }
+
     return state.narrativeMessage;
   }
 
+  return getSelectionBaseDescription(selection);
+}
+
+function getSelectionBaseDescription(selection) {
   return selection.description;
 }
 
@@ -1966,6 +1958,7 @@ function stopTypewriter(nextKey) {
 function renderEmptyHeroActions() {
   elements.selectedName.textContent = 'Объект не выбран';
   elements.selectedDescription.textContent = 'Выберите объект в центральной сцене, чтобы увидеть описание и доступные действия.';
+  updateSelectedObjectClass(null);
   addActionLead('Твои действия:');
 }
 
@@ -2125,15 +2118,15 @@ function renderObjectActionOptions(selection) {
       return;
     }
 
-    addActionLead(getShipProgressText(system) + '. Проверка: 2d6 + ' + (heroStatLabels[stage.statKey] || 'характеристика') + ' против сложности ' + stage.difficulty + '.');
-    appendActionOption('🛠️', stage.action + ' (' + formatActionCostText(stage.cost) + ')', 'Результат: прогресс этапа ' + system.progress + ' / ' + system.requiredProgress, 'repairKey', selection.key, false);
+    addActionLead('Проверка: ' + (heroStatLabels[stage.statKey] || 'Характеристика') + ' · сложность ' + stage.difficulty);
+    appendActionOption('🛠️', formatActionTitle(stage.action, stage.cost), 'Прогресс: ' + system.progress + ' / ' + system.requiredProgress, 'repairKey', selection.key, false);
     return;
   }
 
   if (selection.kind === 'territory') {
     const territory = state.territories[selection.key];
     if (territory.status === 'open' || territory.status === 'depleted') {
-      appendActionOption('⛏️', formatActionTitle(getGatherActionTitle(selection.key), {}), 'Результат: ' + getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
+      appendActionOption('⛏️', formatActionTitle(getGatherActionTitle(selection.key), {}), getTerritoryOutputText(selection.key), 'gatherKey', selection.key, false);
     } else if (territory.status === 'discovered') {
       appendResearchApproachOptions(selection.key, territory);
     } else if (territory.status === 'hidden') {
@@ -2172,7 +2165,7 @@ function appendResearchApproachOptions(key, territory) {
   for (let i = 0; i < approachKeys.length; i++) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
-    appendActionOption('🔍', formatActionTitle(approach.title, {}), 'Бросок 2d6 · исследование: ' + territory.progress + ' / ' + territory.requiredProgress, 'researchApproachKey', key + ':' + approachKey, false);
+    appendActionOption('🔍', formatActionTitle(approach.title, {}), 'Проверка: ' + (heroStatLabels[approach.statKey] || 'Характеристика') + ' · сложность ' + territory.difficulty + ' · исследование ' + territory.progress + ' / ' + territory.requiredProgress, 'researchApproachKey', key + ':' + approachKey, false);
   }
 }
 
@@ -2183,7 +2176,7 @@ function appendDiscoverApproachOptions(key, territory) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
     const statLabel = heroStatLabels[approach.statKey] || 'Характеристика';
-    appendActionOption('🔍', formatActionTitle(approach.title, {}), 'Бросок 2d6 + ' + statLabel + ' · до обнаружения: ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired, 'discoverApproachKey', key + ':' + approachKey, false);
+    appendActionOption('🔍', formatActionTitle(approach.title, {}), 'Проверка: ' + statLabel + ' · сложность ' + territory.difficulty + ' · поиск ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired, 'discoverApproachKey', key + ':' + approachKey, false);
   }
 }
 
@@ -2246,27 +2239,48 @@ function getCompactResourceLabel(resource) {
   return compactResourceLabels[resource] || resourceLabels[resource] || resource;
 }
 
-function formatCompactCost(cost) {
+function formatCompactCost(cost, options) {
   const parts = [];
   const keys = Object.keys(cost || {});
 
-  for (let i = 0; i < keys.length; i++) {
-    const resource = keys[i];
-    parts.push('-' + cost[resource] + ' ' + getCompactResourceLabel(resource));
+  if (options && options.includeStamina) {
+    parts.push('-' + staminaActionCost + getCompactResourceLabel('stamina'));
   }
 
-  return parts.join(', ');
+  for (let i = 0; i < keys.length; i++) {
+    const resource = keys[i];
+    parts.push('-' + cost[resource] + getCompactResourceLabel(resource));
+  }
+
+  return parts.join(' ');
+}
+
+function formatCompactGain(gain) {
+  const parts = [];
+  const keys = Object.keys(gain || {});
+
+  for (let i = 0; i < keys.length; i++) {
+    const resource = keys[i];
+    const value = savedNumber(gain[resource], 0);
+    if (value > 0) {
+      parts.push('+' + value + getCompactResourceLabel(resource));
+    }
+  }
+
+  return parts.length ? parts.join(' ') : '+0';
+}
+
+function formatCompactCheckResult(check, suffix) {
+  const result = '🎲 ' + check.roll.total + ' + ' + check.statLabel + ' ' + check.statValue + ' = ' + check.total + ' · ' + String(check.resultLabel).toLowerCase();
+  return suffix ? result + ' · ' + suffix : result;
+}
+
+function formatCompactGatherResult(check, gain) {
+  return '🎲 ' + check.roll.total + ' · ' + String(check.resultLabel).toLowerCase() + ' · ' + formatCompactGain(gain);
 }
 
 function formatActionTitle(title, cost) {
-  const parts = ['-' + staminaActionCost + ' 🫁'];
-  const extraCost = formatCompactCost(cost);
-
-  if (extraCost) {
-    parts.push(extraCost);
-  }
-
-  return title + ' (' + parts.join(', ') + ')';
+  return title + ' · ' + formatCompactCost(cost, { includeStamina: true });
 }
 
 function formatCityResult(entry) {
@@ -2525,10 +2539,11 @@ function getLogIcon(message) {
   const text = String(message).toLowerCase();
 
   if (text.includes('недостаточно') || text.includes('повреждено')) return '⚠';
-  if (text.includes('вода')) return '💧';
-  if (text.includes('металл')) return '⛓';
-  if (text.includes('еда')) return '🍖';
-  if (text.includes('компонент')) return '🔩';
+  if (text.includes('🎲')) return '🎲';
+  if (text.includes('вода') || text.includes('💧')) return '💧';
+  if (text.includes('металл') || text.includes('⛓')) return '⛓';
+  if (text.includes('еда') || text.includes('🍖')) return '🍖';
+  if (text.includes('компонент') || text.includes('⚙')) return '⚙';
   if (text.includes('кораб') || text.includes('систем')) return '◆';
   return '▸';
 }
@@ -2597,7 +2612,7 @@ function formatGain(gain) {
 
   for (let i = 0; i < keys.length; i++) {
     const resource = keys[i];
-    parts.push(resourceLabels[resource] + ' +' + gain[resource]);
+    parts.push(formatCompactGain({ [resource]: gain[resource] }));
   }
 
   return parts.join(', ');
