@@ -66,45 +66,48 @@
                 <div>
                   <span class="card-kicker">карточка героя</span>
                   <h3>Герой</h3>
-                  <p class="hero-status">Статус: выживший после крушения</p>
                 </div>
                 <button type="button" data-hero-select="true">Выбрать Героя</button>
               </div>
-              <p class="hero-description">Герой пытается выжить на Аурелии-18, восстановить корабль и понять, что скрывает планета.</p>
-              <section class="hero-section hero-stats" aria-label="Характеристики героя">
-                <h4>Характеристики</h4>
-                <div class="hero-stat-grid">
-                  <div class="hero-stat"><span>Сила</span><strong>1</strong></div>
-                  <div class="hero-stat"><span>Мудрость</span><strong>1</strong></div>
-                  <div class="hero-stat"><span>Ловкость</span><strong>1</strong></div>
+              <div class="hero-compact-layout">
+                <div class="hero-info-column">
+                  <section class="hero-section hero-stats" aria-label="Характеристики героя">
+                    <h4>Характеристики</h4>
+                    <div class="hero-stat-list">
+                      <div class="hero-stat"><span>Сила:</span><strong>1</strong></div>
+                      <div class="hero-stat"><span>Мудрость:</span><strong>1</strong></div>
+                      <div class="hero-stat"><span>Ловкость:</span><strong>1</strong></div>
+                    </div>
+                  </section>
+                  <section class="hero-section hero-slots" aria-label="Предметы героя">
+                    <h4>Предметы</h4>
+                    <div class="hero-mini-slot-list">
+                      <div class="hero-slot"><span>Слот 1</span><strong>пусто</strong></div>
+                      <div class="hero-slot"><span>Слот 2</span><strong>пусто</strong></div>
+                      <div class="hero-slot"><span>Слот 3</span><strong>пусто</strong></div>
+                    </div>
+                  </section>
+                  <section class="hero-section hero-slots" aria-label="Мысли героя">
+                    <h4>Мысли</h4>
+                    <div class="hero-mini-slot-list">
+                      <div class="hero-slot"><span>Слот 1</span><strong>пусто</strong></div>
+                      <div class="hero-slot"><span>Слот 2</span><strong>пусто</strong></div>
+                      <div class="hero-slot"><span>Слот 3</span><strong>пусто</strong></div>
+                    </div>
+                  </section>
                 </div>
-              </section>
-              <section class="hero-section hero-slots" aria-label="Экипировка">
-                <h4>Экипировка</h4>
-                <div class="hero-slot-grid">
-                  <div class="hero-slot"><span>Голова</span><strong>пусто</strong></div>
-                  <div class="hero-slot"><span>Тело верх</span><strong>пусто</strong></div>
-                  <div class="hero-slot"><span>Тело низ</span><strong>пусто</strong></div>
-                  <div class="hero-slot"><span>Ноги</span><strong>пусто</strong></div>
-                  <div class="hero-slot"><span>Ботинки</span><strong>пусто</strong></div>
-                </div>
-              </section>
-              <section class="hero-section hero-slots" aria-label="Мысли">
-                <h4>Мысли</h4>
-                <div class="hero-slot-grid three-slots">
-                  <div class="hero-slot"><span>Слот 1</span><strong>пусто</strong></div>
-                  <div class="hero-slot"><span>Слот 2</span><strong>пусто</strong></div>
-                  <div class="hero-slot"><span>Слот 3</span><strong>пусто</strong></div>
-                </div>
-              </section>
-              <section class="hero-section hero-slots" aria-label="Предметы">
-                <h4>Предметы</h4>
-                <div class="hero-slot-grid three-slots">
-                  <div class="hero-slot"><span>Слот 1</span><strong>пусто</strong></div>
-                  <div class="hero-slot"><span>Слот 2</span><strong>пусто</strong></div>
-                  <div class="hero-slot"><span>Слот 3</span><strong>пусто</strong></div>
-                </div>
-              </section>
+                <section class="hero-section hero-equipment" aria-label="Экипировка героя">
+                  <h4>Экипировка</h4>
+                  <div class="hero-equipment-figure" aria-label="Слоты одежды по силуэту героя">
+                    <div class="hero-equipment-silhouette" aria-hidden="true"><span></span></div>
+                    <div class="hero-slot equipment-slot equipment-head"><span>Голова</span><strong>пусто</strong></div>
+                    <div class="hero-slot equipment-slot equipment-torso"><span>Верх</span><strong>пусто</strong></div>
+                    <div class="hero-slot equipment-slot equipment-waist"><span>Низ</span><strong>пусто</strong></div>
+                    <div class="hero-slot equipment-slot equipment-legs"><span>Ноги</span><strong>пусто</strong></div>
+                    <div class="hero-slot equipment-slot equipment-boots"><span>Ботинки</span><strong>пусто</strong></div>
+                  </div>
+                </section>
+              </div>
             </article>
           </section>
 
