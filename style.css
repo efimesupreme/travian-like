@@ -5928,3 +5928,111 @@ button:focus-visible {
     white-space: nowrap;
   }
 }
+
+/* Compact three-cell action rows for the right hero action panel. */
+.narrative-feed .panel-actions .action-choice,
+.narrative-feed .panel-actions button.action-choice {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) max-content;
+  gap: 8px;
+  align-items: center;
+  min-height: 50px;
+  padding: 8px 10px !important;
+  text-align: left;
+}
+
+.narrative-feed .panel-actions .action-choice::after,
+.narrative-feed .panel-actions button.action-choice::after {
+  display: none;
+  content: none;
+}
+
+.narrative-feed .panel-actions .action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  min-width: 42px;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.narrative-feed .panel-actions .action-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.narrative-feed .panel-actions .action-title,
+.narrative-feed .panel-actions .action-note,
+.narrative-feed .panel-actions .action-check {
+  grid-column: auto;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow-wrap: normal;
+}
+
+.narrative-feed .panel-actions .action-title {
+  overflow: hidden;
+  color: #ead9bd;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.22;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.narrative-feed .panel-actions .action-note,
+.narrative-feed .panel-actions .action-check {
+  margin-top: 0;
+  color: #9da7a5;
+  font-size: 0.74rem;
+  line-height: 1.22;
+}
+
+.narrative-feed .panel-actions .action-cost {
+  display: block;
+  grid-column: auto;
+  grid-row: auto;
+  align-self: center;
+  justify-self: end;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  color: var(--hud-blue, var(--tech-blue));
+  font-size: 0.76rem;
+  line-height: 1.2;
+  text-align: right;
+  white-space: nowrap;
+  background: transparent;
+}
+
+@media (max-width: 380px) {
+  .narrative-feed .panel-actions .action-choice,
+  .narrative-feed .panel-actions button.action-choice {
+    grid-template-columns: 34px minmax(0, 1fr) max-content;
+    gap: 6px;
+    padding-right: 4px !important;
+    padding-left: 0 !important;
+  }
+
+  .narrative-feed .panel-actions .action-icon {
+    width: 34px;
+    min-width: 34px;
+    font-size: 1.55rem;
+  }
+
+  .narrative-feed .panel-actions .action-title {
+    font-size: 0.78rem;
+  }
+
+  .narrative-feed .panel-actions .action-note,
+  .narrative-feed .panel-actions .action-check,
+  .narrative-feed .panel-actions .action-cost {
+    font-size: 0.68rem;
+  }
+}

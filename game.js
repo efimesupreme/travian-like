@@ -955,10 +955,8 @@ function performCityAction(entry) {
 
   const missing = getMissingResources(cost);
   if (missing.length > 0) {
-    if (selection) {
-      setNarrativeMessage(selection, 'Герой останавливается на пороге действия: ресурсов не хватает, и интерфейс не даёт подтвердить расход.');
-    }
-    addLog(entry.failureLog || 'Недостаточно ресурсов для действия. Нужно: ' + formatCost(cost) + '.');
+    clearNarrativeMessage();
+    addLog(formatMissingResourcesMessage(cost));
     return;
   }
 
@@ -1012,11 +1010,8 @@ function repairSystem(key) {
 
   const missing = getMissingResources(stage.cost);
   if (missing.length > 0) {
-    const message = 'Недостаточно ресурсов для действия «' + stage.action + '». Не хватает: ' + missing.join(', ') + '. Нужно: ' + formatActionCostText(stage.cost) + '.';
-    if (selection) {
-      setNarrativeMessage(selection, message);
-    }
-    addLog(message);
+    clearNarrativeMessage();
+    addLog(formatMissingResourcesMessage(stage.cost));
     return;
   }
 
@@ -1546,17 +1541,28 @@ function canGatherTerritory(territory) {
 }
 
 function getMissingResources(cost) {
-  const missing = [];
-  const keys = Object.keys(cost);
+  return Object.keys(getMissingResourceCosts(cost));
+}
+
+function getMissingResourceCosts(cost) {
+  const missing = {};
+  const keys = Object.keys(cost || {});
 
   for (let i = 0; i < keys.length; i++) {
     const resource = keys[i];
-    if (state.resources[resource] < cost[resource]) {
-      missing.push(resourceGenitiveLabels[resource]);
+    const required = savedNumber(cost[resource], 0);
+    const available = savedNumber(state.resources[resource], 0);
+    const shortage = required - available;
+    if (shortage > 0) {
+      missing[resource] = shortage;
     }
   }
 
   return missing;
+}
+
+function formatMissingResourcesMessage(cost) {
+  return 'Не хватает: ' + formatCompactResourceList(getMissingResourceCosts(cost));
 }
 
 function canPay(cost) {
@@ -1959,7 +1965,6 @@ function renderEmptyHeroActions() {
   elements.selectedName.textContent = 'Объект не выбран';
   elements.selectedDescription.textContent = 'Выберите объект в центральной сцене, чтобы увидеть описание и доступные действия.';
   updateSelectedObjectClass(null);
-  addActionLead('Твои действия:');
 }
 
 function getCurrentSelection() {
@@ -2092,8 +2097,6 @@ function getTerritoryInspectDescription(territory) {
 }
 
 function renderObjectActionOptions(selection) {
-  addActionLead('Твои действия:');
-
   if (state.actionPanelMode === 'exhausted' && state.narrativeObjectId === selection.id) {
     appendBackOption();
     return;
@@ -2118,8 +2121,7 @@ function renderObjectActionOptions(selection) {
       return;
     }
 
-    addActionLead('Проверка: ' + (heroStatLabels[stage.statKey] || 'Характеристика') + ' · сложность ' + stage.difficulty);
-    appendActionOption('🛠️', formatActionTitle(stage.action, stage.cost), 'Прогресс: ' + system.progress + ' / ' + system.requiredProgress, 'repairKey', selection.key, false);
+    appendActionOption('🛠️', formatActionTitle(stage.action + ' ' + selection.name, stage.cost), (heroStatLabels[stage.statKey] || 'Характеристика') + ' ' + stage.difficulty, 'repairKey', selection.key, false);
     return;
   }
 
@@ -2165,7 +2167,7 @@ function appendResearchApproachOptions(key, territory) {
   for (let i = 0; i < approachKeys.length; i++) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
-    appendActionOption('🔍', formatActionTitle(approach.title, {}), 'Проверка: ' + (heroStatLabels[approach.statKey] || 'Характеристика') + ' · сложность ' + territory.difficulty + ' · исследование ' + territory.progress + ' / ' + territory.requiredProgress, 'researchApproachKey', key + ':' + approachKey, false);
+    appendActionOption('🔍', formatActionTitle(approach.title, {}), (heroStatLabels[approach.statKey] || 'Характеристика') + ' ' + territory.difficulty + ' · исследование ' + territory.progress + ' / ' + territory.requiredProgress, 'researchApproachKey', key + ':' + approachKey, false);
   }
 }
 
@@ -2176,7 +2178,7 @@ function appendDiscoverApproachOptions(key, territory) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
     const statLabel = heroStatLabels[approach.statKey] || 'Характеристика';
-    appendActionOption('🔍', formatActionTitle(approach.title, {}), 'Проверка: ' + statLabel + ' · сложность ' + territory.difficulty + ' · поиск ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired, 'discoverApproachKey', key + ':' + approachKey, false);
+    appendActionOption('🔍', formatActionTitle(approach.title, {}), statLabel + ' ' + territory.difficulty + ' · поиск ' + territory.discoverProgress + ' / ' + territory.discoverProgressRequired, 'discoverApproachKey', key + ':' + approachKey, false);
   }
 }
 
@@ -2241,18 +2243,31 @@ function getCompactResourceLabel(resource) {
 
 function formatCompactCost(cost, options) {
   const parts = [];
-  const keys = Object.keys(cost || {});
 
   if (options && options.includeStamina) {
     parts.push('-' + staminaActionCost + getCompactResourceLabel('stamina'));
   }
 
+  return parts.concat(formatCompactResourceParts(cost, '-')).join(' ');
+}
+
+function formatCompactResourceList(resources) {
+  return formatCompactResourceParts(resources, '').join(' ');
+}
+
+function formatCompactResourceParts(resources, prefix) {
+  const parts = [];
+  const keys = Object.keys(resources || {});
+
   for (let i = 0; i < keys.length; i++) {
     const resource = keys[i];
-    parts.push('-' + cost[resource] + getCompactResourceLabel(resource));
+    const value = savedNumber(resources[resource], 0);
+    if (value > 0) {
+      parts.push(prefix + value + getCompactResourceLabel(resource));
+    }
   }
 
-  return parts.join(' ');
+  return parts;
 }
 
 function formatCompactGain(gain) {
@@ -2353,24 +2368,36 @@ function createActionButton(entry, titleText, noteText, disabled) {
   button.disabled = disabled;
 
   const titleParts = splitActionTitle(titleText);
+  const fullTitleParts = splitActionTitle(entry.title || titleText);
+
+  const icon = document.createElement('span');
+  icon.className = 'action-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = entry.icon;
+  button.appendChild(icon);
+
+  const main = document.createElement('span');
+  main.className = 'action-main';
 
   const title = document.createElement('span');
   title.className = 'action-title';
-  title.textContent = entry.icon + ' ' + titleParts.label;
-  button.appendChild(title);
+  title.textContent = titleParts.label;
+  main.appendChild(title);
 
-  if (titleParts.cost) {
+  if (entry.note) {
+    const note = document.createElement('span');
+    note.className = 'action-note action-check';
+    note.textContent = noteText;
+    main.appendChild(note);
+  }
+
+  button.appendChild(main);
+
+  if (fullTitleParts.cost) {
     const cost = document.createElement('span');
     cost.className = 'action-cost';
     cost.textContent = titleParts.cost;
     button.appendChild(cost);
-  }
-
-  if (entry.note) {
-    const note = document.createElement('span');
-    note.className = 'action-note';
-    note.textContent = noteText;
-    button.appendChild(note);
   }
 
   return button;
@@ -2378,13 +2405,20 @@ function createActionButton(entry, titleText, noteText, disabled) {
 
 function splitActionTitle(text) {
   const source = String(text || '');
-  const match = source.match(/^(.*?)\s*\(([^()]*)\)\s*$/);
+  const separator = ' · ';
+  const separatorIndex = source.lastIndexOf(separator);
 
-  if (!match) {
+  if (separatorIndex === -1) {
     return { label: source, cost: '' };
   }
 
-  return { label: match[1], cost: match[2] };
+  const label = source.slice(0, separatorIndex);
+  const cost = source.slice(separatorIndex + separator.length);
+  if (!cost || cost.charAt(0) !== '-') {
+    return { label: source, cost: '' };
+  }
+
+  return { label, cost };
 }
 
 function collectObjectActionEntries(selection) {
@@ -2459,7 +2493,7 @@ function typeActionButton(entry, token, panelKey, onComplete) {
   const noteNode = button.querySelector('.action-note');
   const costNode = button.querySelector('.action-cost');
   const fullTitleParts = splitActionTitle(entry.title);
-  const fullTitle = entry.icon + ' ' + fullTitleParts.label;
+  const fullTitle = fullTitleParts.label;
   const fullNote = entry.note || '';
   const fullText = fullNote ? fullTitle + '\n' + fullNote : fullTitle;
 
