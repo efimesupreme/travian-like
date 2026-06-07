@@ -5854,3 +5854,21 @@ button:focus-visible {
     height: 48px;
   }
 }
+
+@media (max-width: 767px) {
+  .nav-button.mobile-locked,
+  .nav-button:disabled {
+    color: rgba(174, 178, 173, 0.48);
+    cursor: not-allowed;
+    opacity: 0.48;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .nav-button.mobile-locked:hover,
+  .nav-button:disabled:hover {
+    color: rgba(174, 178, 173, 0.48);
+    background: transparent;
+    box-shadow: none;
+  }
+}

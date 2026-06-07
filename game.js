@@ -682,6 +682,10 @@ const elements = {
 const reducedMotionQuery = window.matchMedia
   ? window.matchMedia('(prefers-reduced-motion: reduce)')
   : { matches: false };
+const mobileCityQuery = window.matchMedia
+  ? window.matchMedia('(max-width: 767px)')
+  : { matches: false };
+const mobileLockedModeFallback = 'territories';
 const typewriterState = {
   timerId: 0,
   token: 0,
@@ -765,11 +769,35 @@ function normalizeTerritoryProgress(territory) {
   territory.progress = clampSavedNumber(territory.progress, 0, 0, territory.requiredProgress);
 }
 
+function isCityLockedOnMobile() {
+  return Boolean(mobileCityQuery.matches);
+}
+
+function getAllowedMode(mode) {
+  return mode === 'city' && isCityLockedOnMobile() ? mobileLockedModeFallback : mode;
+}
+
+function protectMobileMode() {
+  const allowedMode = getAllowedMode(state.mode);
+
+  if (allowedMode === state.mode) {
+    return false;
+  }
+
+  state.mode = allowedMode;
+  state.actionPanelMode = 'actions';
+  state.inspectedObjectId = '';
+  clearNarrativeMessage();
+  state.activeResearchEvent = null;
+  return true;
+}
+
 function switchMode(mode) {
   if (!['hero', 'territories', 'ship', 'city'].includes(mode)) {
     return;
   }
 
+  mode = getAllowedMode(mode);
   state.mode = mode;
   state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
@@ -1455,9 +1483,24 @@ function renderResources() {
 
 function renderNavigation() {
   const buttons = document.querySelectorAll('[data-mode]');
+  const isMobileCityLocked = isCityLockedOnMobile();
 
   for (let i = 0; i < buttons.length; i++) {
+    const isCityButton = buttons[i].dataset.mode === 'city';
     buttons[i].classList.toggle('active', buttons[i].dataset.mode === state.mode);
+
+    if (isCityButton) {
+      buttons[i].disabled = isMobileCityLocked;
+      buttons[i].classList.toggle('mobile-locked', isMobileCityLocked);
+
+      if (isMobileCityLocked) {
+        buttons[i].title = 'Будет открыто позже';
+        buttons[i].setAttribute('aria-label', 'Город. Будет открыто позже');
+      } else {
+        buttons[i].removeAttribute('title');
+        buttons[i].removeAttribute('aria-label');
+      }
+    }
   }
 }
 
@@ -2390,6 +2433,7 @@ function loadGame() {
   const savedText = localStorage.getItem(saveKey) || getLegacySave();
 
   if (!savedText) {
+    protectMobileMode();
     render();
     saveGame();
     return;
@@ -2403,6 +2447,7 @@ function loadGame() {
     state.logMessages.unshift('Сохранение повреждено. Начата новая игра.');
   }
 
+  protectMobileMode();
   render();
   saveGame();
 }
@@ -2649,6 +2694,20 @@ if (elements.toggleLog) {
     elements.toggleLog.textContent = isCollapsed ? 'Развернуть' : 'Свернуть';
     elements.toggleLog.setAttribute('aria-expanded', String(!isCollapsed));
   });
+}
+
+function handleMobileCityLockChange() {
+  if (protectMobileMode()) {
+    saveGame();
+  }
+
+  render();
+}
+
+if (mobileCityQuery.addEventListener) {
+  mobileCityQuery.addEventListener('change', handleMobileCityLockChange);
+} else if (mobileCityQuery.addListener) {
+  mobileCityQuery.addListener(handleMobileCityLockChange);
 }
 
 loadGame();
