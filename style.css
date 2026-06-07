@@ -5616,3 +5616,130 @@ button:focus-visible {
     line-height: 1.08;
   }
 }
+
+/* Final targeted mobile hero/HUD tightening: keep the Hero scene two-column,
+   compact stats/thoughts/items on the left, all equipment slots on the right. */
+.hero-stat-list .hero-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hero-stat-list .hero-stat span,
+.hero-stat-list .hero-stat strong {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 767px) {
+  .mobile-status-grid.mobile-hero-hud,
+  .mobile-status-grid.mobile-hero-hud span,
+  .mobile-status-grid.mobile-hero-hud strong,
+  .mobile-status-grid.mobile-hero-hud p,
+  .mobile-status-grid.mobile-hero-hud .mobile-resource-icon,
+  .mobile-status-grid.mobile-hero-hud .mobile-resource-name {
+    font-size: clamp(10px, 2.65vw, 11.5px);
+    line-height: 1.08;
+  }
+
+  .mobile-status-grid.mobile-hero-hud {
+    align-items: stretch;
+  }
+
+  .hero-compact-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.52fr) minmax(0, 0.48fr);
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .hero-info-column {
+    display: grid;
+    grid-template-rows: auto auto auto;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .hero-section {
+    min-width: 0;
+  }
+
+  .hero-stat-list,
+  .hero-mini-slot-list {
+    gap: 3px;
+  }
+
+  .hero-stat-list .hero-stat,
+  .hero-mini-slot-list .hero-slot,
+  .equipment-slot {
+    min-height: 22px;
+    padding: 3px 5px;
+    line-height: 1.05;
+  }
+
+  .hero-stat-list .hero-stat {
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .hero-stat-list .hero-stat span,
+  .hero-stat-list .hero-stat strong,
+  .hero-mini-slot-list .hero-slot span,
+  .hero-mini-slot-list .hero-slot strong,
+  .equipment-slot span,
+  .equipment-slot strong {
+    font-size: 10px;
+    line-height: 1.05;
+  }
+
+  .hero-equipment-figure {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+    min-height: 0;
+    padding: 4px;
+  }
+
+  .hero-equipment-silhouette {
+    display: none;
+  }
+
+  .equipment-slot,
+  .equipment-head,
+  .equipment-torso,
+  .equipment-waist,
+  .equipment-legs,
+  .equipment-boots {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+    transform: none;
+    text-align: left;
+  }
+
+  .equipment-slot strong {
+    justify-self: end;
+  }
+}
+
+@media (max-width: 380px) {
+  .hero-compact-layout {
+    grid-template-columns: minmax(0, 0.5fr) minmax(0, 0.5fr);
+    gap: 5px;
+  }
+
+  .hero-stat-list .hero-stat,
+  .hero-mini-slot-list .hero-slot,
+  .equipment-slot {
+    padding: 3px 4px;
+  }
+
+  .hero-stat-list .hero-stat span,
+  .hero-stat-list .hero-stat strong,
+  .hero-mini-slot-list .hero-slot span,
+  .hero-mini-slot-list .hero-slot strong,
+  .equipment-slot span,
+  .equipment-slot strong {
+    font-size: 9.5px;
+  }
+}
