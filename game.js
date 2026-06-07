@@ -1140,9 +1140,7 @@ function repairSystem(key) {
 
   if (!stage) {
     const message = 'Система улучшена и работает в усиленном режиме.';
-    if (selection) {
-      setNarrativeMessage(selection, message);
-    }
+    clearNarrativeMessage();
     addLog(message + ' ' + blueprint.name + '.');
     return;
   }
@@ -1176,11 +1174,8 @@ function repairSystem(key) {
     state.resources = normalizeResources(state.resources, state.shipSystems);
   }
 
-  const currentSelection = getCurrentSelection();
   state.actionPanelMode = 'actions';
-  if (currentSelection) {
-    setNarrativeMessage(currentSelection, buildShipRepairResultPanel(blueprint, system, stage, check, progressGain, advanced, previousStatus));
-  }
+  clearNarrativeMessage();
 
   addLog(formatCompactCheckResult(check, 'прогресс +' + progressGain));
 
@@ -1434,14 +1429,6 @@ function getShipRepairCheckResult(naturalTotal, total, difficulty) {
 
 function getShipRepairProgressGain(check) {
   return Math.max(0, savedNumber(check.progressGain, 0));
-}
-
-function buildShipRepairResultPanel(blueprint, system, stage, check, progressGain, advanced, previousStatus) {
-  if (advanced) {
-    return stage.transitionLabel + '. Статус: ' + getShipStatusLabel(system.status) + '.';
-  }
-
-  return stage.action + ': ' + formatCompactCheckResult(check, 'прогресс +' + progressGain) + '. Статус: ' + getShipStatusLabel(previousStatus) + '.';
 }
 
 function getShipProgressText(system) {
@@ -2107,11 +2094,11 @@ function updateSelectedObjectClass(selection) {
 }
 
 function getSelectionPanelText(selection) {
-  if (state.narrativeObjectId === selection.id && state.narrativeMessage) {
-    if (selection.kind === 'system') {
-      return getSelectionBaseDescription(selection) + '\n' + state.narrativeMessage;
-    }
+  if (selection.kind === 'system') {
+    return getSelectionBaseDescription(selection);
+  }
 
+  if (state.narrativeObjectId === selection.id && state.narrativeMessage) {
     return state.narrativeMessage;
   }
 
