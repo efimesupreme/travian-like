@@ -2177,7 +2177,20 @@ function renderSelectionPanel() {
 
 function updateSelectedObjectClass(selection) {
   if (!elements.selectedObject) return;
-  elements.selectedObject.classList.toggle('system-selection', Boolean(selection && selection.kind === 'system'));
+
+  elements.selectedObject.classList.remove('system-selection', 'territory-selection', 'hero-selection');
+
+  if (!selection) {
+    return;
+  }
+
+  if (selection.kind === 'system') {
+    elements.selectedObject.classList.add('system-selection');
+  } else if (selection.kind === 'territory') {
+    elements.selectedObject.classList.add('territory-selection');
+  } else if (selection.kind === 'hero') {
+    elements.selectedObject.classList.add('hero-selection');
+  }
 }
 
 function getSelectionPanelText(selection) {
