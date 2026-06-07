@@ -1498,21 +1498,37 @@ function renderHeroScreen() {
         '</div>' +
         '<button type="button" data-hero-select="true">Выбрать Героя</button>' +
       '</div>' +
-      '<p class="hero-description">' + hero.description + '</p>' +
-      renderHeroStats(hero.stats) +
-      renderHeroSlots('Экипировка', hero.equipment, heroEquipmentLabels, 'equipment') +
-      renderHeroSlots('Мысли', hero.thoughts, null, 'thoughts') +
-      renderHeroSlots('Предметы', hero.items, null, 'items') +
+      '<div class="hero-compact-layout">' +
+        '<div class="hero-info-column">' +
+          renderHeroStats(hero.stats) +
+          renderHeroSlots('Мысли', hero.thoughts, null, 'thoughts') +
+          renderHeroSlots('Предметы', hero.items, null, 'items') +
+        '</div>' +
+        renderHeroEquipment(hero.equipment) +
+      '</div>' +
     '</article>';
 }
 
 function renderHeroStats(stats) {
   const keys = Object.keys(heroStatLabels);
-  let html = '<section class="hero-section hero-stats" aria-label="Характеристики героя"><h4>Характеристики</h4><div class="hero-stat-grid">';
+  let html = '<section class="hero-section hero-stats" aria-label="Характеристики героя"><h4>Характеристики</h4><div class="hero-stat-list">';
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    html += '<div class="hero-stat"><span>' + heroStatLabels[key] + '</span><strong>' + stats[key] + '</strong></div>';
+    html += '<div class="hero-stat"><span>' + heroStatLabels[key] + ':</span><strong>' + stats[key] + '</strong></div>';
+  }
+
+  return html + '</div></section>';
+}
+
+function renderHeroEquipment(equipment) {
+  const keys = Object.keys(heroEquipmentLabels);
+  const slotClasses = ['equipment-head', 'equipment-torso', 'equipment-waist', 'equipment-legs', 'equipment-boots'];
+  let html = '<section class="hero-section hero-equipment" aria-label="Экипировка героя"><h4>Экипировка</h4><div class="hero-equipment-figure" aria-label="Слоты одежды по силуэту героя"><div class="hero-equipment-silhouette" aria-hidden="true"><span></span></div>';
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    html += '<div class="hero-slot equipment-slot ' + slotClasses[i] + '"><span>' + heroEquipmentLabels[key] + '</span><strong>' + (equipment[key] || 'пусто') + '</strong></div>';
   }
 
   return html + '</div></section>';
@@ -1520,7 +1536,7 @@ function renderHeroStats(stats) {
 
 function renderHeroSlots(title, slots, labels, className) {
   const keys = Array.isArray(slots) ? slots.map(function (_, index) { return index; }) : Object.keys(slots);
-  let html = '<section class="hero-section hero-slots hero-' + className + '" aria-label="' + title + '"><h4>' + title + '</h4><div class="hero-slot-grid">';
+  let html = '<section class="hero-section hero-slots hero-' + className + '" aria-label="' + title + '"><h4>' + title + '</h4><div class="hero-mini-slot-list">';
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];

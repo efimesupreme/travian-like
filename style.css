@@ -5558,3 +5558,61 @@ button:focus-visible {
     padding: 3px 4px;
   }
 }
+
+/* Targeted hero scene and mobile HUD refinements. */
+.hero-stat-list .hero-stat,
+.hero-mini-slot-list .hero-slot {
+  overflow: hidden;
+}
+
+.hero-stat-list .hero-stat span,
+.hero-stat-list .hero-stat strong,
+.hero-mini-slot-list .hero-slot span,
+.hero-mini-slot-list .hero-slot strong,
+.equipment-slot span,
+.equipment-slot strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-stat-list .hero-stat {
+  gap: 8px;
+  line-height: 1.1;
+}
+
+@media (max-width: 767px) {
+  .mobile-hero-stats p,
+  .mobile-hero-stats strong,
+  .mobile-hero-resources p,
+  .mobile-resource-name,
+  .mobile-hero-resources strong {
+    font-size: clamp(10px, 2.65vw, 11.5px);
+  }
+
+  .hero-card-header {
+    margin-bottom: 0;
+  }
+
+  .hero-status {
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .hero-compact-layout {
+    align-items: start;
+  }
+
+  .hero-info-column {
+    align-content: start;
+  }
+
+  .hero-stat-list .hero-stat,
+  .hero-mini-slot-list .hero-slot {
+    gap: 4px;
+    line-height: 1.08;
+  }
+}
