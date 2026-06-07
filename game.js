@@ -7,6 +7,19 @@ const typewriterDelay = 8;
 const typewriterCursor = '|';
 const staminaActionCost = 1;
 const restStaminaRecovery = 20;
+const livingBlockSystemKey = 'habitation';
+const livingBlockRestRecovery = {
+  disabled: 10,
+  damaged: restStaminaRecovery,
+  stabilized: 35,
+  improved: 50
+};
+const livingBlockRestNarratives = {
+  disabled: 'Герой устраивается у холодной переборки. Отдых выходит коротким и тревожным.',
+  damaged: 'Герой садится у переборки и выравнивает дыхание. Силы понемногу возвращаются.',
+  stabilized: 'Жилая зона держит тепло и тишину. Отдых становится заметно глубже.',
+  improved: 'Жилой блок работает почти как настоящий отсек восстановления. Тело быстро возвращает силы.'
+};
 
 const researchApproaches = {
   direct: {
@@ -819,6 +832,34 @@ function getShipStorageLimitEffectLine(systemKey, status) {
   }
 
   return 'Эффект: лимит ' + effect.label + ' +' + bonus;
+}
+
+function getLivingBlockStatus(shipSystems) {
+  const systems = shipSystems || (state ? state.shipSystems : null);
+  const system = systems ? systems[livingBlockSystemKey] : null;
+
+  return system ? system.status : '';
+}
+
+function getRestStaminaRecovery(shipSystems) {
+  const status = getLivingBlockStatus(shipSystems);
+
+  return savedNumber(livingBlockRestRecovery[status], restStaminaRecovery);
+}
+
+function getRestNarrative() {
+  const status = getLivingBlockStatus();
+
+  return livingBlockRestNarratives[status] || livingBlockRestNarratives.damaged;
+}
+
+function getLivingBlockRestEffectLine(systemKey, status) {
+  if (systemKey !== livingBlockSystemKey) {
+    return '';
+  }
+
+  const recovery = savedNumber(livingBlockRestRecovery[status], restStaminaRecovery);
+  return 'Эффект: отдых ' + formatStaminaGain(recovery);
 }
 
 function getShipStorageLimitLog(systemKey) {
@@ -1955,9 +1996,14 @@ function getShipSelectionDescription(key, blueprint, system) {
     getShipProgressText(system) + '.'
   ];
   const effectLine = getShipStorageLimitEffectLine(key, system.status);
+  const restEffectLine = getLivingBlockRestEffectLine(key, system.status);
 
   if (effectLine) {
     lines.push(effectLine);
+  }
+
+  if (restEffectLine) {
+    lines.push(restEffectLine);
   }
 
   return lines.join('\n');
@@ -2290,7 +2336,7 @@ function renderObjectActionOptions(selection) {
   }
 
   if (selection.kind === 'hero') {
-    appendActionOption('🛌', 'Отдохнуть', formatStaminaGain(restStaminaRecovery), 'heroAction', 'rest', false);
+    appendActionOption('🛌', 'Отдохнуть', formatStaminaGain(getRestStaminaRecovery()), 'heroAction', 'rest', false);
     appendActionOption('🎒', formatActionTitle('Проверить экипировку', {}), 'Осмотреть личные слоты', 'heroAction', 'equipment', false);
     appendActionOption('💭', formatActionTitle('Проверить мысли', {}), 'Заглянуть во внутренний список', 'heroAction', 'thoughts', false);
     appendActionOption('📦', formatActionTitle('Проверить предметы', {}), 'Сверить пустые ячейки', 'heroAction', 'items', false);
@@ -2403,10 +2449,11 @@ function performHeroAction(action) {
 }
 
 function performRestAction(selection) {
-  const recovered = recoverStamina(restStaminaRecovery);
+  const recovery = getRestStaminaRecovery();
+  const recovered = recoverStamina(recovery);
 
   if (selection) {
-    setNarrativeMessage(selection, 'Герой садится у переборки и выравнивает дыхание. Корабль скрипит под песком, но тело понемногу возвращает силы.');
+    setNarrativeMessage(selection, getRestNarrative());
   }
 
   if (recovered <= 0) {
@@ -2414,7 +2461,7 @@ function performRestAction(selection) {
     return;
   }
 
-  const limitLabel = recovered < restStaminaRecovery ? ' · максимум' : '';
+  const limitLabel = recovered < recovery ? ' · максимум' : '';
   addLog('Отдых: ' + formatStaminaGain(recovered) + limitLabel);
 }
 
