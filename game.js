@@ -6,6 +6,7 @@ const maxTurns = 20;
 const typewriterDelay = 8;
 const typewriterCursor = '|';
 const staminaActionCost = 1;
+const restStaminaRecovery = 20;
 
 const researchApproaches = {
   direct: {
@@ -1648,7 +1649,25 @@ function payCost(cost) {
   state.resources = normalizeResources(state.resources);
 }
 
+function normalizeHeroCondition(condition) {
+  const normalized = { ...initialHeroCondition, ...(condition || {}) };
+  const savedMaxStamina = savedNumber(normalized.maxStamina, initialHeroCondition.maxStamina);
+  const maxStamina = savedMaxStamina > 0 ? savedMaxStamina : initialHeroCondition.maxStamina;
+  const savedMaxHealth = savedNumber(normalized.maxHealth, initialHeroCondition.maxHealth);
+  const maxHealth = savedMaxHealth > 0 ? savedMaxHealth : initialHeroCondition.maxHealth;
+
+  normalized.maxStamina = maxStamina;
+  normalized.stamina = clampSavedNumber(normalized.stamina, initialHeroCondition.stamina, 0, maxStamina);
+  normalized.maxHealth = maxHealth;
+  normalized.health = clampSavedNumber(normalized.health, initialHeroCondition.health, 0, maxHealth);
+  normalized.credits = Math.max(0, savedNumber(normalized.credits, initialHeroCondition.credits));
+
+  return normalized;
+}
+
 function hasEnoughStamina(selection) {
+  state.heroCondition = normalizeHeroCondition(state.heroCondition);
+
   if (state.heroCondition.stamina >= staminaActionCost) {
     return true;
   }
@@ -1662,7 +1681,23 @@ function hasEnoughStamina(selection) {
 }
 
 function spendStamina() {
+  state.heroCondition = normalizeHeroCondition(state.heroCondition);
   state.heroCondition.stamina = Math.max(0, state.heroCondition.stamina - staminaActionCost);
+}
+
+function recoverStamina(amount) {
+  state.heroCondition = normalizeHeroCondition(state.heroCondition);
+
+  const before = state.heroCondition.stamina;
+  const maxStamina = state.heroCondition.maxStamina;
+  const requested = Math.max(0, savedNumber(amount, 0));
+  state.heroCondition.stamina = Math.min(maxStamina, before + requested);
+
+  return state.heroCondition.stamina - before;
+}
+
+function formatStaminaGain(amount) {
+  return '+' + amount + getCompactResourceLabel('stamina');
 }
 
 function addLog(message) {
@@ -2170,7 +2205,7 @@ function renderObjectActionOptions(selection) {
   }
 
   if (selection.kind === 'hero') {
-    appendActionOption('🛌', formatActionTitle('Отдохнуть', {}), 'Короткая передышка', 'heroAction', 'rest', false);
+    appendActionOption('🛌', 'Отдохнуть', formatStaminaGain(restStaminaRecovery), 'heroAction', 'rest', false);
     appendActionOption('🎒', formatActionTitle('Проверить экипировку', {}), 'Осмотреть личные слоты', 'heroAction', 'equipment', false);
     appendActionOption('💭', formatActionTitle('Проверить мысли', {}), 'Заглянуть во внутренний список', 'heroAction', 'thoughts', false);
     appendActionOption('📦', formatActionTitle('Проверить предметы', {}), 'Сверить пустые ячейки', 'heroAction', 'items', false);
@@ -2255,19 +2290,22 @@ function performHeroAction(action) {
 
   const selection = getCurrentSelection();
 
+  if (action === 'rest') {
+    performRestAction(selection);
+    return;
+  }
+
   if (!hasEnoughStamina(selection)) {
     return;
   }
 
   spendStamina();
   const narratives = {
-    rest: 'Герой садится у холодной переборки и несколько минут слушает, как корабль скрипит под песком. Отдых пока остаётся короткой паузой без отдельной механики.',
     equipment: 'Пальцы проходят по креплениям и пустым слотам. Снаряжение держится, но список экипировки всё ещё почти пуст.',
     thoughts: 'Герой пытается разложить мысли по ячейкам. Внутри только шум аварии, молчание планеты и необходимость двигаться дальше.',
     items: 'Личные карманы проверены один за другим. Предметные слоты ждут будущих находок.'
   };
   const messages = {
-    rest: 'Герой отдохнул несколько минут. Система состояния будет добавлена позже.',
     equipment: 'Слоты экипировки осмотрены.',
     thoughts: 'Слоты мыслей пусты.',
     items: 'Слоты предметов пусты.'
@@ -2277,6 +2315,22 @@ function performHeroAction(action) {
     setNarrativeMessage(selection, narratives[action] || 'Герой пробует действие, но эта часть интерфейса пока остаётся заглушкой.');
   }
   addLog(messages[action] || 'Действие Героя пока недоступно.');
+}
+
+function performRestAction(selection) {
+  const recovered = recoverStamina(restStaminaRecovery);
+
+  if (selection) {
+    setNarrativeMessage(selection, 'Герой садится у переборки и выравнивает дыхание. Корабль скрипит под песком, но тело понемногу возвращает силы.');
+  }
+
+  if (recovered <= 0) {
+    addLog('Выносливость уже полная');
+    return;
+  }
+
+  const limitLabel = recovered < restStaminaRecovery ? ' · максимум' : '';
+  addLog('Отдых: ' + formatStaminaGain(recovered) + limitLabel);
 }
 
 function getCityActivity(key) {
@@ -2632,7 +2686,7 @@ function typeActionButton(entry, token, panelKey, onComplete) {
     if (index >= fullText.length) {
       titleNode.textContent = fullTitle;
       if (costNode) {
-        costNode.textContent = fullTitleParts.cost;
+        costNode.textContent = fullTitleParts.cost || '—';
       }
       if (noteNode) {
         noteNode.textContent = fullNote;
@@ -2784,6 +2838,7 @@ function getGenitiveName(name) {
 
 function saveGame() {
   state.resources = normalizeResources(state.resources);
+  state.heroCondition = normalizeHeroCondition(state.heroCondition);
   localStorage.setItem(saveKey, JSON.stringify(state));
 }
 
