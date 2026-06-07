@@ -2121,7 +2121,7 @@ function renderObjectActionOptions(selection) {
       return;
     }
 
-    appendActionOption('🛠️', formatActionTitle(stage.action + ' ' + selection.name, stage.cost), (heroStatLabels[stage.statKey] || 'Характеристика') + ' ' + stage.difficulty, 'repairKey', selection.key, false);
+    appendActionOption('🛠️', formatActionTitle(stage.action, stage.cost), (heroStatLabels[stage.statKey] || 'Характеристика') + ' ' + stage.difficulty, 'repairKey', selection.key, false);
     return;
   }
 
