@@ -86,6 +86,14 @@ const initialResources = {
   recon: 0
 };
 
+const baseResourceLimits = {
+  water: 20,
+  metal: 20,
+  components: 20,
+  food: 20
+};
+const storageResourceKeys = Object.keys(baseResourceLimits);
+
 const resourceLabels = {
   energy: 'энергия',
   water: 'вода',
@@ -725,9 +733,47 @@ const typewriterState = {
   isTyping: false
 };
 
+function isStorageResource(resourceKey) {
+  return Object.prototype.hasOwnProperty.call(baseResourceLimits, resourceKey);
+}
+
+function getResourceLimit(resourceKey) {
+  return savedNumber(baseResourceLimits[resourceKey], 0);
+}
+
+function normalizeResources(resources) {
+  const normalized = { ...initialResources, ...(resources || {}) };
+  const resourceKeys = Object.keys(initialResources);
+
+  for (let i = 0; i < resourceKeys.length; i++) {
+    const key = resourceKeys[i];
+    normalized[key] = Math.max(0, savedNumber(normalized[key], initialResources[key]));
+  }
+
+  for (let i = 0; i < storageResourceKeys.length; i++) {
+    const key = storageResourceKeys[i];
+    normalized[key] = Math.min(getResourceLimit(key), Math.max(0, savedNumber(normalized[key], initialResources[key] || 0)));
+  }
+
+  return normalized;
+}
+
+function didGainHitResourceLimit(plannedGain, actualGain) {
+  const keys = Object.keys(plannedGain || {});
+
+  for (let i = 0; i < keys.length; i++) {
+    const resource = keys[i];
+    if (isStorageResource(resource) && savedNumber(plannedGain[resource], 0) > savedNumber(actualGain[resource], 0)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function createInitialState() {
-  return {
-    resources: { ...initialResources },
+  const next = {
+    resources: normalizeResources({ ...initialResources }),
     heroCondition: { ...initialHeroCondition },
     turn: 1,
     mode: 'hero',
@@ -745,6 +791,9 @@ function createInitialState() {
     territories: createTerritories(),
     logMessages: ['Аварийный интерфейс Аурелии-18 запущен. Выберите сцену и объект для действий Героя.']
   };
+
+  next.resources = normalizeResources(next.resources);
+  return next;
 }
 
 function createHero() {
@@ -962,25 +1011,39 @@ function performCityAction(entry) {
 
   spendStamina();
   payCost(cost);
-  if (entry.result) {
-    addResources(entry.result);
-  }
+  const actualGain = entry.result ? addResources(entry.result) : null;
   if (selection) {
     setNarrativeMessage(selection, 'Герой выполняет выбранное действие. Место отвечает коротким изменением в протоколе, а подробная городская сцена пока остаётся заглушкой.');
   }
-  addLog(entry.successLog);
+  addLog(formatCityActionLog(entry, actualGain));
 }
 
 function addResources(gain) {
-  const keys = Object.keys(gain);
+  const actualGain = {};
+  const keys = Object.keys(gain || {});
 
+  state.resources = normalizeResources(state.resources);
   for (let i = 0; i < keys.length; i++) {
     const resource = keys[i];
-    if (state.resources[resource] === undefined) {
-      state.resources[resource] = 0;
+    const requested = Math.max(0, savedNumber(gain[resource], 0));
+
+    if (isStorageResource(resource)) {
+      const before = savedNumber(state.resources[resource], 0);
+      const limit = getResourceLimit(resource);
+      const received = Math.max(0, Math.min(requested, limit - before));
+      state.resources[resource] = Math.min(limit, before + received);
+      actualGain[resource] = received;
+    } else {
+      if (state.resources[resource] === undefined) {
+        state.resources[resource] = 0;
+      }
+      state.resources[resource] = savedNumber(state.resources[resource], 0) + requested;
+      actualGain[resource] = requested;
     }
-    state.resources[resource] += gain[resource];
   }
+  state.resources = normalizeResources(state.resources);
+
+  return actualGain;
 }
 
 function repairSystem(key) {
@@ -1076,18 +1139,25 @@ function gatherTerritory(key) {
   const resource = territory.resource;
   const check = resolveGatherCheck(resource, territory);
   const wasDepleted = territory.status === 'depleted';
-  let actualGain = 0;
+  let plannedGain = 0;
 
   if (check.gained > 0) {
     if (wasDepleted) {
-      actualGain = 1;
+      plannedGain = 1;
     } else {
       territory.remaining = getTerritoryRemaining(territory);
-      actualGain = Math.min(check.gained, territory.remaining);
-      territory.remaining = Math.max(0, territory.remaining - actualGain);
+      plannedGain = Math.min(check.gained, territory.remaining);
     }
   } else if (!wasDepleted) {
     territory.remaining = getTerritoryRemaining(territory);
+  }
+
+  const plannedResourceGain = { [resource]: plannedGain };
+  const gain = addResources(plannedResourceGain);
+  const actualGain = savedNumber(gain[resource], 0);
+
+  if (!wasDepleted && actualGain > 0) {
+    territory.remaining = Math.max(0, territory.remaining - actualGain);
   }
 
   const depletedNow = !wasDepleted && territory.remaining === 0;
@@ -1095,16 +1165,11 @@ function gatherTerritory(key) {
     territory.status = 'depleted';
   }
 
-  const gain = { [resource]: actualGain };
-  if (actualGain > 0) {
-    addResources(gain);
-  }
-
   const remaining = getTerritoryRemaining(territory);
   if (selection) {
     setNarrativeMessage(selection, buildGatherResultPanel(check, actualGain, remaining, depletedNow));
   }
-  addLog(formatCompactGatherResult(check, gain));
+  addLog(formatCompactGatherResult(check, gain, didGainHitResourceLimit(plannedResourceGain, gain)));
 
   if (depletedNow) {
     addLog('Запас клетки исчерпан. Зона стала истощённой: ' + territory.name + '.');
@@ -1580,6 +1645,7 @@ function payCost(cost) {
     const resource = keys[i];
     state.resources[resource] -= cost[resource];
   }
+  state.resources = normalizeResources(state.resources);
 }
 
 function hasEnoughStamina(selection) {
@@ -1622,11 +1688,12 @@ function renderResources() {
   elements.turn.textContent = state.turn;
   const healthText = state.heroCondition.health + ' / ' + state.heroCondition.maxHealth;
   const staminaText = state.heroCondition.stamina + ' / ' + state.heroCondition.maxStamina;
+  state.resources = normalizeResources(state.resources);
   const energyText = String(state.resources.energy);
-  const waterText = state.resources.water + ' / 20';
-  const componentsText = state.resources.components + ' / 20';
-  const metalText = state.resources.metal + ' / 20';
-  const foodText = (state.resources.food || 0) + ' / 20';
+  const waterText = state.resources.water + ' / ' + getResourceLimit('water');
+  const componentsText = state.resources.components + ' / ' + getResourceLimit('components');
+  const metalText = state.resources.metal + ' / ' + getResourceLimit('metal');
+  const foodText = state.resources.food + ' / ' + getResourceLimit('food');
 
   elements.health.textContent = healthText;
   elements.stamina.textContent = staminaText;
@@ -2302,17 +2369,25 @@ function formatCompactResourceParts(resources, prefix) {
 
 function formatCompactGain(gain) {
   const parts = [];
+  const zeroParts = [];
   const keys = Object.keys(gain || {});
 
   for (let i = 0; i < keys.length; i++) {
     const resource = keys[i];
     const value = savedNumber(gain[resource], 0);
+    const part = '+' + value + getCompactResourceLabel(resource);
     if (value > 0) {
-      parts.push('+' + value + getCompactResourceLabel(resource));
+      parts.push(part);
+    } else if (value === 0) {
+      zeroParts.push(part);
     }
   }
 
-  return parts.length ? parts.join(' ') : '+0';
+  if (parts.length) {
+    return parts.join(' ');
+  }
+
+  return zeroParts.length ? zeroParts.join(' ') : '+0';
 }
 
 function formatCompactCheckResult(check, suffix) {
@@ -2320,8 +2395,18 @@ function formatCompactCheckResult(check, suffix) {
   return suffix ? result + ' · ' + suffix : result;
 }
 
-function formatCompactGatherResult(check, gain) {
-  return '🎲 ' + check.roll.total + ' · ' + String(check.resultLabel).toLowerCase() + ' · ' + formatCompactGain(gain);
+function formatCompactGatherResult(check, gain, limitReached) {
+  const result = '🎲 ' + check.roll.total + ' · ' + String(check.resultLabel).toLowerCase() + ' · ' + formatCompactGain(gain);
+  return limitReached ? result + ' · лимит' : result;
+}
+
+function formatCityActionLog(entry, actualGain) {
+  if (!actualGain) {
+    return entry.successLog;
+  }
+
+  const result = (entry.name || 'Город') + ': успех · ' + formatCompactGain(actualGain);
+  return didGainHitResourceLimit(entry.result, actualGain) ? result + ' · лимит' : result;
 }
 
 function formatActionTitle(title, cost) {
@@ -2698,6 +2783,7 @@ function getGenitiveName(name) {
 
 
 function saveGame() {
+  state.resources = normalizeResources(state.resources);
   localStorage.setItem(saveKey, JSON.stringify(state));
 }
 
@@ -2745,6 +2831,7 @@ function mergeSavedState(saved) {
     const legacyValue = key === 'recon' && savedResources.recon === undefined ? savedResources.data : savedResources[key];
     next.resources[key] = savedNumber(legacyValue, initialResources[key]);
   }
+  next.resources = normalizeResources(next.resources);
 
   const savedCondition = saved.heroCondition && typeof saved.heroCondition === 'object'
     ? { ...saved.heroCondition }
