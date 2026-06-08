@@ -260,7 +260,94 @@ function buildQuestRegistry() {
     }
   }
 
+  applyEarlyQuestOverrides(quests);
   return quests;
+}
+
+function applyEarlyQuestOverrides(quests) {
+  const overrides = {
+    'main-001': {
+      type: 'main',
+      level: 1,
+      title: 'Протокол аварийной посадки',
+      description: 'Герой приходит в себя после жёсткой посадки и действует по аварийному протоколу: проверяет собственное состояние, корабль, место крушения и первые ресурсы для выживания.',
+      xpReward: 100,
+      steps: [
+        createRealQuestStep(1, 'Прийти в себя', 'Проверить состояние Героя после крушения.', 'visitedHero'),
+        createRealQuestStep(2, 'Оценить состояние корабля', 'Открыть корабль и выбрать любую систему, чтобы понять масштаб повреждений.', 'inspectedAnyShipSystem'),
+        createRealQuestStep(3, 'Осмотреть место крушения', 'Выбрать зону “Место крушения” в Пустошах.', 'selectedCrashSite'),
+        createRealQuestStep(4, 'Собрать первые материалы', 'Найти металл или компоненты среди обломков у места крушения.', 'collectedCrashSiteMaterials'),
+        createRealQuestStep(5, 'Наладить базовое выживание', 'Получить первую воду из Пустошей или через Жизнеобеспечение корабля.', 'foundWater')
+      ]
+    },
+    'side-001': {
+      type: 'side',
+      level: 1,
+      title: 'Аварийная диагностика',
+      description: 'Герой проводит быструю диагностику ключевых модулей корабля: энергии, выживания и двигателя.',
+      xpReward: 40,
+      steps: [
+        createRealQuestStep(1, 'Проверить Энергоконтур', 'Выбрать модуль “Энергоконтур” на сцене Корабль.', 'inspectedEnergyCircuit'),
+        createRealQuestStep(2, 'Проверить Жизнеобеспечение', 'Выбрать модуль “Жизнеобеспечение” на сцене Корабль.', 'inspectedLifeSupport'),
+        createRealQuestStep(3, 'Проверить Двигатель', 'Выбрать модуль “Двигатель” на сцене Корабль.', 'inspectedEngine')
+      ]
+    },
+    'extra-001': {
+      type: 'extra',
+      level: 1,
+      title: 'Первый лом',
+      description: 'Собрать первый металл после крушения.',
+      xpReward: 20,
+      steps: [createRealQuestStep(1, 'Получить металл', 'Получить хотя бы 1 металл любым способом.', 'gatheredFirstMetal')]
+    },
+    'extra-002': {
+      type: 'extra',
+      level: 1,
+      title: 'Первая вода',
+      description: 'Получить первую воду для выживания.',
+      xpReward: 20,
+      steps: [createRealQuestStep(1, 'Получить воду', 'Получить хотя бы 1 воду любым способом.', 'foundWater')]
+    },
+    'extra-003': {
+      type: 'extra',
+      level: 1,
+      title: 'Первые детали',
+      description: 'Найти первые уцелевшие компоненты среди обломков и технического мусора.',
+      xpReward: 20,
+      steps: [createRealQuestStep(1, 'Получить компоненты', 'Получить хотя бы 1 компонент любым способом.', 'gatheredFirstComponents')]
+    }
+  };
+
+  for (let i = 0; i < quests.length; i++) {
+    const override = overrides[quests[i].id];
+    if (!override) {
+      continue;
+    }
+
+    quests[i] = {
+      ...quests[i],
+      ...override,
+      typeLabel: questTypeLabels[override.type],
+      visibility: createDefaultQuestVisibility()
+    };
+    if (override.type === 'main') {
+      quests[i].chain = { id: 'main', order: 1 };
+    } else {
+      delete quests[i].chain;
+    }
+  }
+}
+
+function createRealQuestStep(index, title, description, flagKey) {
+  return {
+    index,
+    title,
+    description,
+    condition: {
+      type: 'flag',
+      key: flagKey
+    }
+  };
 }
 
 function createQuestPlaceholder(type, number, level) {
@@ -569,12 +656,94 @@ function setWorldFlag(flagKey, value) {
   if (!state.worldFlags || typeof state.worldFlags !== 'object') {
     state.worldFlags = {};
   }
-  state.worldFlags[flagKey] = value === undefined ? true : value;
+  const nextValue = value === undefined ? true : value;
+  if (state.worldFlags[flagKey] === nextValue) {
+    return;
+  }
+  state.worldFlags[flagKey] = nextValue;
+  syncQuestProgress();
   saveGame();
 }
 
 function hasWorldFlag(flagKey) {
   return !!(state && state.worldFlags && state.worldFlags[flagKey] === true);
+}
+
+function isQuestStepConditionMet(step) {
+  if (!step || !step.condition) {
+    return false;
+  }
+
+  if (step.condition.type === 'flag') {
+    return hasWorldFlag(step.condition.key);
+  }
+
+  return false;
+}
+
+function questHasRealStepConditions(quest) {
+  return !!(quest && Array.isArray(quest.steps) && quest.steps.some(function (step) {
+    return !!(step && step.condition);
+  }));
+}
+
+function getQuestCompletionLogPrefix(quest) {
+  if (quest && quest.type === 'main') return 'Квест завершён';
+  if (quest && quest.type === 'extra') return 'Доп. задача завершена';
+  return 'Задача завершена';
+}
+
+function syncQuestProgress() {
+  if (!state) {
+    return;
+  }
+
+  if (!state.questProgress || typeof state.questProgress !== 'object') {
+    state.questProgress = {};
+  }
+
+  for (let i = 0; i < questRegistry.length; i++) {
+    const quest = questRegistry[i];
+    if (!questHasRealStepConditions(quest) || !isQuestKnown(quest)) {
+      continue;
+    }
+
+    const progress = getQuestProgress(quest.id);
+    const stepCount = getQuestStepCount(quest);
+    let changedSteps = false;
+
+    for (let stepIndex = 0; stepIndex < quest.steps.length; stepIndex++) {
+      const stepNumber = stepIndex + 1;
+      if (!progress.completedSteps.includes(stepNumber) && isQuestStepConditionMet(quest.steps[stepIndex])) {
+        progress.completedSteps.push(stepNumber);
+        changedSteps = true;
+        addLogOnly('Шаг выполнен: ' + quest.title + ' — ' + progress.completedSteps.length + ' / ' + stepCount + '.');
+      }
+    }
+
+    if (changedSteps) {
+      progress.completedSteps.sort(function (first, second) { return first - second; });
+    }
+
+    let nextIncompleteStep = 0;
+    for (let stepNumber = 1; stepNumber <= stepCount; stepNumber++) {
+      if (!progress.completedSteps.includes(stepNumber)) {
+        nextIncompleteStep = stepNumber;
+        break;
+      }
+    }
+    progress.currentStep = nextIncompleteStep;
+
+    if (stepCount > 0 && progress.completedSteps.length >= stepCount) {
+      progress.completed = true;
+      progress.currentStep = stepCount;
+      if (progress.rewardClaimed !== true) {
+        progress.rewardClaimed = true;
+        addLogOnly(getQuestCompletionLogPrefix(quest) + ': ' + quest.title + '. Получено опыта: ' + quest.xpReward + '.');
+        addHeroExperience(quest.xpReward, quest.title);
+      }
+    }
+  }
 }
 
 function isQuestStarted(questId) {
@@ -1887,6 +2056,9 @@ function switchMode(mode) {
   state.inspectedObjectId = '';
   clearNarrativeMessage();
   state.activeResearchEvent = null;
+  if (mode === 'hero') {
+    setWorldFlag('visitedHero', true);
+  }
   saveGame();
   render();
 }
@@ -1898,6 +2070,14 @@ function selectSystem(key) {
 
   state.mode = 'ship';
   state.selectedSystemKey = key;
+  setWorldFlag('inspectedAnyShipSystem', true);
+  if (key === energyCircuitSystemKey) {
+    setWorldFlag('inspectedEnergyCircuit', true);
+  } else if (key === lifeSupportSystemKey) {
+    setWorldFlag('inspectedLifeSupport', true);
+  } else if (key === 'engine') {
+    setWorldFlag('inspectedEngine', true);
+  }
   state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
   clearNarrativeMessage();
@@ -1912,6 +2092,9 @@ function selectTerritory(key) {
 
   state.mode = 'territories';
   state.selectedTerritoryKey = key;
+  if (key === 'crashSite') {
+    setWorldFlag('selectedCrashSite', true);
+  }
   state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
   clearNarrativeMessage();
@@ -2014,6 +2197,12 @@ function completeNextQuestStep(id) {
 
   if (progress.completed || progress.rewardClaimed) {
     addLog('Задача уже завершена: ' + quest.title + '. Повторное выполнение недоступно.');
+    return;
+  }
+
+  if (questHasRealStepConditions(quest)) {
+    syncQuestProgress();
+    addLog('Шаги этой задачи выполняются автоматически через реальные условия: ' + quest.title + '.');
     return;
   }
 
@@ -2127,8 +2316,25 @@ function addResources(gain) {
     }
   }
   state.resources = normalizeResources(state.resources, state.shipSystems);
+  markResourceGainWorldFlags(actualGain);
 
   return actualGain;
+}
+
+function markResourceGainWorldFlags(actualGain) {
+  if (!actualGain || typeof actualGain !== 'object') {
+    return;
+  }
+
+  if (savedNumber(actualGain.metal, 0) > 0) {
+    setWorldFlag('gatheredFirstMetal', true);
+  }
+  if (savedNumber(actualGain.water, 0) > 0) {
+    setWorldFlag('foundWater', true);
+  }
+  if (savedNumber(actualGain.components, 0) > 0) {
+    setWorldFlag('gatheredFirstComponents', true);
+  }
 }
 
 
@@ -2343,6 +2549,9 @@ function gatherTerritory(key, nodeKey) {
   const plannedResourceGain = { [resource]: plannedGain };
   const gain = addResources(plannedResourceGain);
   const actualGain = savedNumber(gain[resource], 0);
+  if (key === 'crashSite' && (resource === 'metal' || resource === 'components') && actualGain > 0) {
+    setWorldFlag('collectedCrashSiteMaterials', true);
+  }
 
   if (!wasDepleted && actualGain > 0) {
     node.remaining = Math.max(0, node.remaining - actualGain);
@@ -3483,7 +3692,8 @@ function createTaskStepNode(quest, progress, index) {
   const stepNumber = index + 1;
   const item = document.createElement('li');
   const isCompleted = progress.completedSteps.includes(stepNumber);
-  const isCurrent = !isCompleted && !progress.completed && stepNumber === progress.completedSteps.length + 1;
+  const currentStep = progress.currentStep || progress.completedSteps.length + 1;
+  const isCurrent = !isCompleted && !progress.completed && stepNumber === currentStep;
   item.className = 'task-step';
   item.classList.toggle('completed', isCompleted);
   item.classList.toggle('current', isCurrent);
@@ -3866,7 +4076,13 @@ function renderObjectActionOptions(selection) {
     if (!isQuestAvailable(quest)) {
       const reasons = getQuestLockReasons(quest);
       addActionLead(reasons.length > 0 ? 'Недоступно:\n- ' + reasons.join('\n- ') : 'Задача пока недоступна.');
-      appendActionOption('✓', 'Выполнить следующий шаг (заглушка)', 'Недоступно: условия не выполнены', 'completeQuestStep', quest.id, true);
+      if (!questHasRealStepConditions(quest)) {
+        appendActionOption('✓', 'Выполнить следующий шаг (заглушка)', 'Недоступно: условия не выполнены', 'completeQuestStep', quest.id, true);
+      }
+      return;
+    }
+    if (questHasRealStepConditions(quest)) {
+      addActionLead('Шаги выполняются автоматически при выполнении условий в сценах Герой, Корабль и Пустоши.');
       return;
     }
     appendActionOption('✓', 'Выполнить следующий шаг (заглушка)', 'Временная проверка реестра задач', 'completeQuestStep', quest.id, false);
@@ -4567,6 +4783,7 @@ function loadGame() {
   }
 
   protectMobileMode();
+  syncQuestProgress();
   render();
   saveGame();
 }
