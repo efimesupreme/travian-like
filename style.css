@@ -6094,3 +6094,32 @@ button:focus-visible {
     line-height: 1;
   }
 }
+
+.hero-development-summary {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.hero-development-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.development-button {
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid rgba(116, 215, 255, 0.22);
+  border-radius: 10px;
+  color: var(--text);
+  background: rgba(8, 18, 31, 0.56);
+  font-weight: 700;
+}
+
+.development-button:hover,
+.development-button:focus-visible {
+  border-color: rgba(116, 215, 255, 0.58);
+  background: rgba(116, 215, 255, 0.1);
+}
