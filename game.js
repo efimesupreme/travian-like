@@ -622,7 +622,7 @@ function getQuestStepText(step, index) {
     return [step.title, step.description].filter(Boolean).join(' — ');
   }
 
-  return 'Шаг ' + (index + 1) + ' — условие будет добавлено позже';
+  return 'Шаг ' + (index + 1) + ' — условие будет добавлено позже.';
 }
 
 function getQuestVisibility(quest) {
@@ -2175,6 +2175,7 @@ function selectCityUnique(key) {
 
 function setTaskFilter(filter) {
   state.taskFilter = normalizeTaskFilter(filter);
+  resetHiddenSelectedQuest();
   saveGame();
   render();
 }
@@ -2187,7 +2188,7 @@ function selectQuest(id) {
   }
 
   state.mode = 'tasks';
-  state.selectedQuestId = id;
+  state.selectedQuestId = state.selectedQuestId === id ? '' : id;
   state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
   clearNarrativeMessage();
@@ -3513,7 +3514,7 @@ function renderTasks() {
   title.textContent = 'Задачи';
   const lead = document.createElement('p');
   lead.className = 'description';
-  lead.textContent = 'Компактный список известных задач. Выберите строку, чтобы увидеть подробности в правой панели.';
+  lead.textContent = 'Компактный список известных задач. Выберите строку, чтобы раскрыть подробности прямо в центральном списке.';
   titleBlock.appendChild(title);
   titleBlock.appendChild(lead);
   header.appendChild(titleBlock);
@@ -3671,7 +3672,9 @@ function createTaskCard(quest) {
   const completed = progress.completed || progress.rewardClaimed;
   const card = document.createElement('article');
   card.className = 'task-card compact-task-card';
-  card.classList.toggle('selected', state.selectedQuestId === quest.id);
+  const expanded = state.selectedQuestId === quest.id;
+  card.classList.toggle('selected', expanded);
+  card.classList.toggle('expanded', expanded);
   card.classList.toggle('completed', completed);
   card.classList.toggle('locked', isQuestVisible(quest) && !isQuestAvailable(quest) && !completed);
 
@@ -3710,7 +3713,82 @@ function createTaskCard(quest) {
   button.appendChild(meta);
   card.appendChild(button);
 
+  if (expanded) {
+    card.appendChild(createTaskExpandedBody(quest, progress));
+  }
+
   return card;
+}
+
+function createTaskExpandedBody(quest, progress) {
+  const body = document.createElement('div');
+  body.className = 'task-expanded-body';
+
+  const description = document.createElement('p');
+  description.className = 'task-expanded-description';
+  description.textContent = getQuestDescription(quest);
+  body.appendChild(description);
+
+  const stepCount = getQuestStepCount(quest);
+  const meta = document.createElement('div');
+  meta.className = 'task-expanded-meta';
+  appendTaskExpandedMeta(meta, 'Награда опыта', formatQuestNumber(quest.xpReward));
+  appendTaskExpandedMeta(meta, 'Статус', getQuestStatusLabel(quest));
+  appendTaskExpandedMeta(meta, 'Шаги', progress.completedSteps.length + ' / ' + stepCount);
+  body.appendChild(meta);
+
+  if (Array.isArray(quest.steps) && quest.steps.length > 0) {
+    const steps = document.createElement('ul');
+    steps.className = 'task-step-list';
+    for (let i = 0; i < quest.steps.length; i++) {
+      steps.appendChild(createTaskStepNode(quest, progress, i));
+    }
+    body.appendChild(steps);
+  }
+
+  appendQuestLockReasons(body, quest);
+  appendQuestPlaceholderAction(body, quest, progress);
+
+  return body;
+}
+
+function appendTaskExpandedMeta(parent, labelText, valueText) {
+  const item = document.createElement('span');
+  const label = document.createElement('small');
+  label.textContent = labelText;
+  const value = document.createElement('strong');
+  value.textContent = valueText;
+  item.appendChild(label);
+  item.appendChild(value);
+  parent.appendChild(item);
+}
+
+function appendQuestPlaceholderAction(parent, quest, progress) {
+  if (progress.completed || progress.rewardClaimed) {
+    const complete = document.createElement('p');
+    complete.className = 'task-placeholder-action task-completed-note';
+    complete.textContent = 'Задача завершена. Награда уже получена.';
+    parent.appendChild(complete);
+    return;
+  }
+
+  if (questHasRealStepConditions(quest)) {
+    return;
+  }
+
+  const action = document.createElement('div');
+  action.className = 'task-placeholder-action';
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.completeQuestStep = quest.id;
+  button.textContent = 'Выполнить следующий шаг (заглушка)';
+  button.disabled = !isQuestAvailable(quest);
+  button.addEventListener('click', function (event) {
+    event.stopPropagation();
+    completeNextQuestStep(quest.id);
+  });
+  action.appendChild(button);
+  parent.appendChild(action);
 }
 
 function appendQuestLockReasons(parent, quest) {
@@ -3742,7 +3820,7 @@ function resetHiddenSelectedQuest() {
   }
 
   const selectedQuest = getQuestById(state.selectedQuestId);
-  if (!selectedQuest || !isQuestKnown(selectedQuest)) {
+  if (!selectedQuest || !isQuestKnown(selectedQuest) || !isQuestVisibleByFilter(selectedQuest, state.taskFilter)) {
     state.selectedQuestId = '';
   }
 }
@@ -3756,7 +3834,7 @@ function createTaskStepNode(quest, progress, index) {
   item.className = 'task-step';
   item.classList.toggle('completed', isCompleted);
   item.classList.toggle('current', isCurrent);
-  item.classList.toggle('later', !isCompleted && !isCurrent);
+  item.classList.toggle('locked', !isCompleted && !isCurrent);
   item.textContent = getQuestStepText(quest.steps[index], index) + ' · ' + (isCompleted ? 'выполнен' : (isCurrent ? 'текущий' : 'позже'));
   return item;
 }
@@ -3987,17 +4065,18 @@ function getCurrentSelection() {
     return getCitySelection();
   }
 
-  if (state.mode === 'tasks' && state.selectedQuestId) {
+  if (state.mode === 'tasks') {
     const quest = getQuestById(state.selectedQuestId);
-    if (!quest) return null;
+    const selectedLine = quest && isQuestVisibleByFilter(quest, state.taskFilter)
+      ? '\n\nВыбрана задача: ' + quest.title + '. Подробности раскрыты в центральной карточке.'
+      : '';
     return {
-      id: 'quest:' + quest.id,
-      kind: 'quest',
-      key: quest.id,
-      name: quest.title,
-      type: quest.typeLabel,
-      description: getQuestPanelDescription(quest),
-      inspectDescription: getQuestPanelDescription(quest)
+      id: 'tasks:guide:' + (quest ? quest.id : 'none'),
+      kind: 'taskGuide',
+      name: 'Задачи',
+      type: 'реестр задач',
+      description: 'Выберите задачу в центральном списке, чтобы раскрыть описание, шаги и условия выполнения.' + selectedLine,
+      inspectDescription: 'Выберите задачу в центральном списке, чтобы раскрыть описание, шаги и условия выполнения.' + selectedLine
     };
   }
 
@@ -4132,30 +4211,8 @@ function renderObjectActionOptions(selection) {
     return;
   }
 
-  if (selection.kind === 'quest') {
-    const quest = getQuestById(selection.key);
-    const progress = quest ? getQuestProgress(quest.id) : createEmptyQuestProgress();
-    if (!quest) {
-      addActionLead('Задача не найдена.');
-      return;
-    }
-    if (progress.completed || progress.rewardClaimed) {
-      addActionLead(progress.rewardClaimed ? 'Задача завершена. Награда уже получена.' : 'Задача выполнена. Повторное выполнение шагов недоступно.');
-      return;
-    }
-    if (!isQuestAvailable(quest)) {
-      const reasons = getQuestLockReasons(quest);
-      addActionLead(reasons.length > 0 ? 'Недоступно:\n- ' + reasons.join('\n- ') : 'Задача пока недоступна.');
-      if (!questHasRealStepConditions(quest)) {
-        appendActionOption('✓', 'Выполнить следующий шаг (заглушка)', 'Недоступно: условия не выполнены', 'completeQuestStep', quest.id, true);
-      }
-      return;
-    }
-    if (questHasRealStepConditions(quest)) {
-      addActionLead('Шаги выполняются автоматически при выполнении условий в сценах Герой, Корабль и Пустоши.');
-      return;
-    }
-    appendActionOption('✓', 'Выполнить следующий шаг (заглушка)', 'Временная проверка реестра задач', 'completeQuestStep', quest.id, false);
+  if (selection.kind === 'taskGuide') {
+    addActionLead('Подробности задачи, шаги, награда и условия теперь отображаются в раскрытой центральной карточке.');
     return;
   }
 
