@@ -325,8 +325,8 @@ const shipSystemBlueprints = {
 const territoryStatusLabels = {
   hidden: 'Скрыта',
   discovered: 'Обнаружена',
-  open: 'открыта',
-  depleted: 'истощённая'
+  open: 'Открыта',
+  depleted: 'Истощённая'
 };
 const territoryStatusKeys = Object.keys(territoryStatusLabels);
 
@@ -335,289 +335,153 @@ const territoryBlueprints = {
     id: 'crashSite',
     name: 'Место крушения',
     status: 'open',
-    description: 'Центральная зона вокруг корабля, где начинается игра.',
-    resource: 'metal',
-    yieldMin: 2,
-    yieldMax: 3,
-    baseGain: { metal: 2 },
-    remaining: 24,
-    action: 'Собрать металл',
-    progress: 1,
-    requiredProgress: 1
-  },
-  nearDebris: {
-    id: 'nearDebris',
-    name: 'Ближние обломки',
-    status: 'open',
-    description: 'Россыпь обшивки, посадочных опор и грузовых рам.',
-    resource: 'metal',
-    yieldMin: 2,
-    yieldMax: 4,
-    baseGain: { metal: 2 },
-    remaining: 28,
-    action: 'Разобрать обломки',
+    description: 'Разбитый периметр вокруг корабля. Среди обломков ещё можно найти металл, крепёж и уцелевшие компоненты.',
+    resourceNodes: [
+      {
+        key: 'metal',
+        action: 'Собрать металл',
+        yieldMin: 1,
+        yieldMax: 2,
+        remaining: 14
+      },
+      {
+        key: 'components',
+        action: 'Искать компоненты',
+        yieldMin: 1,
+        yieldMax: 1,
+        remaining: 6
+      }
+    ],
     progress: 1,
     requiredProgress: 1
   },
   wetLowland: {
     id: 'wetLowland',
-    name: 'Влажная низина',
+    name: 'Ущелье',
     status: 'open',
-    description: 'Складка рельефа, где ночью собирается конденсат.',
-    resource: 'water',
-    yieldMin: 1,
-    yieldMax: 3,
-    baseGain: { water: 1 },
-    remaining: 20,
-    action: 'Собрать воду',
+    description: 'Узкий разлом в сухой породе. Ночью на стенках собирается влага, а в тени дольше держится холод.',
+    resourceNodes: [
+      {
+        key: 'water',
+        action: 'Собрать воду',
+        yieldMin: 1,
+        yieldMax: 2,
+        remaining: 14
+      }
+    ],
     progress: 1,
     requiredProgress: 1
   },
-  sandRidge: {
-    id: 'sandRidge',
-    name: 'Песчаная гряда',
-    status: 'open',
-    description: 'На горизонте видна каменная кромка и следы старого ветра.',
-    resource: 'metal',
-    yieldMin: 1,
-    yieldMax: 3,
-    baseGain: { metal: 1 },
-    remaining: 18,
-    action: 'Просеять песок',
-    progress: 1,
-    requiredProgress: 1
-  },
-  weakSignal: {
-    id: 'weakSignal',
-    name: 'Слабый сигнал',
+  nearDebris: {
+    id: 'nearDebris',
+    name: 'Северные холмы',
     status: 'discovered',
-    description: 'Аварийный приёмник ловит короткий неустойчивый импульс.',
-    resource: 'components',
-    yieldMin: 1,
-    yieldMax: 2,
-    capacity: 10,
-    baseGain: { components: 1 },
-    remaining: 10,
-    action: 'Искать компоненты',
-    difficulty: 9,
-    progress: 0,
-    requiredProgress: 4
-  },
-  oldFallLine: {
-    id: 'oldFallLine',
-    name: 'Старая линия падения',
-    status: 'discovered',
-    description: 'По песку тянется длинный след давнего падения: под коркой могут лежать тяжёлые фрагменты.',
-    resource: 'metal',
-    yieldMin: 2,
-    yieldMax: 4,
-    capacity: 30,
-    baseGain: { metal: 2 },
-    remaining: 30,
-    action: 'Пройти вдоль линии падения',
-    difficulty: 8,
+    description: 'Низкая гряда камня и песка к северу от корабля. Под завалами могут лежать тяжёлые фрагменты корпуса.',
+    resourceNodes: [
+      {
+        key: 'metal',
+        action: 'Разобрать каменные завалы',
+        yieldMin: 2,
+        yieldMax: 3,
+        remaining: 22
+      }
+    ],
+    approachDifficulties: {
+      direct: 7,
+      signals: 9,
+      careful: 8
+    },
     progress: 0,
     requiredProgress: 2
   },
-  tornCargoContainer: {
-    id: 'tornCargoContainer',
-    name: 'Разорванный грузовой контейнер',
+  weakSignal: {
+    id: 'weakSignal',
+    name: 'Западные склоны',
     status: 'discovered',
-    description: 'На краю обзора виден вскрытый грузовой модуль; часть креплений ещё уходит под песок.',
-    resource: 'components',
-    yieldMin: 1,
-    yieldMax: 3,
-    capacity: 14,
-    baseGain: { components: 1 },
-    remaining: 14,
-    action: 'Проверить контейнер',
-    difficulty: 9,
-    progress: 0,
-    requiredProgress: 3
-  },
-  coolingCrack: {
-    id: 'coolingCrack',
-    name: 'Охладительная трещина',
-    status: 'discovered',
-    description: 'Из узкой трещины ночью выходит холодный пар, а утром на кромке остаются блестящие капли.',
-    resource: 'water',
-    yieldMin: 1,
-    yieldMax: 3,
-    capacity: 22,
-    baseGain: { water: 1 },
-    remaining: 22,
-    action: 'Собрать конденсат',
-    difficulty: 9,
+    description: 'Покатые склоны уходят к зоне старых помех. Приборы ловят короткие всплески, похожие на работу повреждённой техники.',
+    resourceNodes: [
+      {
+        key: 'components',
+        action: 'Искать технические фрагменты',
+        yieldMin: 1,
+        yieldMax: 2,
+        remaining: 10
+      }
+    ],
+    approachDifficulties: {
+      direct: 10,
+      signals: 7,
+      careful: 9
+    },
     progress: 0,
     requiredProgress: 3
   },
   buriedServiceBlock: {
     id: 'buriedServiceBlock',
-    name: 'Закопанный сервисный блок',
+    name: 'Южные равнины',
     status: 'hidden',
-    description: 'Под песком скрыт старый сервисный блок с уцелевшими техническими ячейками.',
-    resource: 'components',
-    yieldMin: 1,
-    yieldMax: 2,
-    capacity: 12,
-    baseGain: { components: 1 },
-    remaining: 12,
-    action: 'Искать компоненты',
+    description: 'На юге тянется ровная пыльная поверхность. Она выглядит пустой, но следы ветра там обрываются слишком резко.',
+    resourceNodes: [
+      {
+        key: 'components',
+        action: 'Проверить старые крепления',
+        yieldMin: 1,
+        yieldMax: 2,
+        remaining: 12
+      }
+    ],
     discoverProgressRequired: 1,
-    difficulty: 9,
+    approachDifficulties: {
+      direct: 9,
+      signals: 8,
+      careful: 7
+    },
     progress: 0,
     requiredProgress: 3
   },
-  saltDepression: {
-    id: 'saltDepression',
-    name: 'Соляная впадина',
+  oldFallLine: {
+    id: 'oldFallLine',
+    name: 'Восточное косогорье',
     status: 'hidden',
-    description: 'Белёсая впадина в рельефе может удерживать влагу под соляной коркой.',
-    resource: 'water',
-    yieldMin: 1,
-    yieldMax: 2,
-    capacity: 18,
-    baseGain: { water: 1 },
-    remaining: 18,
-    action: 'Собрать воду',
+    description: 'Косой каменный склон с плотными осыпями. В трещинах могут застревать тяжёлые металлические фрагменты.',
+    resourceNodes: [
+      {
+        key: 'metal',
+        action: 'Собрать тяжёлый лом',
+        yieldMin: 2,
+        yieldMax: 3,
+        remaining: 24
+      }
+    ],
     discoverProgressRequired: 1,
-    difficulty: 8,
-    progress: 0,
-    requiredProgress: 2
-  },
-  stoneScatter: {
-    id: 'stoneScatter',
-    name: 'Каменная россыпь',
-    status: 'hidden',
-    description: 'Неровная россыпь камня прячет под пылью тяжёлые металлические включения.',
-    resource: 'metal',
-    yieldMin: 1,
-    yieldMax: 3,
-    capacity: 24,
-    baseGain: { metal: 1 },
-    remaining: 24,
-    action: 'Собрать металл',
-    discoverProgressRequired: 1,
-    difficulty: 8,
-    progress: 0,
-    requiredProgress: 2
-  },
-  buriedSolarFarm: {
-    id: 'buriedSolarFarm',
-    name: 'Занесённая солнечная ферма',
-    status: 'hidden',
-    description: 'Под волнами пыли едва угадываются ряды старых солнечных панелей и кабельных коробов.',
-    resource: 'components',
-    yieldMin: 1,
-    yieldMax: 2,
-    capacity: 12,
-    baseGain: { components: 1 },
-    remaining: 12,
-    action: 'Разобрать солнечную ферму',
-    discoverProgressRequired: 1,
-    difficulty: 10,
-    progress: 0,
-    requiredProgress: 4
-  },
-  emergencyRationCompartment: {
-    id: 'emergencyRationCompartment',
-    name: 'Аварийный пайковый отсек',
-    status: 'hidden',
-    description: 'В песке скрыт аварийный отсек с герметичными контейнерами снабжения.',
-    resource: 'food',
-    yieldMin: 1,
-    yieldMax: 2,
-    capacity: 10,
-    baseGain: { food: 1 },
-    remaining: 10,
-    action: 'Собрать аварийные пайки',
-    discoverProgressRequired: 1,
-    difficulty: 8,
-    progress: 0,
-    requiredProgress: 2
-  },
-  brokenBiocontainer: {
-    id: 'brokenBiocontainer',
-    name: 'Разбитый биоконтейнер',
-    status: 'hidden',
-    description: 'Треснувшая оболочка биоконтейнера торчит из песка, но содержимое ещё нужно проверить.',
-    resource: 'food',
-    yieldMin: 1,
-    yieldMax: 2,
-    capacity: 8,
-    baseGain: { food: 1 },
-    remaining: 8,
-    action: 'Проверить биоконтейнер',
-    discoverProgressRequired: 1,
-    difficulty: 9,
+    approachDifficulties: {
+      direct: 7,
+      signals: 9,
+      careful: 8
+    },
     progress: 0,
     requiredProgress: 3
   },
   dustyRepeater: {
     id: 'dustyRepeater',
-    name: 'Пыльный ретранслятор',
+    name: 'Котлован',
     status: 'hidden',
-    description: 'Пыльный корпус ретранслятора почти слился с камнями, оставив наружу только обломок мачты.',
-    resource: 'components',
-    yieldMin: 1,
-    yieldMax: 3,
-    capacity: 15,
-    baseGain: { components: 1 },
-    remaining: 15,
-    action: 'Разобрать ретранслятор',
+    description: 'Глубокая воронка с осыпавшимися краями. На дне видны тёмные пятна старой техники или обгоревшего груза.',
+    resourceNodes: [
+      {
+        key: 'components',
+        action: 'Разобрать старую технику',
+        yieldMin: 1,
+        yieldMax: 3,
+        remaining: 14
+      }
+    ],
     discoverProgressRequired: 1,
-    difficulty: 10,
-    progress: 0,
-    requiredProgress: 4
-  },
-  metalScree: {
-    id: 'metalScree',
-    name: 'Металлическая осыпь',
-    status: 'hidden',
-    description: 'Склон покрыт металлической осыпью: часть фрагментов застряла глубоко между камнями.',
-    resource: 'metal',
-    yieldMin: 2,
-    yieldMax: 4,
-    capacity: 34,
-    baseGain: { metal: 2 },
-    remaining: 34,
-    action: 'Разобрать осыпь',
-    discoverProgressRequired: 1,
-    difficulty: 9,
-    progress: 0,
-    requiredProgress: 3
-  },
-  dryReservoir: {
-    id: 'dryReservoir',
-    name: 'Сухой резервуар',
-    status: 'hidden',
-    description: 'Пустой резервуар выглядит пересохшим, но в нижних швах могли сохраниться остатки влаги.',
-    resource: 'water',
-    yieldMin: 1,
-    yieldMax: 3,
-    capacity: 24,
-    baseGain: { water: 1 },
-    remaining: 24,
-    action: 'Собрать остатки воды',
-    discoverProgressRequired: 1,
-    difficulty: 10,
-    progress: 0,
-    requiredProgress: 4
-  },
-  emergencySupplyCapsule: {
-    id: 'emergencySupplyCapsule',
-    name: 'Капсула аварийного снабжения',
-    status: 'hidden',
-    description: 'Небольшая капсула аварийного снабжения зарыта в песок после жёсткого падения.',
-    resource: 'food',
-    yieldMin: 1,
-    yieldMax: 3,
-    capacity: 12,
-    baseGain: { food: 1 },
-    remaining: 12,
-    action: 'Проверить капсулу',
-    discoverProgressRequired: 1,
-    difficulty: 10,
+    approachDifficulties: {
+      direct: 10,
+      signals: 8,
+      careful: 9
+    },
     progress: 0,
     requiredProgress: 4
   }
@@ -1034,25 +898,142 @@ function createSystems() {
   return systems;
 }
 
+
+function cloneResourceNode(node) {
+  return {
+    key: node.key,
+    action: node.action,
+    yieldMin: node.yieldMin,
+    yieldMax: node.yieldMax,
+    remaining: node.remaining
+  };
+}
+
+function cloneTerritoryBlueprint(blueprint) {
+  const territory = {
+    ...blueprint,
+    resourceNodes: getBlueprintResourceNodes(blueprint).map(cloneResourceNode)
+  };
+
+  if (blueprint.approachDifficulties) {
+    territory.approachDifficulties = { ...blueprint.approachDifficulties };
+  }
+
+  return territory;
+}
+
+function getBlueprintResourceNodes(territory) {
+  if (Array.isArray(territory.resourceNodes) && territory.resourceNodes.length > 0) {
+    return territory.resourceNodes;
+  }
+
+  if (!territory.resource) {
+    return [];
+  }
+
+  return [{
+    key: territory.resource,
+    action: territory.action || territoryGatherActions[territory.resource] || 'Собрать ресурс',
+    yieldMin: territory.yieldMin,
+    yieldMax: territory.yieldMax,
+    remaining: territory.remaining
+  }];
+}
+
 function createTerritories() {
   const territories = {};
   const keys = Object.keys(territoryBlueprints);
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    territories[key] = {
-      ...territoryBlueprints[key],
-      baseGain: { ...territoryBlueprints[key].baseGain }
-    };
+    territories[key] = cloneTerritoryBlueprint(territoryBlueprints[key]);
   }
 
   return territories;
 }
 
+
+function normalizeTerritoryResourceNodes(territory) {
+  territory.resourceNodes = getBlueprintResourceNodes(territory).map(function (node) {
+    return {
+      key: node.key,
+      action: node.action || territoryGatherActions[node.key] || 'Собрать ресурс',
+      yieldMin: Math.max(0, savedNumber(node.yieldMin, 1)),
+      yieldMax: Math.max(Math.max(0, savedNumber(node.yieldMin, 1)), savedNumber(node.yieldMax, node.yieldMin)),
+      remaining: Math.max(0, savedNumber(node.remaining, 0))
+    };
+  });
+
+  const primaryNode = territory.resourceNodes[0];
+  territory.resource = primaryNode ? primaryNode.key : '';
+  territory.action = primaryNode ? primaryNode.action : '';
+  territory.yieldMin = primaryNode ? primaryNode.yieldMin : 0;
+  territory.yieldMax = primaryNode ? primaryNode.yieldMax : 0;
+  territory.remaining = primaryNode ? primaryNode.remaining : 0;
+}
+
+function getTerritoryResourceNodes(territory) {
+  if (!territory) {
+    return [];
+  }
+
+  normalizeTerritoryResourceNodes(territory);
+  return territory.resourceNodes;
+}
+
+function getTerritoryResourceNode(territory, nodeKey) {
+  const nodes = getTerritoryResourceNodes(territory);
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].key === nodeKey) {
+      return nodes[i];
+    }
+  }
+
+  return nodes[0] || null;
+}
+
+function areAllTerritoryNodesDepleted(territory) {
+  const nodes = getTerritoryResourceNodes(territory);
+  if (nodes.length === 0) {
+    return false;
+  }
+
+  for (let i = 0; i < nodes.length; i++) {
+    if (getResourceNodeRemaining(nodes[i]) > 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function syncTerritoryPrimaryResourceFields(territory) {
+  const nodes = getTerritoryResourceNodes(territory);
+  const primaryNode = nodes[0];
+  territory.resource = primaryNode ? primaryNode.key : '';
+  territory.action = primaryNode ? primaryNode.action : '';
+  territory.yieldMin = primaryNode ? primaryNode.yieldMin : 0;
+  territory.yieldMax = primaryNode ? primaryNode.yieldMax : 0;
+  territory.remaining = primaryNode ? primaryNode.remaining : 0;
+}
+
 function normalizeTerritoryProgress(territory) {
+  normalizeTerritoryResourceNodes(territory);
   territory.requiredProgress = Math.max(1, savedNumber(territory.requiredProgress, 1));
   if (territory.difficulty !== undefined) {
     territory.difficulty = Math.max(1, savedNumber(territory.difficulty, 1));
+  }
+
+  if (territory.approachDifficulties) {
+    const approachKeys = Object.keys(researchApproaches);
+    for (let i = 0; i < approachKeys.length; i++) {
+      const approachKey = approachKeys[i];
+      territory.approachDifficulties[approachKey] = Math.max(1, savedNumber(territory.approachDifficulties[approachKey], territory.difficulty || 8));
+    }
+  }
+
+  if ((territory.status === 'open' || territory.status === 'depleted') && areAllTerritoryNodesDepleted(territory)) {
+    territory.status = 'depleted';
   }
 
   if (territory.status === 'open' || territory.status === 'depleted') {
@@ -1440,10 +1421,15 @@ function returnToSelectedPanel() {
   render();
 }
 
-function gatherTerritory(key) {
+function gatherTerritory(key, nodeKey) {
   const territory = state.territories[key];
 
   if (!territory || !canGatherTerritory(territory)) {
+    return;
+  }
+
+  const node = getTerritoryResourceNode(territory, nodeKey);
+  if (!node) {
     return;
   }
 
@@ -1454,8 +1440,8 @@ function gatherTerritory(key) {
   }
 
   spendStamina();
-  const resource = territory.resource;
-  const check = resolveGatherCheck(resource, territory);
+  const resource = node.key;
+  const check = resolveGatherCheck(resource, territory, node);
   const wasDepleted = territory.status === 'depleted';
   let plannedGain = 0;
 
@@ -1463,11 +1449,11 @@ function gatherTerritory(key) {
     if (wasDepleted) {
       plannedGain = 1;
     } else {
-      territory.remaining = getTerritoryRemaining(territory);
-      plannedGain = Math.min(check.gained, territory.remaining);
+      node.remaining = getResourceNodeRemaining(node);
+      plannedGain = Math.min(check.gained, node.remaining);
     }
   } else if (!wasDepleted) {
-    territory.remaining = getTerritoryRemaining(territory);
+    node.remaining = getResourceNodeRemaining(node);
   }
 
   const plannedResourceGain = { [resource]: plannedGain };
@@ -1475,22 +1461,23 @@ function gatherTerritory(key) {
   const actualGain = savedNumber(gain[resource], 0);
 
   if (!wasDepleted && actualGain > 0) {
-    territory.remaining = Math.max(0, territory.remaining - actualGain);
+    node.remaining = Math.max(0, node.remaining - actualGain);
   }
 
-  const depletedNow = !wasDepleted && territory.remaining === 0;
+  const depletedNow = !wasDepleted && areAllTerritoryNodesDepleted(territory);
   if (depletedNow) {
     territory.status = 'depleted';
   }
+  syncTerritoryPrimaryResourceFields(territory);
 
-  const remaining = getTerritoryRemaining(territory);
+  const remaining = getResourceNodeRemaining(node);
   if (selection) {
     setNarrativeMessage(selection, buildGatherResultPanel(check, actualGain, remaining, depletedNow));
   }
   addLog(formatCompactGatherResult(check, gain, didGainHitResourceLimit(plannedResourceGain, gain)));
 
   if (depletedNow) {
-    addLog('Запас клетки исчерпан. Зона стала истощённой: ' + territory.name + '.');
+    addLog('Запасы клетки исчерпаны. Зона стала истощённой: ' + territory.name + '.');
   }
 }
 
@@ -1514,7 +1501,7 @@ function exploreHiddenTerritory(key, approachKey) {
   territory.discoverProgress = currentProgress;
 
   spendStamina();
-  const check = resolveDiscoverCheck(approach, territory);
+  const check = resolveDiscoverCheck(approach, territory, approachKey);
   const progressGain = getDiscoverProgressGain(check);
   territory.discoverProgress = Math.min(requiredProgress, territory.discoverProgress + progressGain);
   const discovered = territory.discoverProgress >= requiredProgress;
@@ -1558,7 +1545,7 @@ function researchTerritory(key, approachKey) {
   territory.progress = currentProgress;
 
   spendStamina();
-  const check = resolveResearchCheck(approach, territory);
+  const check = resolveResearchCheck(approach, territory, approachKey);
   const progressGain = getResearchProgressGain(check);
   territory.progress = Math.min(requiredProgress, territory.progress + progressGain);
   const opened = territory.progress >= requiredProgress;
@@ -1698,13 +1685,23 @@ function rollD6() {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-function resolveResearchCheck(approach, territory) {
+
+function getTerritoryApproachBaseDifficulty(territory, approachKey) {
+  const difficulties = territory && territory.approachDifficulties ? territory.approachDifficulties : null;
+  if (difficulties && difficulties[approachKey] !== undefined) {
+    return Math.max(1, savedNumber(difficulties[approachKey], 8));
+  }
+
+  return Math.max(1, savedNumber(territory && territory.difficulty, 8));
+}
+
+function resolveResearchCheck(approach, territory, approachKey) {
   const roll = roll2d6();
   const statKey = approach.statKey || 'strength';
   const statLabel = heroStatLabels[statKey] || 'Характеристика';
   const statValue = getHeroStatValue(statKey);
   const total = roll.total + statValue;
-  const baseDifficulty = Math.max(1, savedNumber(territory && territory.difficulty, 1));
+  const baseDifficulty = getTerritoryApproachBaseDifficulty(territory, approachKey);
   const difficulty = getResearchEffectiveDifficulty(baseDifficulty);
   const result = getResearchCheckResult(roll.total, total, difficulty);
 
@@ -1735,13 +1732,13 @@ function getResearchCheckResult(naturalTotal, total, difficulty) {
   return { label: 'Успех', progressGain: 1 };
 }
 
-function resolveDiscoverCheck(approach, territory) {
+function resolveDiscoverCheck(approach, territory, approachKey) {
   const roll = roll2d6();
   const statKey = approach.statKey || 'strength';
   const statLabel = heroStatLabels[statKey] || 'Характеристика';
   const statValue = getHeroStatValue(statKey);
   const total = roll.total + statValue;
-  const baseDifficulty = Math.max(1, savedNumber(territory && territory.difficulty, 8));
+  const baseDifficulty = getTerritoryApproachBaseDifficulty(territory, approachKey);
   const difficulty = getResearchEffectiveDifficulty(baseDifficulty);
   const result = getDiscoverCheckResult(roll.total, total, difficulty);
 
@@ -1774,9 +1771,9 @@ function getDiscoverProgressGain(check) {
   return Math.max(0, savedNumber(check.progressGain, 0));
 }
 
-function resolveGatherCheck(resource, territory) {
+function resolveGatherCheck(resource, territory, node) {
   const roll = roll2d6();
-  const result = getGatherCheckResult(roll.total, territory);
+  const result = getGatherCheckResult(roll.total, node || territory);
 
   return {
     resource,
@@ -1786,9 +1783,9 @@ function resolveGatherCheck(resource, territory) {
   };
 }
 
-function getGatherCheckResult(total, territory) {
-  const yieldMin = Math.max(0, savedNumber(territory.yieldMin, 1));
-  const yieldMax = Math.max(yieldMin, savedNumber(territory.yieldMax, yieldMin));
+function getGatherCheckResult(total, resourceNode) {
+  const yieldMin = Math.max(0, savedNumber(resourceNode.yieldMin, 1));
+  const yieldMax = Math.max(yieldMin, savedNumber(resourceNode.yieldMax, yieldMin));
 
   if (total === 2) return { label: 'Критический провал', gained: 0 };
   if (total <= 5) return { label: 'Провал', gained: 0 };
@@ -1843,29 +1840,32 @@ function formatSignedModifier(value) {
 
 function getTerritoryOutputText(key) {
   const territory = state.territories[key] || territoryBlueprints[key];
+  const nodes = getTerritoryResourceNodes(territory);
 
-  if (!territory || !territory.resource) {
+  if (!territory || nodes.length === 0) {
     return 'ресурс скрыт';
   }
 
-  if (territory.yieldMin !== undefined && territory.yieldMax !== undefined) {
-    return getTerritoryYieldText(territory) + ' ' + resourceGenitiveLabels[territory.resource];
-  }
-
-  return 'Сбор ресурса: ' + resourceLabels[territory.resource];
+  return nodes.map(function (node) {
+    return getResourceNodeYieldText(node) + ' ' + resourceGenitiveLabels[node.key];
+  }).join(', ');
 }
 
 function getTerritoryResourceText(territory) {
-  if (!territory.resource) {
+  const nodes = getTerritoryResourceNodes(territory);
+
+  if (nodes.length === 0) {
     return 'ресурс скрыт';
   }
 
-  return resourceLabels[territory.resource] || territory.resource;
+  return nodes.map(function (node) {
+    return resourceLabels[node.key] || node.key;
+  }).join(', ');
 }
 
-function getTerritoryYieldText(territory) {
-  const min = savedNumber(territory.yieldMin, NaN);
-  const max = savedNumber(territory.yieldMax, NaN);
+function getResourceNodeYieldText(node) {
+  const min = savedNumber(node.yieldMin, NaN);
+  const max = savedNumber(node.yieldMax, NaN);
 
   if (!Number.isFinite(min) || !Number.isFinite(max)) {
     return 'добыча скрыта';
@@ -1874,16 +1874,31 @@ function getTerritoryYieldText(territory) {
   return min === max ? String(min) : min + '–' + max;
 }
 
+function getTerritoryYieldText(territory) {
+  const nodes = getTerritoryResourceNodes(territory);
+
+  if (nodes.length === 0) {
+    return 'добыча скрыта';
+  }
+
+  return nodes.map(function (node) {
+    return (resourceLabels[node.key] || node.key) + ': ' + getResourceNodeYieldText(node);
+  }).join('; ');
+}
+
 function getTerritoryOpenSummaryLines(territory) {
-  return [
-    'Ресурс: ' + getTerritoryResourceText(territory),
-    'Добыча: ' + getTerritoryYieldText(territory),
-    getTerritoryStockText(territory)
-  ];
+  const nodes = getTerritoryResourceNodes(territory);
+  const lines = [];
+
+  for (let i = 0; i < nodes.length; i++) {
+    lines.push(getResourceNodeSummaryLine(nodes[i], territory.status));
+  }
+
+  return lines;
 }
 
 function getTerritoryShortSummaryLine(territory) {
-  return 'Ресурс: ' + getTerritoryResourceText(territory) + ' · ' + getTerritoryStockText(territory);
+  return getTerritoryOpenSummaryLines(territory).join(' · ');
 }
 
 function getTerritoryProgressRemaining(territory) {
@@ -1907,20 +1922,43 @@ function getTerritoryDiscoverProgressRemaining(territory) {
   return Math.max(0, getTerritoryDiscoverProgressRequired(territory) - getTerritoryDiscoverProgress(territory));
 }
 
+function getResourceNodeRemaining(node) {
+  return Math.max(0, savedNumber(node.remaining, 0));
+}
+
 function getTerritoryRemaining(territory) {
-  return Math.max(0, savedNumber(territory.remaining, 0));
+  const nodes = getTerritoryResourceNodes(territory);
+  let total = 0;
+
+  for (let i = 0; i < nodes.length; i++) {
+    total += getResourceNodeRemaining(nodes[i]);
+  }
+
+  return total;
+}
+
+function getResourceNodeSummaryLine(node, territoryStatus) {
+  const label = resourceLabels[node.key] || node.key;
+  if (territoryStatus === 'depleted') {
+    return label + ': добыча минимальная, 1 за действие';
+  }
+
+  return label + ': добыча ' + getResourceNodeYieldText(node) + ', запас ' + getResourceNodeRemaining(node);
 }
 
 function getTerritoryStockText(territory) {
   if (territory.status === 'depleted') {
-    return 'Запас истощён. Минимальная добыча: 1';
+    return 'Запасы истощены. Минимальная добыча: 1 на каждый ресурсный узел';
   }
 
-  return 'Запас: ' + getTerritoryRemaining(territory);
+  return getTerritoryResourceNodes(territory).map(function (node) {
+    return (resourceLabels[node.key] || node.key) + ': запас ' + getResourceNodeRemaining(node);
+  }).join('; ');
 }
 
 function canGatherTerritory(territory) {
-  return (territory.status === 'open' || territory.status === 'depleted') && Boolean(territoryGatherActions[territory.resource]);
+  const nodes = getTerritoryResourceNodes(territory);
+  return (territory.status === 'open' || territory.status === 'depleted') && nodes.length > 0;
 }
 
 function getMissingResources(cost) {
@@ -2243,7 +2281,7 @@ function renderTerritories() {
       detailsHtml += '<p>' + territory.description + '</p>' +
         '<em>Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '</em>';
     } else {
-      detailsHtml += '<em>Исследований до обнаружения: ' + getTerritoryDiscoverProgressRemaining(territory) + '</em>';
+      detailsHtml += '<em>Обнаружение: ' + getTerritoryDiscoverProgress(territory) + ' / ' + getTerritoryDiscoverProgressRequired(territory) + '</em>';
     }
 
     card.innerHTML = '<button class="card-select" type="button" data-territory-key="' + key + '">' +
@@ -2532,7 +2570,7 @@ function getShipStatusLabel(status) {
 
 function getTerritoryPanelDescription(territory) {
   if (territory.status === 'hidden') {
-    return 'Статус: Скрыта. Исследований до обнаружения: ' + getTerritoryDiscoverProgressRemaining(territory) + '.';
+    return 'Статус: Скрыта. Обнаружение: ' + getTerritoryDiscoverProgress(territory) + ' / ' + getTerritoryDiscoverProgressRequired(territory) + '.';
   }
 
   if (territory.status === 'discovered') {
@@ -2551,7 +2589,7 @@ function getTerritoryInspectDescription(territory) {
     return territory.description + ' Статус: Обнаружена. Исследование: ' + territory.progress + ' / ' + territory.requiredProgress + '.';
   }
 
-  return 'Статус: Скрыта. Исследований до обнаружения: ' + getTerritoryDiscoverProgressRemaining(territory) + '.';
+  return 'Статус: Скрыта. Обнаружение: ' + getTerritoryDiscoverProgress(territory) + ' / ' + getTerritoryDiscoverProgressRequired(territory) + '.';
 }
 
 function renderObjectActionOptions(selection) {
@@ -2597,7 +2635,7 @@ function renderObjectActionOptions(selection) {
   if (selection.kind === 'territory') {
     const territory = state.territories[selection.key];
     if (territory.status === 'open' || territory.status === 'depleted') {
-      appendActionOption(getGatherActionIcon(territory), formatActionTitle(getGatherActionTitle(selection.key), {}), getGatherActionNote(territory), 'gatherKey', selection.key, false);
+      appendGatherResourceNodeOptions(selection.key, territory);
     } else if (territory.status === 'discovered') {
       appendResearchApproachOptions(selection.key, territory);
     } else if (territory.status === 'hidden') {
@@ -2630,13 +2668,23 @@ function renderObjectActionOptions(selection) {
   }
 }
 
+
+function appendGatherResourceNodeOptions(key, territory) {
+  const nodes = getTerritoryResourceNodes(territory);
+
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    appendActionOption(getGatherActionIcon(node), formatActionTitle(getGatherActionTitle(key, node.key), {}), getGatherActionNote(node), 'gatherKey', key + ':' + node.key, false);
+  }
+}
+
 function appendResearchApproachOptions(key, territory) {
   const approachKeys = Object.keys(researchApproaches);
 
   for (let i = 0; i < approachKeys.length; i++) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
-    const baseDifficulty = Math.max(1, savedNumber(territory.difficulty, 1));
+    const baseDifficulty = getTerritoryApproachBaseDifficulty(territory, approachKey);
     const difficulty = getResearchEffectiveDifficulty(baseDifficulty);
     const statLabel = heroStatLabels[approach.statKey] || 'Характеристика';
     appendActionOption('🔍', formatActionTitle('Исследовать зону', {}), statLabel + ' · ' + formatEffectiveDifficulty(baseDifficulty, difficulty), 'researchApproachKey', key + ':' + approachKey, false);
@@ -2650,7 +2698,7 @@ function appendDiscoverApproachOptions(key, territory) {
     const approachKey = approachKeys[i];
     const approach = researchApproaches[approachKey];
     const statLabel = heroStatLabels[approach.statKey] || 'Характеристика';
-    const baseDifficulty = Math.max(1, savedNumber(territory.difficulty, 8));
+    const baseDifficulty = getTerritoryApproachBaseDifficulty(territory, approachKey);
     const difficulty = getResearchEffectiveDifficulty(baseDifficulty);
     appendActionOption('🔍', formatActionTitle('Исследовать зону', {}), statLabel + ' · ' + formatEffectiveDifficulty(baseDifficulty, difficulty), 'discoverApproachKey', key + ':' + approachKey, false);
   }
@@ -2721,8 +2769,8 @@ function formatMaybeCost(cost) {
 }
 
 
-function getGatherActionIcon(territory) {
-  if (!territory) {
+function getGatherActionIcon(resourceSource) {
+  if (!resourceSource) {
     return '⛏️';
   }
 
@@ -2732,30 +2780,37 @@ function getGatherActionIcon(territory) {
     components: '⚙️',
     food: '🍖'
   };
+  const resource = resourceSource.key || resourceSource.resource;
 
-  return icons[territory.resource] || '⛏️';
+  return icons[resource] || '⛏️';
 }
 
-function getGatherActionNote(territory) {
-  if (!territory) {
+function getGatherActionNote(resourceSource) {
+  if (!resourceSource) {
     return 'Собрать доступный ресурс';
   }
 
   const notes = {
     water: 'Пополнить запасы воды',
     metal: 'Поиск металла и обломков',
-    components: 'Поиск металла и компонентов',
+    components: 'Поиск компонентов',
     food: 'Пополнить запасы еды'
   };
+  const resource = resourceSource.key || resourceSource.resource;
 
-  return notes[territory.resource] || 'Собрать доступный ресурс';
+  return notes[resource] || 'Собрать доступный ресурс';
 }
 
-function getGatherActionTitle(key) {
+function getGatherActionTitle(key, nodeKey) {
   const territory = state.territories[key] || territoryBlueprints[key];
 
   if (!territory) {
     return 'Собрать ресурс';
+  }
+
+  const node = getTerritoryResourceNode(territory, nodeKey);
+  if (node) {
+    return node.action || territoryGatherActions[node.key] || 'Собрать ресурс';
   }
 
   return territory.action || territoryGatherActions[territory.resource] || 'Собрать ресурс';
@@ -3356,15 +3411,14 @@ function mergeSavedState(saved) {
       nextTerritory.progress = savedNumber(savedTerritory.progress, nextTerritory.progress);
       nextTerritory.discoverProgressRequired = savedNumber(savedTerritory.discoverProgressRequired, nextTerritory.discoverProgressRequired);
       nextTerritory.discoverProgress = savedNumber(savedTerritory.discoverProgress, nextTerritory.discoverProgress);
-      nextTerritory.remaining = Math.max(0, savedNumber(savedTerritory.remaining, nextTerritory.remaining || 0));
+      migrateSavedTerritoryResourceNodes(nextTerritory, savedTerritory);
       if (nextTerritory.status === 'depleted') {
-        nextTerritory.remaining = 0;
+        depleteTerritoryResourceNodes(nextTerritory);
       }
       normalizeTerritoryProgress(nextTerritory);
     }
   }
 
-  applyStarterTerritoryConcept(next.territories);
   if (next.activeResearchEvent && next.territories[next.activeResearchEvent.territoryKey].status !== 'discovered') {
     next.activeResearchEvent = null;
   }
@@ -3376,29 +3430,43 @@ function mergeSavedState(saved) {
   return next;
 }
 
-function applyStarterTerritoryConcept(territories) {
-  const keys = ['crashSite', 'nearDebris', 'wetLowland', 'sandRidge'];
 
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    const territory = territories[key];
-    const blueprint = territoryBlueprints[key];
+function migrateSavedTerritoryResourceNodes(nextTerritory, savedTerritory) {
+  const nodes = getTerritoryResourceNodes(nextTerritory);
+  const savedNodes = Array.isArray(savedTerritory.resourceNodes) ? savedTerritory.resourceNodes : [];
 
-    if (!territory || !blueprint) {
-      continue;
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    let savedNode = null;
+    for (let j = 0; j < savedNodes.length; j++) {
+      if (savedNodes[j] && savedNodes[j].key === node.key) {
+        savedNode = savedNodes[j];
+        break;
+      }
     }
 
-    territory.status = blueprint.status;
-    territory.resource = blueprint.resource;
-    territory.yieldMin = blueprint.yieldMin;
-    territory.yieldMax = blueprint.yieldMax;
-    territory.baseGain = { ...blueprint.baseGain };
-    territory.remaining = blueprint.remaining;
-    territory.action = blueprint.action;
-    territory.progress = blueprint.progress;
-    territory.requiredProgress = blueprint.requiredProgress;
+    if (savedNode) {
+      node.remaining = clampSavedNumber(savedNode.remaining, node.remaining, 0, node.remaining);
+    } else if (savedTerritory.resource === node.key || nodes.length === 1) {
+      node.remaining = clampSavedNumber(savedTerritory.remaining, node.remaining, 0, node.remaining);
+    }
   }
+
+  syncTerritoryPrimaryResourceFields(nextTerritory);
 }
+
+function depleteTerritoryResourceNodes(territory) {
+  const nodes = getTerritoryResourceNodes(territory);
+  for (let i = 0; i < nodes.length; i++) {
+    nodes[i].remaining = 0;
+  }
+  syncTerritoryPrimaryResourceFields(territory);
+}
+
+function applyStarterTerritoryConcept() {
+  // Стартовый состав Пустошей теперь задаётся только territoryBlueprints.
+}
+
 
 function mergeSavedHero(savedHero) {
   const hero = createHero();
@@ -3485,7 +3553,8 @@ document.addEventListener('click', function (event) {
   } else if (target.dataset.lifeSupportActionKey) {
     performLifeSupportAction(target.dataset.lifeSupportActionKey);
   } else if (target.dataset.gatherKey) {
-    gatherTerritory(target.dataset.gatherKey);
+    const parts = target.dataset.gatherKey.split(':');
+    gatherTerritory(parts[0], parts[1]);
   } else if (target.dataset.researchKey) {
     researchTerritory(target.dataset.researchKey);
   } else if (target.dataset.startResearchKey) {
