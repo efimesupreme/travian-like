@@ -139,6 +139,31 @@ const rollResultTypes = {
   criticalSuccess: 'критический успех'
 };
 
+const maxHeroLevel = 20;
+const maxHeroStatValue = 5;
+const LEVEL_CONFIG = [
+  { level: 1, abilityPointsReward: 0, skillPointsReward: 1, xpToNext: 20 },
+  { level: 2, abilityPointsReward: 0, skillPointsReward: 1, xpToNext: 30 },
+  { level: 3, abilityPointsReward: 2, skillPointsReward: 0, xpToNext: 40 },
+  { level: 4, abilityPointsReward: 2, skillPointsReward: 0, xpToNext: 60 },
+  { level: 5, abilityPointsReward: 0, skillPointsReward: 1, xpToNext: 90 },
+  { level: 6, abilityPointsReward: 2, skillPointsReward: 0, xpToNext: 130 },
+  { level: 7, abilityPointsReward: 2, skillPointsReward: 0, xpToNext: 180 },
+  { level: 8, abilityPointsReward: 0, skillPointsReward: 1, xpToNext: 240 },
+  { level: 9, abilityPointsReward: 2, skillPointsReward: 0, xpToNext: 300 },
+  { level: 10, abilityPointsReward: 3, skillPointsReward: 0, xpToNext: 380 },
+  { level: 11, abilityPointsReward: 0, skillPointsReward: 1, xpToNext: 460 },
+  { level: 12, abilityPointsReward: 3, skillPointsReward: 0, xpToNext: 550 },
+  { level: 13, abilityPointsReward: 3, skillPointsReward: 0, xpToNext: 640 },
+  { level: 14, abilityPointsReward: 0, skillPointsReward: 1, xpToNext: 750 },
+  { level: 15, abilityPointsReward: 3, skillPointsReward: 0, xpToNext: 860 },
+  { level: 16, abilityPointsReward: 3, skillPointsReward: 0, xpToNext: 980 },
+  { level: 17, abilityPointsReward: 0, skillPointsReward: 2, xpToNext: 1100 },
+  { level: 18, abilityPointsReward: 4, skillPointsReward: 0, xpToNext: 1200 },
+  { level: 19, abilityPointsReward: 4, skillPointsReward: 0, xpToNext: 1400 },
+  { level: 20, abilityPointsReward: 0, skillPointsReward: 2, xpToNext: null }
+];
+
 
 const initialHeroCondition = {
   health: 100,
@@ -157,6 +182,19 @@ const initialHero = {
     strength: 1,
     wisdom: 1,
     agility: 1
+  },
+  level: 1,
+  experience: 0,
+  unspentAbilityPoints: 0,
+  unspentSkillPoints: 1,
+  spentAbilityPoints: {
+    health: 0,
+    stamina: 0
+  },
+  spentSkillPoints: {
+    strength: 0,
+    wisdom: 0,
+    agility: 0
   },
   equipment: {
     head: '',
@@ -882,6 +920,124 @@ function createInitialState() {
 
 function createHero() {
   return JSON.parse(JSON.stringify(initialHero));
+}
+
+function getLevelConfig(level) {
+  const numericLevel = Math.max(1, Math.min(maxHeroLevel, Math.floor(savedNumber(level, 1))));
+  return LEVEL_CONFIG[numericLevel - 1] || LEVEL_CONFIG[0];
+}
+
+function getXpToNextLevel(level) {
+  return getLevelConfig(level).xpToNext;
+}
+
+function getTotalXpForLevel(level) {
+  const targetLevel = Math.max(1, Math.min(maxHeroLevel, Math.floor(savedNumber(level, 1))));
+  let total = 0;
+
+  for (let i = 1; i < targetLevel; i++) {
+    total += savedNumber(getXpToNextLevel(i), 0);
+  }
+
+  return total;
+}
+
+function getLevelForExperience(experience) {
+  const totalExperience = Math.max(0, Math.floor(savedNumber(experience, 0)));
+  let level = 1;
+
+  while (level < maxHeroLevel) {
+    const xpToNext = getXpToNextLevel(level);
+    if (xpToNext === null || totalExperience < getTotalXpForLevel(level + 1)) {
+      break;
+    }
+    level += 1;
+  }
+
+  return level;
+}
+
+function getCurrentLevelProgress(hero) {
+  const sourceHero = hero || state.hero || createHero();
+  const level = Math.max(1, Math.min(maxHeroLevel, Math.floor(savedNumber(sourceHero.level, 1))));
+  const xpToNext = getXpToNextLevel(level);
+  const totalExperience = Math.max(0, Math.floor(savedNumber(sourceHero.experience, 0)));
+
+  if (xpToNext === null) {
+    return { level, current: 0, required: null, isMaxLevel: true };
+  }
+
+  return {
+    level,
+    current: Math.max(0, totalExperience - getTotalXpForLevel(level)),
+    required: xpToNext,
+    isMaxLevel: false
+  };
+}
+
+function addHeroExperience(amount, sourceText) {
+  state.hero = normalizeHeroProgression(state.hero);
+  const experienceGain = Math.max(0, Math.floor(savedNumber(amount, 0)));
+
+  if (experienceGain <= 0) {
+    return;
+  }
+
+  state.hero.experience += experienceGain;
+  if (sourceText) {
+    state.logMessages.unshift('Опыт +' + experienceGain + ': ' + sourceText + '.');
+    state.logMessages = state.logMessages.slice(0, maxLogMessages);
+  }
+  checkHeroLevelUps();
+  saveGame();
+  render();
+}
+
+function checkHeroLevelUps() {
+  state.hero = normalizeHeroProgression(state.hero);
+  const targetLevel = getLevelForExperience(state.hero.experience);
+
+  while (state.hero.level < targetLevel && state.hero.level < maxHeroLevel) {
+    state.hero.level += 1;
+    applyLevelReward(state.hero.level);
+  }
+}
+
+function applyLevelReward(level) {
+  const config = getLevelConfig(level);
+  const abilityReward = savedNumber(config.abilityPointsReward, 0);
+  const skillReward = savedNumber(config.skillPointsReward, 0);
+
+  state.hero.unspentAbilityPoints += abilityReward;
+  state.hero.unspentSkillPoints += skillReward;
+  state.logMessages.unshift('Герой достиг уровня ' + config.level + '.');
+  if (abilityReward > 0 || skillReward > 0) {
+    state.logMessages.unshift('Получено: очки способностей +' + abilityReward + ', очки навыков +' + skillReward + '.');
+  }
+  state.logMessages = state.logMessages.slice(0, maxLogMessages);
+}
+
+function normalizeHeroProgression(hero) {
+  const defaults = createHero();
+  const normalized = { ...defaults, ...(hero || {}) };
+  normalized.stats = { ...defaults.stats, ...(normalized.stats || {}) };
+  normalized.equipment = { ...defaults.equipment, ...(normalized.equipment || {}) };
+  normalized.thoughts = Array.isArray(normalized.thoughts) ? normalized.thoughts : defaults.thoughts.slice();
+  normalized.items = Array.isArray(normalized.items) ? normalized.items : defaults.items.slice();
+  normalized.level = Math.max(1, Math.min(maxHeroLevel, Math.floor(savedNumber(normalized.level, getLevelForExperience(normalized.experience)))));
+  normalized.experience = Math.max(0, Math.floor(savedNumber(normalized.experience, 0)));
+  normalized.unspentAbilityPoints = Math.max(0, Math.floor(savedNumber(normalized.unspentAbilityPoints, 0)));
+  normalized.unspentSkillPoints = Math.max(0, Math.floor(savedNumber(normalized.unspentSkillPoints, 1)));
+  normalized.spentAbilityPoints = {
+    health: Math.max(0, Math.floor(savedNumber(normalized.spentAbilityPoints && normalized.spentAbilityPoints.health, 0))),
+    stamina: Math.max(0, Math.floor(savedNumber(normalized.spentAbilityPoints && normalized.spentAbilityPoints.stamina, 0)))
+  };
+  normalized.spentSkillPoints = {
+    strength: Math.max(0, Math.floor(savedNumber(normalized.spentSkillPoints && normalized.spentSkillPoints.strength, 0))),
+    wisdom: Math.max(0, Math.floor(savedNumber(normalized.spentSkillPoints && normalized.spentSkillPoints.wisdom, 0))),
+    agility: Math.max(0, Math.floor(savedNumber(normalized.spentSkillPoints && normalized.spentSkillPoints.agility, 0)))
+  };
+  return normalized;
 }
 
 function createSystems() {
@@ -2051,6 +2207,62 @@ function formatStaminaGain(amount) {
   return '+' + amount + getCompactResourceLabel('stamina');
 }
 
+function spendAbilityPoint(target) {
+  state.hero = normalizeHeroProgression(state.hero);
+  state.heroCondition = normalizeHeroCondition(state.heroCondition);
+
+  if (!['health', 'stamina'].includes(target)) {
+    addLog('Неизвестное направление развития способности.');
+    return;
+  }
+
+  if (state.hero.unspentAbilityPoints <= 0) {
+    addLog('Нет нераспределённых очков способностей.');
+    return;
+  }
+
+  if (target === 'health') {
+    state.heroCondition.maxHealth += 5;
+    state.heroCondition.health = Math.min(state.heroCondition.maxHealth, state.heroCondition.health + 5);
+    state.hero.spentAbilityPoints.health += 1;
+    state.hero.unspentAbilityPoints -= 1;
+    addLog('Развитие: максимум здоровья +5.');
+    return;
+  }
+
+  state.heroCondition.maxStamina += 5;
+  state.heroCondition.stamina = Math.min(state.heroCondition.maxStamina, state.heroCondition.stamina + 5);
+  state.hero.spentAbilityPoints.stamina += 1;
+  state.hero.unspentAbilityPoints -= 1;
+  addLog('Развитие: максимум выносливости +5.');
+}
+
+function spendSkillPoint(statKey) {
+  state.hero = normalizeHeroProgression(state.hero);
+  const statKeys = Object.keys(heroStatLabels);
+
+  if (!statKeys.includes(statKey)) {
+    addLog('Неизвестная характеристика для развития.');
+    return;
+  }
+
+  if (state.hero.unspentSkillPoints <= 0) {
+    addLog('Нет нераспределённых очков навыков.');
+    return;
+  }
+
+  state.hero.stats[statKey] = Math.floor(savedNumber(state.hero.stats[statKey], 1));
+  if (state.hero.stats[statKey] >= maxHeroStatValue) {
+    addLog(heroStatLabels[statKey] + ' уже достигла максимума ' + maxHeroStatValue + '.');
+    return;
+  }
+
+  state.hero.stats[statKey] += 1;
+  state.hero.spentSkillPoints[statKey] += 1;
+  state.hero.unspentSkillPoints -= 1;
+  addLog('Развитие: ' + heroStatLabels[statKey] + ' +1.');
+}
+
 function addLog(message) {
   state.logMessages.unshift(message);
   state.logMessages = state.logMessages.slice(0, maxLogMessages);
@@ -2154,11 +2366,13 @@ function renderScreens() {
 }
 
 function renderHeroScreen() {
-  const hero = state.hero || createHero();
+  const hero = normalizeHeroProgression(state.hero || createHero());
+  state.hero = hero;
   elements.heroScreen.innerHTML =
     '<article class="hero-scene-card" aria-label="Карточка героя">' +
       '<div class="hero-compact-layout">' +
         '<div class="hero-info-column">' +
+          renderHeroDevelopment(hero) +
           renderHeroStats(hero.stats) +
           renderHeroSlots('Мысли', hero.thoughts, null, 'thoughts') +
           renderHeroSlots('Предметы', hero.items, null, 'items') +
@@ -2166,6 +2380,38 @@ function renderHeroScreen() {
         renderHeroEquipment(hero.equipment) +
       '</div>' +
     '</article>';
+}
+
+function renderHeroDevelopment(hero) {
+  const progress = getCurrentLevelProgress(hero);
+  const experienceLine = progress.isMaxLevel
+    ? 'Максимальный уровень'
+    : progress.current + ' / ' + progress.required + ' до следующего уровня';
+  const hasAbilityPoints = hero.unspentAbilityPoints > 0;
+  const hasSkillPoints = hero.unspentSkillPoints > 0;
+  const statKeys = Object.keys(heroStatLabels);
+  let skillButtons = '';
+
+  for (let i = 0; i < statKeys.length; i++) {
+    const key = statKeys[i];
+    const disabled = !hasSkillPoints || savedNumber(hero.stats[key], 1) >= maxHeroStatValue;
+    skillButtons += '<button class="development-button" type="button" data-spend-skill="' + key + '"' + (disabled ? ' disabled' : '') + '>+1 ' + heroStatLabels[key] + '</button>';
+  }
+
+  return '<section class="hero-section hero-development" aria-label="Развитие героя">' +
+    '<h4>Развитие</h4>' +
+    '<div class="hero-development-summary">' +
+      '<div class="hero-stat"><span>Уровень:</span><strong>' + hero.level + '</strong></div>' +
+      '<div class="hero-stat"><span>Опыт:</span><strong>' + experienceLine + '</strong></div>' +
+      '<div class="hero-stat"><span>Очки способностей:</span><strong>' + hero.unspentAbilityPoints + '</strong></div>' +
+      '<div class="hero-stat"><span>Очки навыков:</span><strong>' + hero.unspentSkillPoints + '</strong></div>' +
+    '</div>' +
+    '<div class="hero-development-actions" aria-label="Трата очков способностей">' +
+      '<button class="development-button" type="button" data-spend-ability="health"' + (hasAbilityPoints ? '' : ' disabled') + '>+5 здоровье</button>' +
+      '<button class="development-button" type="button" data-spend-ability="stamina"' + (hasAbilityPoints ? '' : ' disabled') + '>+5 выносливость</button>' +
+    '</div>' +
+    '<div class="hero-development-actions" aria-label="Трата очков навыков">' + skillButtons + '</div>' +
+  '</section>';
 }
 
 function renderHeroStats(stats) {
@@ -2475,7 +2721,7 @@ function getCurrentSelection() {
       kind: 'hero',
       name: hero.name,
       type: hero.type,
-      description: 'Герой стоит у аварийного интерфейса и сверяет маршрут между кораблём, пустошами и городом. Личные показатели пока служат ориентиром, а не отдельной механикой.',
+      description: 'Герой стоит у аварийного интерфейса и сверяет маршрут между кораблём, пустошами и городом. Развитие показывает уровень, опыт и доступные очки для усиления характеристик.',
       inspectDescription: 'Герой проверяет снаряжение и дыхание. Тело держится. Паника отступила, но усталость пока просто некуда записать в протокол.'
     };
   }
@@ -2599,7 +2845,13 @@ function renderObjectActionOptions(selection) {
   }
 
   if (selection.kind === 'hero') {
+    const hero = normalizeHeroProgression(state.hero);
     appendActionOption('🛌', 'Отдохнуть', formatStaminaGain(getRestStaminaRecovery()), 'heroAction', 'rest', false);
+    appendActionOption('❤️', 'Развить здоровье', 'Потратить 1 очко способностей', 'spendAbility', 'health', hero.unspentAbilityPoints <= 0);
+    appendActionOption('🫁', 'Развить выносливость', 'Потратить 1 очко способностей', 'spendAbility', 'stamina', hero.unspentAbilityPoints <= 0);
+    appendActionOption('💪', 'Развить Силу', 'Потратить 1 очко навыков', 'spendSkill', 'strength', hero.unspentSkillPoints <= 0 || savedNumber(hero.stats.strength, 1) >= maxHeroStatValue);
+    appendActionOption('🧠', 'Развить Мудрость', 'Потратить 1 очко навыков', 'spendSkill', 'wisdom', hero.unspentSkillPoints <= 0 || savedNumber(hero.stats.wisdom, 1) >= maxHeroStatValue);
+    appendActionOption('🏃', 'Развить Ловкость', 'Потратить 1 очко навыков', 'spendSkill', 'agility', hero.unspentSkillPoints <= 0 || savedNumber(hero.stats.agility, 1) >= maxHeroStatValue);
     appendActionOption('🎒', formatActionTitle('Проверить экипировку', {}), 'Осмотреть личные слоты', 'heroAction', 'equipment', false);
     appendActionOption('💭', formatActionTitle('Проверить мысли', {}), 'Заглянуть во внутренний список', 'heroAction', 'thoughts', false);
     appendActionOption('📦', formatActionTitle('Проверить предметы', {}), 'Сверить пустые ячейки', 'heroAction', 'items', false);
@@ -3264,6 +3516,7 @@ function getGenitiveName(name) {
 
 function saveGame() {
   state.resources = normalizeResources(state.resources, state.shipSystems);
+  state.hero = normalizeHeroProgression(state.hero);
   state.heroCondition = normalizeHeroCondition(state.heroCondition);
   localStorage.setItem(saveKey, JSON.stringify(state));
 }
@@ -3353,11 +3606,7 @@ function mergeSavedState(saved) {
   if (savedCondition.health === undefined && saved.health !== undefined) savedCondition.health = saved.health;
   if (savedCondition.stamina === undefined && saved.stamina !== undefined) savedCondition.stamina = saved.stamina;
   if (savedCondition.credits === undefined && saved.credits !== undefined) savedCondition.credits = saved.credits;
-  next.heroCondition.health = clampSavedNumber(savedCondition.health, initialHeroCondition.health, 0, initialHeroCondition.maxHealth);
-  next.heroCondition.maxHealth = initialHeroCondition.maxHealth;
-  next.heroCondition.stamina = clampSavedNumber(savedCondition.stamina, initialHeroCondition.stamina, 0, initialHeroCondition.maxStamina);
-  next.heroCondition.maxStamina = initialHeroCondition.maxStamina;
-  next.heroCondition.credits = Math.max(0, savedNumber(savedCondition.credits, initialHeroCondition.credits));
+  next.heroCondition = normalizeHeroCondition(savedCondition);
 
   next.turn = savedNumber(saved.turn, 1);
   next.mode = ['hero', 'territories', 'ship', 'city'].includes(saved.mode) ? saved.mode : (['recon', 'drones', 'map', 'research', 'Разведка', 'Дроны', 'Карта', 'карта'].includes(saved.mode) ? 'territories' : 'hero');
@@ -3484,11 +3733,31 @@ function mergeSavedHero(savedHero) {
     const statKeys = Object.keys(hero.stats);
     for (let i = 0; i < statKeys.length; i++) {
       const key = statKeys[i];
-      hero.stats[key] = savedNumber(savedHero.stats[key], hero.stats[key]);
+      hero.stats[key] = clampSavedNumber(savedHero.stats[key], hero.stats[key], 1, maxHeroStatValue);
     }
   }
 
-  return hero;
+  hero.experience = Math.max(0, Math.floor(savedNumber(savedHero.experience, hero.experience)));
+  hero.level = savedHero.level === undefined
+    ? getLevelForExperience(hero.experience)
+    : Math.max(1, Math.min(maxHeroLevel, Math.floor(savedNumber(savedHero.level, hero.level))));
+  hero.unspentAbilityPoints = Math.max(0, Math.floor(savedNumber(savedHero.unspentAbilityPoints, hero.unspentAbilityPoints)));
+  hero.unspentSkillPoints = Math.max(0, Math.floor(savedNumber(savedHero.unspentSkillPoints, hero.unspentSkillPoints)));
+
+  if (savedHero.spentAbilityPoints && typeof savedHero.spentAbilityPoints === 'object') {
+    hero.spentAbilityPoints.health = Math.max(0, Math.floor(savedNumber(savedHero.spentAbilityPoints.health, hero.spentAbilityPoints.health)));
+    hero.spentAbilityPoints.stamina = Math.max(0, Math.floor(savedNumber(savedHero.spentAbilityPoints.stamina, hero.spentAbilityPoints.stamina)));
+  }
+
+  if (savedHero.spentSkillPoints && typeof savedHero.spentSkillPoints === 'object') {
+    const skillKeys = Object.keys(hero.spentSkillPoints);
+    for (let i = 0; i < skillKeys.length; i++) {
+      const key = skillKeys[i];
+      hero.spentSkillPoints[key] = Math.max(0, Math.floor(savedNumber(savedHero.spentSkillPoints[key], hero.spentSkillPoints[key])));
+    }
+  }
+
+  return normalizeHeroProgression(hero);
 }
 
 function savedNumber(value, fallback) {
@@ -3524,6 +3793,10 @@ document.addEventListener('click', function (event) {
     switchMode(target.dataset.mode);
   } else if (target.dataset.heroSelect) {
     switchMode('hero');
+  } else if (target.dataset.spendAbility) {
+    spendAbilityPoint(target.dataset.spendAbility);
+  } else if (target.dataset.spendSkill) {
+    spendSkillPoint(target.dataset.spendSkill);
   } else if (target.dataset.heroAction) {
     performHeroAction(target.dataset.heroAction);
   } else if (target.dataset.backSelected) {
