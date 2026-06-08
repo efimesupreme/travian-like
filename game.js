@@ -168,8 +168,8 @@ const LEVEL_CONFIG = [
 
 const questTypeLabels = {
   main: 'Основной квест',
-  side: 'Задача',
-  extra: 'Доп. задача'
+  side: 'Второстепенная',
+  extra: 'Дополнительная'
 };
 const questTypeTitlePrefixes = {
   main: 'Квест',
@@ -186,7 +186,9 @@ const questVisibilityModes = ['level', 'chain', 'world', 'secret'];
 const questFilterKeys = ['known', 'available', 'locked', 'completed', 'main', 'side', 'extra'];
 const legacyQuestFilterAliases = {
   all: 'known',
-  active: 'known'
+  active: 'known',
+  available: 'known',
+  locked: 'known'
 };
 const territoryStatusRanks = {
   hidden: 0,
@@ -531,6 +533,24 @@ function getQuestStepCount(quest) {
 function getQuestCompletedStepCount(quest) {
   const progress = quest && quest.id ? getQuestProgress(quest.id) : createEmptyQuestProgress();
   return progress.completedSteps.length;
+}
+
+function getQuestProgressPercent(quest) {
+  if (!quest || !quest.id) {
+    return 0;
+  }
+
+  const progress = getQuestProgress(quest.id);
+  if (progress.completed || progress.rewardClaimed) {
+    return 100;
+  }
+
+  const stepCount = getQuestStepCount(quest);
+  if (stepCount <= 0) {
+    return 0;
+  }
+
+  return Math.round((progress.completedSteps.length / stepCount) * 100);
 }
 
 function getQuestStatus(quest) {
@@ -3490,10 +3510,10 @@ function renderTasks() {
 
   const titleBlock = document.createElement('div');
   const title = document.createElement('h3');
-  title.textContent = 'Реестр задач';
+  title.textContent = 'Задачи';
   const lead = document.createElement('p');
   lead.className = 'description';
-  lead.textContent = 'Временный реестр заглушек с фильтрами видимости по уровню Героя и условиям доступности.';
+  lead.textContent = 'Компактный список известных задач. Выберите строку, чтобы увидеть подробности в правой панели.';
   titleBlock.appendChild(title);
   titleBlock.appendChild(lead);
   header.appendChild(titleBlock);
@@ -3502,34 +3522,20 @@ function renderTasks() {
   summary.className = 'task-summary';
   const hero = normalizeHeroProgression(state.hero || createHero());
   const knownQuests = getKnownQuests();
-  const availableQuests = getAvailableQuests();
   const completedCount = questRegistry.reduce(function (total, quest) {
     const progress = getQuestProgress(quest.id);
     return total + (progress.completed || progress.rewardClaimed ? 1 : 0);
   }, 0);
+  appendTaskSummaryItem(summary, 'Известно', knownQuests.length + ' / ' + questRegistry.length);
+  appendTaskSummaryItem(summary, 'Завершено', completedCount);
   appendTaskSummaryItem(summary, 'Уровень Героя', hero.level);
-  appendTaskSummaryItem(summary, 'Опыт Героя', formatQuestNumber(hero.experience));
-  appendTaskSummaryItem(summary, 'Известно задач', knownQuests.length + ' / ' + questRegistry.length);
-  appendTaskSummaryItem(summary, 'Доступно задач', availableQuests.length);
-  appendTaskSummaryItem(summary, 'Завершено задач', completedCount);
-  appendTaskSummaryItem(summary, 'Скрыто задач', questRegistry.length - knownQuests.length);
-  appendTaskSummaryItem(summary, 'Получено опыта из задач', formatQuestNumber(calculateClaimedQuestXp()));
   header.appendChild(summary);
   elements.tasksScreen.appendChild(header);
 
   resetHiddenSelectedQuest();
 
   renderTaskFilters();
-
-  const sections = [
-    { type: 'main', title: 'Основной квест' },
-    { type: 'side', title: 'Задачи' },
-    { type: 'extra', title: 'Доп. задачи' }
-  ];
-
-  for (let i = 0; i < sections.length; i++) {
-    renderTaskSection(sections[i].type, sections[i].title);
-  }
+  renderTaskSection();
 }
 
 function appendTaskSummaryItem(summary, labelText, valueText) {
@@ -3545,13 +3551,11 @@ function appendTaskSummaryItem(summary, labelText, valueText) {
 
 function renderTaskFilters() {
   const filters = [
+    { key: 'main', label: 'Основные' },
+    { key: 'side', label: 'Второстепенные' },
+    { key: 'extra', label: 'Дополнительные' },
     { key: 'known', label: 'Все известные' },
-    { key: 'available', label: 'Доступные' },
-    { key: 'locked', label: 'Недоступные' },
-    { key: 'completed', label: 'Завершённые' },
-    { key: 'main', label: 'Основной квест' },
-    { key: 'side', label: 'Задачи' },
-    { key: 'extra', label: 'Доп. задачи' }
+    { key: 'completed', label: 'Завершённые' }
   ];
   const filterBar = document.createElement('div');
   filterBar.className = 'task-filters';
@@ -3560,6 +3564,7 @@ function renderTaskFilters() {
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.taskFilter = filters[i].key;
+    button.className = 'task-filter-button';
     button.classList.toggle('active', normalizeTaskFilter(state.taskFilter) === filters[i].key);
     button.textContent = filters[i].label;
     filterBar.appendChild(button);
@@ -3568,30 +3573,94 @@ function renderTaskFilters() {
   elements.tasksScreen.appendChild(filterBar);
 }
 
-function renderTaskSection(type, titleText) {
-  const visibleQuests = getQuestsByType(type).filter(function (quest) {
+function getTaskFilterLabel(filter) {
+  const labels = {
+    main: 'Основные',
+    side: 'Второстепенные',
+    extra: 'Дополнительные',
+    known: 'Все известные',
+    completed: 'Завершённые',
+    available: 'Доступные',
+    locked: 'Недоступные'
+  };
+  return labels[normalizeTaskFilter(filter)] || labels.known;
+}
+
+function getQuestTypeSortRank(type) {
+  const ranks = {
+    main: 0,
+    side: 1,
+    extra: 2
+  };
+  return ranks[type] === undefined ? 99 : ranks[type];
+}
+
+function getQuestListSortRank(quest) {
+  const progress = getQuestProgress(quest.id);
+  if (progress.completed || progress.rewardClaimed) {
+    return 2;
+  }
+  if (isQuestVisible(quest) && !isQuestAvailable(quest)) {
+    return 1;
+  }
+  return 0;
+}
+
+function compareQuestListItems(firstQuest, secondQuest) {
+  const filter = normalizeTaskFilter(state.taskFilter);
+  if (filter !== 'completed') {
+    const firstRank = getQuestListSortRank(firstQuest);
+    const secondRank = getQuestListSortRank(secondQuest);
+    if (firstRank !== secondRank) {
+      return firstRank - secondRank;
+    }
+  }
+
+  const firstLevel = savedNumber(firstQuest.level, 1);
+  const secondLevel = savedNumber(secondQuest.level, 1);
+  if (firstLevel !== secondLevel) {
+    return firstLevel - secondLevel;
+  }
+
+  if (filter !== 'completed') {
+    const firstTypeRank = getQuestTypeSortRank(firstQuest.type);
+    const secondTypeRank = getQuestTypeSortRank(secondQuest.type);
+    if (firstTypeRank !== secondTypeRank) {
+      return firstTypeRank - secondTypeRank;
+    }
+  }
+
+  return String(firstQuest.id).localeCompare(String(secondQuest.id), 'ru');
+}
+
+function getFilteredSortedQuests() {
+  return questRegistry.filter(function (quest) {
     return isQuestVisibleByFilter(quest, state.taskFilter);
-  });
+  }).sort(compareQuestListItems);
+}
+
+function renderTaskSection() {
+  const visibleQuests = getFilteredSortedQuests();
 
   const section = document.createElement('section');
-  section.className = 'task-section task-section-' + type;
+  section.className = 'task-section task-section-compact';
 
   const heading = document.createElement('h3');
-  heading.textContent = titleText + ' · ' + visibleQuests.length;
+  heading.textContent = getTaskFilterLabel(state.taskFilter) + ' · ' + visibleQuests.length;
   section.appendChild(heading);
 
   if (visibleQuests.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'description task-empty';
-    empty.textContent = 'Нет записей для выбранного фильтра.';
+    empty.textContent = 'Нет записей для выбранного раздела.';
     section.appendChild(empty);
   } else {
-    const grid = document.createElement('div');
-    grid.className = 'task-card-grid';
+    const list = document.createElement('div');
+    list.className = 'compact-task-list';
     for (let i = 0; i < visibleQuests.length; i++) {
-      grid.appendChild(createTaskCard(visibleQuests[i]));
+      list.appendChild(createTaskCard(visibleQuests[i]));
     }
-    section.appendChild(grid);
+    section.appendChild(list);
   }
 
   elements.tasksScreen.appendChild(section);
@@ -3599,56 +3668,46 @@ function renderTaskSection(type, titleText) {
 
 function createTaskCard(quest) {
   const progress = getQuestProgress(quest.id);
-  const stepCount = getQuestStepCount(quest);
-  const completedCount = progress.completedSteps.length;
+  const completed = progress.completed || progress.rewardClaimed;
   const card = document.createElement('article');
-  card.className = 'task-card';
+  card.className = 'task-card compact-task-card';
   card.classList.toggle('selected', state.selectedQuestId === quest.id);
-  card.classList.toggle('completed', progress.completed);
-  card.classList.toggle('locked', isQuestVisible(quest) && !isQuestAvailable(quest) && !progress.completed && !progress.rewardClaimed);
+  card.classList.toggle('completed', completed);
+  card.classList.toggle('locked', isQuestVisible(quest) && !isQuestAvailable(quest) && !completed);
 
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'task-card-select';
   button.dataset.questId = quest.id;
 
-  const kicker = document.createElement('span');
-  kicker.className = 'card-kicker';
-  kicker.textContent = quest.typeLabel;
-  button.appendChild(kicker);
+  const main = document.createElement('div');
+  main.className = 'task-card-main';
+
+  const badge = document.createElement('span');
+  badge.className = 'task-type-badge';
+  badge.textContent = quest.typeLabel;
+  main.appendChild(badge);
 
   const title = document.createElement('strong');
+  title.className = 'task-title';
   title.textContent = quest.title;
-  button.appendChild(title);
+  main.appendChild(title);
+  button.appendChild(main);
 
   const meta = document.createElement('div');
   meta.className = 'task-card-meta';
-  const metaLines = [
-    'Уровень: ' + quest.level,
-    'Тип: ' + quest.typeLabel,
-    'Опыт: ' + formatQuestNumber(quest.xpReward),
-    'Шаги: ' + completedCount + ' / ' + stepCount,
-    'Статус: ' + getQuestStatusLabel(quest)
-  ];
-  for (let i = 0; i < metaLines.length; i++) {
-    const item = document.createElement('small');
-    item.textContent = metaLines[i];
-    meta.appendChild(item);
-  }
+
+  const level = document.createElement('span');
+  level.className = 'task-level';
+  level.textContent = 'ур. ' + quest.level;
+  meta.appendChild(level);
+
+  const percent = document.createElement('span');
+  percent.className = 'task-progress';
+  percent.textContent = getQuestProgressPercent(quest) + '%';
+  meta.appendChild(percent);
+
   button.appendChild(meta);
-
-  appendQuestLockReasons(button, quest);
-
-  const description = document.createElement('p');
-  description.textContent = getQuestDescription(quest);
-  button.appendChild(description);
-
-  const steps = document.createElement('ol');
-  steps.className = 'task-step-list';
-  for (let i = 0; i < quest.steps.length; i++) {
-    steps.appendChild(createTaskStepNode(quest, progress, i));
-  }
-  button.appendChild(steps);
   card.appendChild(button);
 
   return card;
@@ -3992,14 +4051,25 @@ function getCitySelection() {
 
 function getQuestPanelDescription(quest) {
   const progress = getQuestProgress(quest.id);
+  const stepCount = getQuestStepCount(quest);
   const lines = [
     'Тип: ' + quest.typeLabel + '.',
     'Уровень: ' + quest.level + '.',
     'Награда опыта: ' + formatQuestNumber(quest.xpReward) + '.',
     'Статус: ' + getQuestStatusLabel(quest) + '.',
     getQuestDescription(quest),
-    'Прогресс шагов: ' + progress.completedSteps.length + ' / ' + getQuestStepCount(quest) + '.'
+    'Прогресс шагов: ' + progress.completedSteps.length + ' / ' + stepCount + ' (' + getQuestProgressPercent(quest) + '%).',
+    'Шаги:'
   ];
+
+  for (let i = 0; i < quest.steps.length; i++) {
+    const stepNumber = i + 1;
+    const isCompleted = progress.completedSteps.includes(stepNumber);
+    const currentStep = progress.currentStep || progress.completedSteps.length + 1;
+    const isCurrent = !isCompleted && !progress.completed && stepNumber === currentStep;
+    lines.push('- ' + getQuestStepText(quest.steps[i], i) + ' · ' + (isCompleted ? 'выполнен' : (isCurrent ? 'текущий' : 'позже')));
+  }
+
   const reasons = getQuestLockReasons(quest);
 
   if (!progress.completed && !progress.rewardClaimed && !isQuestAvailable(quest) && reasons.length > 0) {

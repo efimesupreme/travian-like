@@ -6136,11 +6136,11 @@ button:focus-visible {
 
 .tasks-registry-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.9fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.7fr);
+  gap: 14px;
   align-items: start;
   margin-bottom: 12px;
-  padding: 16px;
+  padding: 14px;
   border: 1px solid rgba(116, 215, 255, 0.16);
   border-radius: 16px;
   background: rgba(7, 17, 31, 0.58);
@@ -6154,13 +6154,13 @@ button:focus-visible {
 
 .task-summary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin: 0;
 }
 
 .task-summary div {
-  padding: 9px;
+  padding: 8px 9px;
   border: 1px solid rgba(116, 215, 255, 0.12);
   border-radius: 10px;
   background: rgba(13, 27, 45, 0.72);
@@ -6168,7 +6168,7 @@ button:focus-visible {
 
 .task-summary dt {
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
 }
 
@@ -6187,11 +6187,12 @@ button:focus-visible {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
+.task-filter-button,
 .task-filters button {
-  padding: 8px 11px;
+  padding: 8px 12px;
   border: 1px solid rgba(116, 215, 255, 0.18);
   border-radius: 999px;
   color: var(--muted);
@@ -6199,6 +6200,8 @@ button:focus-visible {
   cursor: pointer;
 }
 
+.task-filter-button.active,
+.task-filter-button:hover,
 .task-filters button.active,
 .task-filters button:hover {
   color: var(--text);
@@ -6207,55 +6210,66 @@ button:focus-visible {
 }
 
 .task-section {
-  margin-top: 16px;
+  margin-top: 14px;
   padding: 14px;
   border: 1px solid rgba(116, 215, 255, 0.14);
   border-radius: 16px;
   background: rgba(6, 15, 27, 0.45);
 }
 
-.task-card-grid {
+.task-card-grid,
+.compact-task-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 8px;
 }
 
-.task-card {
+.task-card,
+.compact-task-card {
   overflow: hidden;
   border: 1px solid rgba(116, 215, 255, 0.16);
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(10, 23, 39, 0.94);
-  box-shadow: inset 0 0 18px rgba(58, 165, 216, 0.03), 0 12px 28px rgba(0, 0, 0, 0.22);
+  box-shadow: inset 0 0 18px rgba(58, 165, 216, 0.03), 0 10px 22px rgba(0, 0, 0, 0.18);
 }
 
-.task-card.selected {
+.task-card.selected,
+.compact-task-card.selected {
   border-color: rgba(116, 215, 255, 0.95);
-  box-shadow: 0 0 0 2px rgba(116, 215, 255, 0.18), 0 0 30px rgba(31, 199, 255, 0.13);
+  box-shadow: 0 0 0 2px rgba(116, 215, 255, 0.18), 0 0 26px rgba(31, 199, 255, 0.12);
 }
 
-.task-card.completed {
+.task-card.completed,
+.compact-task-card.completed {
   opacity: 0.68;
   background: rgba(8, 17, 29, 0.9);
 }
 
-.task-card.locked {
-  border-color: rgba(255, 204, 102, 0.25);
-  background: rgba(27, 22, 14, 0.78);
+.task-card.locked,
+.compact-task-card.locked {
+  opacity: 0.78;
+  border-color: rgba(255, 204, 102, 0.22);
+  background: rgba(23, 21, 18, 0.82);
 }
 
 .task-card-select {
-  display: grid;
-  gap: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
-  padding: 14px;
+  min-height: 58px;
+  padding: 10px 12px;
   color: var(--text);
   text-align: left;
   background: transparent;
   cursor: pointer;
 }
 
-.task-card-select strong {
-  font-size: 1rem;
+.task-card-select strong,
+.task-title {
+  font-size: 0.96rem;
+  line-height: 1.25;
 }
 
 .task-card-select p {
@@ -6264,18 +6278,56 @@ button:focus-visible {
   line-height: 1.45;
 }
 
+.task-card-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.task-type-badge,
+.task-card .card-kicker {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border: 1px solid rgba(116, 215, 255, 0.16);
+  border-radius: 999px;
+  color: var(--accent);
+  background: rgba(116, 215, 255, 0.06);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.task-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .task-card-meta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .task-card-meta small,
-.task-card .card-kicker {
-  color: var(--accent);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
+.task-level,
+.task-progress {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.task-progress {
+  min-width: 42px;
+  color: var(--text);
+  font-weight: 800;
+  text-align: right;
 }
 
 .task-lock-reasons {
