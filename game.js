@@ -165,6 +165,256 @@ const LEVEL_CONFIG = [
 ];
 
 
+
+const questTypeLabels = {
+  main: 'Основной квест',
+  side: 'Задача',
+  extra: 'Доп. задача'
+};
+const questTypeTitlePrefixes = {
+  main: 'Квест',
+  side: 'Задача',
+  extra: 'Доп. задача'
+};
+const questStepCounts = {
+  main: 5,
+  side: 3,
+  extra: 1
+};
+const questDistributionByLevel = [
+  { level: 1, main: 1, side: 1, extra: 2 },
+  { level: 2, main: 1, side: 1, extra: 2 },
+  { level: 3, main: 1, side: 1, extra: 2 },
+  { level: 4, main: 1, side: 1, extra: 3 },
+  { level: 5, main: 1, side: 1, extra: 3 },
+  { level: 6, main: 1, side: 1, extra: 3 },
+  { level: 7, main: 1, side: 1, extra: 3 },
+  { level: 8, main: 1, side: 1, extra: 3 },
+  { level: 9, main: 1, side: 2, extra: 3 },
+  { level: 10, main: 1, side: 2, extra: 3 },
+  { level: 11, main: 1, side: 2, extra: 4 },
+  { level: 12, main: 1, side: 2, extra: 4 },
+  { level: 13, main: 1, side: 2, extra: 4 },
+  { level: 14, main: 1, side: 2, extra: 4 },
+  { level: 15, main: 1, side: 2, extra: 4 },
+  { level: 16, main: 1, side: 2, extra: 4 },
+  { level: 17, main: 1, side: 2, extra: 5 },
+  { level: 18, main: 1, side: 2, extra: 5 },
+  { level: 19, main: 1, side: 1, extra: 5 },
+  { level: 20, main: 0, side: 0, extra: 0 }
+];
+const questXpRewardByLevelBracket = [
+  { min: 1, max: 4, rewards: { main: 100, side: 40, extra: 20 } },
+  { min: 5, max: 8, rewards: { main: 160, side: 70, extra: 30 } },
+  { min: 9, max: 12, rewards: { main: 240, side: 100, extra: 50 } },
+  { min: 13, max: 16, rewards: { main: 360, side: 150, extra: 70 } },
+  { min: 17, max: 20, rewards: { main: 500, side: 220, extra: 100 } }
+];
+const questRegistry = buildQuestRegistry();
+const questRegistryById = questRegistry.reduce(function (registryById, quest) {
+  registryById[quest.id] = quest;
+  return registryById;
+}, {});
+
+function getQuestXpReward(type, level) {
+  const questType = questTypeLabels[type] ? type : 'extra';
+  const questLevel = Math.max(1, Math.min(maxHeroLevel, Math.floor(savedNumber(level, 1))));
+
+  for (let i = 0; i < questXpRewardByLevelBracket.length; i++) {
+    const bracket = questXpRewardByLevelBracket[i];
+    if (questLevel >= bracket.min && questLevel <= bracket.max) {
+      return bracket.rewards[questType];
+    }
+  }
+
+  return questXpRewardByLevelBracket[0].rewards[questType];
+}
+
+function buildQuestRegistry() {
+  const quests = [];
+  const counters = { main: 0, side: 0, extra: 0 };
+  const types = Object.keys(questTypeLabels);
+
+  for (let i = 0; i < questDistributionByLevel.length; i++) {
+    const distribution = questDistributionByLevel[i];
+    for (let typeIndex = 0; typeIndex < types.length; typeIndex++) {
+      const type = types[typeIndex];
+      const count = distribution[type];
+      for (let questIndex = 0; questIndex < count; questIndex++) {
+        counters[type] += 1;
+        quests.push(createQuestPlaceholder(type, counters[type], distribution.level));
+      }
+    }
+  }
+
+  return quests;
+}
+
+function createQuestPlaceholder(type, number, level) {
+  const paddedNumber = String(number).padStart(3, '0');
+  const stepCount = questStepCounts[type];
+  const titlePrefix = questTypeTitlePrefixes[type];
+
+  return {
+    id: type + '-' + paddedNumber,
+    type,
+    typeLabel: questTypeLabels[type],
+    level,
+    title: titlePrefix + ' №' + number + ' (ур. ' + level + ')',
+    description: '',
+    xpReward: getQuestXpReward(type, level),
+    steps: createQuestPlaceholderSteps(stepCount)
+  };
+}
+
+function createQuestPlaceholderSteps(stepCount) {
+  const steps = [];
+
+  for (let i = 1; i <= stepCount; i++) {
+    steps.push({
+      index: i,
+      title: '',
+      description: '',
+      condition: null
+    });
+  }
+
+  return steps;
+}
+
+function getQuestRegistry() {
+  return questRegistry;
+}
+
+function getQuestById(id) {
+  return questRegistryById[id] || null;
+}
+
+function getQuestsByType(type) {
+  return questRegistry.filter(function (quest) {
+    return quest.type === type;
+  });
+}
+
+function getQuestsByLevel(level) {
+  const questLevel = Math.max(1, Math.min(maxHeroLevel, Math.floor(savedNumber(level, 1))));
+  return questRegistry.filter(function (quest) {
+    return quest.level === questLevel;
+  });
+}
+
+function createEmptyQuestProgress() {
+  return {
+    currentStep: 0,
+    completedSteps: [],
+    completed: false,
+    rewardClaimed: false
+  };
+}
+
+function normalizeQuestProgressForQuest(quest, savedProgress) {
+  const nextProgress = createEmptyQuestProgress();
+  const saved = savedProgress && typeof savedProgress === 'object' ? savedProgress : {};
+  const stepCount = getQuestStepCount(quest);
+  const completedStepSet = {};
+  const savedCompletedSteps = Array.isArray(saved.completedSteps) ? saved.completedSteps : [];
+
+  for (let i = 0; i < savedCompletedSteps.length; i++) {
+    const stepIndex = Math.floor(savedNumber(savedCompletedSteps[i], 0));
+    if (stepIndex >= 1 && stepIndex <= stepCount) {
+      completedStepSet[stepIndex] = true;
+    }
+  }
+
+  nextProgress.completedSteps = Object.keys(completedStepSet).map(function (stepIndex) {
+    return Number(stepIndex);
+  }).sort(function (first, second) {
+    return first - second;
+  });
+  nextProgress.currentStep = Math.max(0, Math.min(stepCount, Math.floor(savedNumber(saved.currentStep, 0))));
+  nextProgress.completed = nextProgress.completedSteps.length >= stepCount;
+  nextProgress.rewardClaimed = nextProgress.completed && saved.rewardClaimed === true;
+
+  return nextProgress;
+}
+
+function mergeSavedQuestProgress(savedQuestProgress) {
+  const nextProgress = {};
+
+  if (!savedQuestProgress || typeof savedQuestProgress !== 'object') {
+    return nextProgress;
+  }
+
+  const questIds = Object.keys(savedQuestProgress);
+  for (let i = 0; i < questIds.length; i++) {
+    const questId = questIds[i];
+    const quest = getQuestById(questId);
+    if (!quest) {
+      continue;
+    }
+    nextProgress[questId] = normalizeQuestProgressForQuest(quest, savedQuestProgress[questId]);
+  }
+
+  return nextProgress;
+}
+
+function normalizeQuestProgressCollection(questProgress) {
+  return mergeSavedQuestProgress(questProgress);
+}
+
+function getQuestProgress(id) {
+  if (!state) {
+    return createEmptyQuestProgress();
+  }
+
+  if (!state.questProgress || typeof state.questProgress !== 'object') {
+    state.questProgress = {};
+  }
+
+  const quest = getQuestById(id);
+  if (!quest) {
+    return createEmptyQuestProgress();
+  }
+
+  if (!state.questProgress[id]) {
+    state.questProgress[id] = createEmptyQuestProgress();
+  }
+
+  state.questProgress[id] = normalizeQuestProgressForQuest(quest, state.questProgress[id]);
+  return state.questProgress[id];
+}
+
+function isQuestCompleted(id) {
+  return getQuestProgress(id).completed === true;
+}
+
+function getQuestStepCount(quest) {
+  return quest && Array.isArray(quest.steps) ? quest.steps.length : 0;
+}
+
+function getQuestCompletedStepCount(quest) {
+  const progress = quest && quest.id ? getQuestProgress(quest.id) : createEmptyQuestProgress();
+  return progress.completedSteps.length;
+}
+
+function getQuestStatus(quest) {
+  if (!quest || !quest.id) {
+    return 'notStarted';
+  }
+
+  const progress = getQuestProgress(quest.id);
+  if (progress.rewardClaimed) {
+    return 'rewardClaimed';
+  }
+  if (progress.completed) {
+    return 'completed';
+  }
+  if (progress.currentStep > 0 || progress.completedSteps.length > 0) {
+    return 'inProgress';
+  }
+  return 'notStarted';
+}
+
 const initialHeroCondition = {
   health: 100,
   maxHealth: 100,
@@ -908,6 +1158,7 @@ function createInitialState() {
     narrativeObjectId: '',
     narrativeMessage: '',
     activeResearchEvent: null,
+    questProgress: {},
     hero: createHero(),
     shipSystems: createSystems(),
     territories: createTerritories(),
@@ -3518,6 +3769,7 @@ function saveGame() {
   state.resources = normalizeResources(state.resources, state.shipSystems);
   state.hero = normalizeHeroProgression(state.hero);
   state.heroCondition = normalizeHeroCondition(state.heroCondition);
+  state.questProgress = normalizeQuestProgressCollection(state.questProgress);
   localStorage.setItem(saveKey, JSON.stringify(state));
 }
 
@@ -3624,6 +3876,7 @@ function mergeSavedState(saved) {
     };
   }
   next.hero = mergeSavedHero(saved.hero);
+  next.questProgress = mergeSavedQuestProgress(saved.questProgress);
 
 
   const savedSystems = saved.shipSystems || {};
