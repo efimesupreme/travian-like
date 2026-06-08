@@ -206,7 +206,7 @@ const questDistributionByLevel = [
 const questXpRewardByLevelBracket = [
   { min: 1, max: 4, rewards: { main: 100, side: 40, extra: 20 } },
   { min: 5, max: 8, rewards: { main: 160, side: 70, extra: 30 } },
-  { min: 9, max: 12, rewards: { main: 240, side: 100, extra: 50 } },
+  { min: 9, max: 12, rewards: { main: 240, side: 115, extra: 50 } },
   { min: 13, max: 16, rewards: { main: 360, side: 150, extra: 70 } },
   { min: 17, max: 20, rewards: { main: 500, side: 220, extra: 100 } }
 ];
@@ -413,6 +413,67 @@ function getQuestStatus(quest) {
     return 'inProgress';
   }
   return 'notStarted';
+}
+
+function getQuestStatusLabel(quest) {
+  const labels = {
+    notStarted: 'Не начато',
+    inProgress: 'В процессе',
+    completed: 'Выполнено',
+    rewardClaimed: 'Награда получена'
+  };
+
+  return labels[getQuestStatus(quest)] || labels.notStarted;
+}
+
+function calculateTotalQuestXp(type) {
+  return questRegistry.reduce(function (total, quest) {
+    if (type && quest.type !== type) {
+      return total;
+    }
+    return total + Math.max(0, savedNumber(quest.xpReward, 0));
+  }, 0);
+}
+
+function countRewardedQuests() {
+  return questRegistry.reduce(function (total, quest) {
+    return total + (getQuestProgress(quest.id).rewardClaimed ? 1 : 0);
+  }, 0);
+}
+
+function calculateClaimedQuestXp() {
+  return questRegistry.reduce(function (total, quest) {
+    return total + (getQuestProgress(quest.id).rewardClaimed ? Math.max(0, savedNumber(quest.xpReward, 0)) : 0);
+  }, 0);
+}
+
+function formatQuestNumber(value) {
+  return Math.max(0, Math.floor(savedNumber(value, 0))).toLocaleString('ru-RU');
+}
+
+function getQuestDescription(quest) {
+  return quest && quest.description ? quest.description : 'Описание будет добавлено позже.';
+}
+
+function getQuestStepText(step, index) {
+  if (step && (step.title || step.description)) {
+    return [step.title, step.description].filter(Boolean).join(' — ');
+  }
+
+  return 'Шаг ' + (index + 1) + ' — условие будет добавлено позже';
+}
+
+function isQuestVisibleByFilter(quest, filter) {
+  const questFilter = filter || 'all';
+  const status = getQuestStatus(quest);
+
+  if (questFilter === 'all') return true;
+  if (questFilter === 'main') return quest.type === 'main';
+  if (questFilter === 'side') return quest.type === 'side';
+  if (questFilter === 'extra') return quest.type === 'extra';
+  if (questFilter === 'active') return status !== 'rewardClaimed';
+  if (questFilter === 'completed') return status === 'completed' || status === 'rewardClaimed';
+  return true;
 }
 
 const initialHeroCondition = {
@@ -928,6 +989,7 @@ const elements = {
   shipScreen: document.getElementById('shipScreen'),
   territoriesScreen: document.getElementById('territoriesScreen'),
   cityScreen: document.getElementById('cityScreen'),
+  tasksScreen: document.getElementById('tasksScreen'),
   shipSystemsGrid: document.getElementById('shipSystemsGrid'),
   territoriesGrid: document.getElementById('territoriesGrid'),
   cityGrid: document.getElementById('cityGrid'),
@@ -1159,6 +1221,8 @@ function createInitialState() {
     narrativeMessage: '',
     activeResearchEvent: null,
     questProgress: {},
+    selectedQuestId: '',
+    taskFilter: 'all',
     hero: createHero(),
     shipSystems: createSystems(),
     territories: createTerritories(),
@@ -1482,7 +1546,7 @@ function protectMobileMode() {
 }
 
 function switchMode(mode) {
-  if (!['hero', 'territories', 'ship', 'city'].includes(mode)) {
+  if (!['hero', 'territories', 'ship', 'city', 'tasks'].includes(mode)) {
     return;
   }
 
@@ -1573,6 +1637,79 @@ function selectCityUnique(key) {
   clearNarrativeMessage();
   render();
   saveGame();
+}
+
+function setTaskFilter(filter) {
+  const allowedFilters = ['all', 'main', 'side', 'extra', 'active', 'completed'];
+  state.taskFilter = allowedFilters.includes(filter) ? filter : 'all';
+  saveGame();
+  render();
+}
+
+function selectQuest(id) {
+  if (!getQuestById(id)) {
+    return;
+  }
+
+  state.mode = 'tasks';
+  state.selectedQuestId = id;
+  state.actionPanelMode = 'actions';
+  state.inspectedObjectId = '';
+  clearNarrativeMessage();
+  render();
+  saveGame();
+}
+
+function completeNextQuestStep(id) {
+  const quest = getQuestById(id);
+  if (!quest) {
+    addLog('Задача не найдена.');
+    return;
+  }
+
+  state.mode = 'tasks';
+  state.selectedQuestId = id;
+  const progress = getQuestProgress(id);
+  const stepCount = getQuestStepCount(quest);
+
+  if (progress.completed && progress.rewardClaimed) {
+    addLog('Задача уже завершена: ' + quest.title + '. Награда уже получена.');
+    return;
+  }
+
+  let nextStep = 0;
+  for (let i = 1; i <= stepCount; i++) {
+    if (!progress.completedSteps.includes(i)) {
+      nextStep = i;
+      break;
+    }
+  }
+
+  if (nextStep > 0) {
+    progress.completedSteps.push(nextStep);
+    progress.completedSteps.sort(function (first, second) { return first - second; });
+    progress.currentStep = Math.min(stepCount, nextStep);
+    addLogOnly('Шаг выполнен: ' + quest.title + ' — ' + progress.completedSteps.length + ' / ' + stepCount + '.');
+  }
+
+  if (progress.completedSteps.length >= stepCount) {
+    progress.completed = true;
+    progress.currentStep = stepCount;
+    if (!progress.rewardClaimed) {
+      progress.rewardClaimed = true;
+      addLogOnly('Задача завершена: ' + quest.title + '. Получено опыта: ' + quest.xpReward + '.');
+      addHeroExperience(quest.xpReward, quest.title);
+      return;
+    }
+  }
+
+  saveGame();
+  render();
+}
+
+function addLogOnly(message) {
+  state.logMessages.unshift(message);
+  state.logMessages = state.logMessages.slice(0, maxLogMessages);
 }
 
 function performCityActivity(districtKey, activityKey) {
@@ -2529,6 +2666,7 @@ function render() {
   renderShipSystems();
   renderTerritories();
   renderCity();
+  renderTasks();
   renderSelectionPanel();
   renderLog();
 }
@@ -2597,10 +2735,12 @@ function renderScreens() {
   const isShip = state.mode === 'ship';
   const isTerritories = state.mode === 'territories';
   const isCity = state.mode === 'city';
+  const isTasks = state.mode === 'tasks';
   elements.heroScreen.classList.toggle('hidden', !isHero);
   elements.shipScreen.classList.toggle('hidden', !isShip);
   elements.territoriesScreen.classList.toggle('hidden', !isTerritories);
   elements.cityScreen.classList.toggle('hidden', !isCity);
+  elements.tasksScreen.classList.toggle('hidden', !isTasks);
   if (isHero) {
     elements.screenTitle.textContent = 'Герой';
     elements.screenSubtitle.textContent = 'Состояние, характеристики и личные слоты героя.';
@@ -2613,6 +2753,9 @@ function renderScreens() {
   } else if (isCity) {
     elements.screenTitle.textContent = 'Город';
     elements.screenSubtitle.textContent = 'Ашхаб-18: районы, активности и уникальные точки.';
+  } else if (isTasks) {
+    elements.screenTitle.textContent = 'Задачи';
+    elements.screenSubtitle.textContent = 'Квесты, задачи и дополнительные цели Героя.';
   }
 }
 
@@ -2790,6 +2933,182 @@ function renderTerritories() {
   }
 }
 
+function renderTasks() {
+  elements.tasksScreen.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'tasks-registry-header';
+
+  const titleBlock = document.createElement('div');
+  const title = document.createElement('h3');
+  title.textContent = 'Реестр задач';
+  const lead = document.createElement('p');
+  lead.className = 'description';
+  lead.textContent = 'Временный реестр заглушек для проверки прогресса, опыта и уровней.';
+  titleBlock.appendChild(title);
+  titleBlock.appendChild(lead);
+  header.appendChild(titleBlock);
+
+  const summary = document.createElement('dl');
+  summary.className = 'task-summary';
+  const hero = normalizeHeroProgression(state.hero || createHero());
+  appendTaskSummaryItem(summary, 'Уровень Героя', hero.level);
+  appendTaskSummaryItem(summary, 'Опыт Героя', formatQuestNumber(hero.experience));
+  appendTaskSummaryItem(summary, 'Выполнено задач', countRewardedQuests() + ' / ' + questRegistry.length);
+  appendTaskSummaryItem(summary, 'Доступно опыта в реестре', formatQuestNumber(calculateTotalQuestXp()));
+  appendTaskSummaryItem(summary, 'Получено опыта из задач', formatQuestNumber(calculateClaimedQuestXp()));
+  header.appendChild(summary);
+  elements.tasksScreen.appendChild(header);
+
+  const totalLine = document.createElement('p');
+  totalLine.className = 'task-total-line';
+  totalLine.textContent = 'Всего опыта в реестре: ' + formatQuestNumber(calculateTotalQuestXp()) + '.';
+  elements.tasksScreen.appendChild(totalLine);
+
+  renderTaskFilters();
+
+  const sections = [
+    { type: 'main', title: 'Основной квест' },
+    { type: 'side', title: 'Задачи' },
+    { type: 'extra', title: 'Доп. задачи' }
+  ];
+
+  for (let i = 0; i < sections.length; i++) {
+    renderTaskSection(sections[i].type, sections[i].title);
+  }
+}
+
+function appendTaskSummaryItem(summary, labelText, valueText) {
+  const item = document.createElement('div');
+  const label = document.createElement('dt');
+  label.textContent = labelText;
+  const value = document.createElement('dd');
+  value.textContent = valueText;
+  item.appendChild(label);
+  item.appendChild(value);
+  summary.appendChild(item);
+}
+
+function renderTaskFilters() {
+  const filters = [
+    { key: 'all', label: 'Все' },
+    { key: 'main', label: 'Основной квест' },
+    { key: 'side', label: 'Задачи' },
+    { key: 'extra', label: 'Доп. задачи' },
+    { key: 'active', label: 'Не завершены' },
+    { key: 'completed', label: 'Завершены' }
+  ];
+  const filterBar = document.createElement('div');
+  filterBar.className = 'task-filters';
+
+  for (let i = 0; i < filters.length; i++) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.taskFilter = filters[i].key;
+    button.classList.toggle('active', (state.taskFilter || 'all') === filters[i].key);
+    button.textContent = filters[i].label;
+    filterBar.appendChild(button);
+  }
+
+  elements.tasksScreen.appendChild(filterBar);
+}
+
+function renderTaskSection(type, titleText) {
+  const visibleQuests = getQuestsByType(type).filter(function (quest) {
+    return isQuestVisibleByFilter(quest, state.taskFilter);
+  });
+
+  const section = document.createElement('section');
+  section.className = 'task-section task-section-' + type;
+
+  const heading = document.createElement('h3');
+  heading.textContent = titleText + ' · ' + visibleQuests.length;
+  section.appendChild(heading);
+
+  if (visibleQuests.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'description task-empty';
+    empty.textContent = 'Нет записей для выбранного фильтра.';
+    section.appendChild(empty);
+  } else {
+    const grid = document.createElement('div');
+    grid.className = 'task-card-grid';
+    for (let i = 0; i < visibleQuests.length; i++) {
+      grid.appendChild(createTaskCard(visibleQuests[i]));
+    }
+    section.appendChild(grid);
+  }
+
+  elements.tasksScreen.appendChild(section);
+}
+
+function createTaskCard(quest) {
+  const progress = getQuestProgress(quest.id);
+  const stepCount = getQuestStepCount(quest);
+  const completedCount = progress.completedSteps.length;
+  const card = document.createElement('article');
+  card.className = 'task-card';
+  card.classList.toggle('selected', state.selectedQuestId === quest.id);
+  card.classList.toggle('completed', progress.completed);
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'task-card-select';
+  button.dataset.questId = quest.id;
+
+  const kicker = document.createElement('span');
+  kicker.className = 'card-kicker';
+  kicker.textContent = quest.typeLabel;
+  button.appendChild(kicker);
+
+  const title = document.createElement('strong');
+  title.textContent = quest.title;
+  button.appendChild(title);
+
+  const meta = document.createElement('div');
+  meta.className = 'task-card-meta';
+  const metaLines = [
+    'Уровень: ' + quest.level,
+    'Тип: ' + quest.typeLabel,
+    'Опыт: ' + formatQuestNumber(quest.xpReward),
+    'Шаги: ' + completedCount + ' / ' + stepCount,
+    'Статус: ' + getQuestStatusLabel(quest)
+  ];
+  for (let i = 0; i < metaLines.length; i++) {
+    const item = document.createElement('small');
+    item.textContent = metaLines[i];
+    meta.appendChild(item);
+  }
+  button.appendChild(meta);
+
+  const description = document.createElement('p');
+  description.textContent = getQuestDescription(quest);
+  button.appendChild(description);
+
+  const steps = document.createElement('ol');
+  steps.className = 'task-step-list';
+  for (let i = 0; i < quest.steps.length; i++) {
+    steps.appendChild(createTaskStepNode(quest, progress, i));
+  }
+  button.appendChild(steps);
+  card.appendChild(button);
+
+  return card;
+}
+
+function createTaskStepNode(quest, progress, index) {
+  const stepNumber = index + 1;
+  const item = document.createElement('li');
+  const isCompleted = progress.completedSteps.includes(stepNumber);
+  const isCurrent = !isCompleted && !progress.completed && stepNumber === progress.completedSteps.length + 1;
+  item.className = 'task-step';
+  item.classList.toggle('completed', isCompleted);
+  item.classList.toggle('current', isCurrent);
+  item.classList.toggle('later', !isCompleted && !isCurrent);
+  item.textContent = getQuestStepText(quest.steps[index], index) + ' · ' + (isCompleted ? 'выполнен' : (isCurrent ? 'текущий' : 'позже'));
+  return item;
+}
+
 function renderCity() {
   elements.cityGrid.innerHTML = '';
   elements.uniqueCityGrid.innerHTML = '';
@@ -2884,7 +3203,7 @@ function renderSelectionPanel() {
 function updateSelectedObjectClass(selection) {
   if (!elements.selectedObject) return;
 
-  elements.selectedObject.classList.remove('system-selection', 'territory-selection', 'hero-selection');
+  elements.selectedObject.classList.remove('system-selection', 'territory-selection', 'hero-selection', 'quest-selection');
 
   if (!selection) {
     return;
@@ -2896,6 +3215,8 @@ function updateSelectedObjectClass(selection) {
     elements.selectedObject.classList.add('territory-selection');
   } else if (selection.kind === 'hero') {
     elements.selectedObject.classList.add('hero-selection');
+  } else if (selection.kind === 'quest') {
+    elements.selectedObject.classList.add('quest-selection');
   }
 }
 
@@ -2960,7 +3281,9 @@ function stopTypewriter(nextKey) {
 
 function renderEmptyHeroActions() {
   elements.selectedName.textContent = 'Объект не выбран';
-  elements.selectedDescription.textContent = 'Выберите объект в центральной сцене, чтобы увидеть описание и доступные действия.';
+  elements.selectedDescription.textContent = state.mode === 'tasks'
+    ? 'Выберите задачу в центральной сцене.'
+    : 'Выберите объект в центральной сцене, чтобы увидеть описание и доступные действия.';
   updateSelectedObjectClass(null);
 }
 
@@ -3012,6 +3335,20 @@ function getCurrentSelection() {
     return getCitySelection();
   }
 
+  if (state.mode === 'tasks' && state.selectedQuestId) {
+    const quest = getQuestById(state.selectedQuestId);
+    if (!quest) return null;
+    return {
+      id: 'quest:' + quest.id,
+      kind: 'quest',
+      key: quest.id,
+      name: quest.title,
+      type: quest.typeLabel,
+      description: getQuestPanelDescription(quest),
+      inspectDescription: getQuestPanelDescription(quest)
+    };
+  }
+
   return null;
 }
 
@@ -3060,6 +3397,18 @@ function getCitySelection() {
 }
 
 
+function getQuestPanelDescription(quest) {
+  const progress = getQuestProgress(quest.id);
+  return [
+    'Тип: ' + quest.typeLabel + '.',
+    'Уровень: ' + quest.level + '.',
+    'Награда опыта: ' + formatQuestNumber(quest.xpReward) + '.',
+    getQuestDescription(quest),
+    'Шаги: ' + progress.completedSteps.length + ' / ' + getQuestStepCount(quest) + '.',
+    'Статус: ' + getQuestStatusLabel(quest) + '.'
+  ].join('\n');
+}
+
 function getShipStatusLabel(status) {
   return shipStatusLabels[status] || shipStatusLabels.damaged;
 }
@@ -3107,6 +3456,21 @@ function renderObjectActionOptions(selection) {
     appendActionOption('💭', formatActionTitle('Проверить мысли', {}), 'Заглянуть во внутренний список', 'heroAction', 'thoughts', false);
     appendActionOption('📦', formatActionTitle('Проверить предметы', {}), 'Сверить пустые ячейки', 'heroAction', 'items', false);
     appendBackOption();
+    return;
+  }
+
+  if (selection.kind === 'quest') {
+    const quest = getQuestById(selection.key);
+    const progress = quest ? getQuestProgress(quest.id) : createEmptyQuestProgress();
+    if (!quest) {
+      addActionLead('Задача не найдена.');
+      return;
+    }
+    if (progress.completed && progress.rewardClaimed) {
+      addActionLead('Задача завершена. Награда уже получена.');
+      return;
+    }
+    appendActionOption('✓', 'Выполнить следующий шаг (заглушка)', 'Временная проверка реестра задач', 'completeQuestStep', quest.id, false);
     return;
   }
 
@@ -3424,8 +3788,17 @@ function migrateLogMessage(message) {
 
 let actionRenderCollector = null;
 
-function addActionLead() {
-  // Обычные списки действий начинаются сразу с кнопок без вводной строки.
+function addActionLead(text) {
+  if (!text) {
+    return;
+  }
+
+  if (actionRenderCollector) {
+    actionRenderCollector.push({ type: 'lead', text });
+    return;
+  }
+
+  elements.selectedActions.appendChild(createActionLead(text));
 }
 
 function createActionLead(text) {
@@ -3861,7 +4234,7 @@ function mergeSavedState(saved) {
   next.heroCondition = normalizeHeroCondition(savedCondition);
 
   next.turn = savedNumber(saved.turn, 1);
-  next.mode = ['hero', 'territories', 'ship', 'city'].includes(saved.mode) ? saved.mode : (['recon', 'drones', 'map', 'research', 'Разведка', 'Дроны', 'Карта', 'карта'].includes(saved.mode) ? 'territories' : 'hero');
+  next.mode = ['hero', 'territories', 'ship', 'city', 'tasks'].includes(saved.mode) ? saved.mode : (['recon', 'drones', 'map', 'research', 'Разведка', 'Дроны', 'Карта', 'карта'].includes(saved.mode) ? 'territories' : 'hero');
   next.selectedSystemKey = getMigratedSelectedSystemKey(saved.selectedSystemKey);
   next.selectedTerritoryKey = territoryBlueprints[saved.selectedTerritoryKey] ? saved.selectedTerritoryKey : '';
   next.selectedCityKey = saved.selectedCityKey || '';
@@ -3877,6 +4250,8 @@ function mergeSavedState(saved) {
   }
   next.hero = mergeSavedHero(saved.hero);
   next.questProgress = mergeSavedQuestProgress(saved.questProgress);
+  next.selectedQuestId = getQuestById(saved.selectedQuestId) ? saved.selectedQuestId : '';
+  next.taskFilter = ['all', 'main', 'side', 'extra', 'active', 'completed'].includes(saved.taskFilter) ? saved.taskFilter : 'all';
 
 
   const savedSystems = saved.shipSystems || {};
@@ -4056,6 +4431,12 @@ document.addEventListener('click', function (event) {
     returnToSelectedPanel();
   } else if (target.dataset.diagnosticKey) {
     diagnoseSystem(target.dataset.diagnosticKey);
+  } else if (target.dataset.taskFilter) {
+    setTaskFilter(target.dataset.taskFilter);
+  } else if (target.dataset.questId) {
+    selectQuest(target.dataset.questId);
+  } else if (target.dataset.completeQuestStep) {
+    completeNextQuestStep(target.dataset.completeQuestStep);
   } else if (target.dataset.cityActivitySelectKey) {
     const parts = target.dataset.cityActivitySelectKey.split(':');
     selectCityActivity(parts[0], parts[1]);
