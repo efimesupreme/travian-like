@@ -7,11 +7,22 @@ const typewriterDelay = 8;
 const typewriterCursor = '|';
 const staminaActionCost = 1;
 const restStaminaRecovery = 20;
+const energyCircuitSystemKey = 'energyCircuit';
+const lifeSupportSystemKey = 'lifeSupport';
 const livingBlockSystemKey = 'habitation';
-const scannerSystemKey = 'scanner';
-const scannerResearchDifficultyEffects = {
+const engineeringBaySystemKey = 'engineeringBay';
+const navigationNodeSystemKey = 'navigationNode';
+const navigationResearchDifficultyEffects = {
   stabilized: 1,
   improved: 2
+};
+const energyCircuitBalanceEffects = {
+  stabilized: 2,
+  improved: 4
+};
+const engineeringBayStorageLimitEffects = {
+  stabilized: 10,
+  improved: 20
 };
 const livingBlockRestRecovery = {
   disabled: 10,
@@ -42,6 +53,82 @@ const researchApproaches = {
     statKey: 'agility',
     resultText: 'Герой медленно обходит опасные участки и проверяет зону без лишнего риска.'
   }
+};
+
+const lifeSupportActionBlueprints = {
+  manualWater: {
+    title: 'Собрать воду вручную',
+    icon: '💧',
+    minStatusRank: 1,
+    cost: {},
+    statKey: 'strength',
+    baseDifficulty: 8,
+    resource: 'water',
+    gains: { criticalFailure: 0, failure: 0, partial: 1, success: 2, criticalSuccess: 3 }
+  },
+  condensate: {
+    title: 'Очистить конденсат',
+    icon: '💧',
+    minStatusRank: 2,
+    cost: {},
+    statKey: 'agility',
+    baseDifficulty: 8,
+    usesLifeSupportBonus: true,
+    resource: 'water',
+    gains: { criticalFailure: 0, failure: 0, partial: 2, success: 3, criticalSuccess: 4 }
+  },
+  ration: {
+    title: 'Вырастить аварийный паёк',
+    icon: '🍖',
+    minStatusRank: 2,
+    cost: { water: 1 },
+    statKey: 'wisdom',
+    baseDifficulty: 8,
+    usesLifeSupportBonus: true,
+    resource: 'food',
+    gains: { criticalFailure: 0, failure: 0, partial: 1, success: 2, criticalSuccess: 3 }
+  },
+  cycle: {
+    title: 'Запустить цикл жизнеобеспечения',
+    icon: '♻️',
+    minStatusRank: 3,
+    cost: { water: 2 },
+    statKey: 'wisdom',
+    baseDifficulty: 8,
+    usesLifeSupportBonus: true,
+    resource: 'food',
+    gains: { criticalFailure: 1, failure: 1, partial: 3, success: 4, criticalSuccess: 5 }
+  }
+};
+const shipStatusRanks = {
+  disabled: 0,
+  damaged: 1,
+  stabilized: 2,
+  improved: 3
+};
+const legacyShipSystemGroups = {
+  energyCircuit: ['reactor', 'solarPanels'],
+  lifeSupport: ['lifeSupport', 'waterLoop', 'hydroponics', 'medical'],
+  habitation: ['habitation'],
+  engineeringBay: ['repairWorkshop', 'storage'],
+  navigationNode: ['navigation', 'scanner', 'server'],
+  engine: ['engine']
+};
+const legacySelectedSystemMap = {
+  reactor: 'energyCircuit',
+  solarPanels: 'energyCircuit',
+  lifeSupport: 'lifeSupport',
+  waterLoop: 'lifeSupport',
+  hydroponics: 'lifeSupport',
+  medical: 'lifeSupport',
+  habitation: 'habitation',
+  hull: '',
+  repairWorkshop: 'engineeringBay',
+  storage: 'engineeringBay',
+  navigation: 'navigationNode',
+  scanner: 'navigationNode',
+  server: 'navigationNode',
+  engine: 'engine'
 };
 
 const rollResultTypes = {
@@ -114,23 +201,11 @@ const baseResourceLimits = {
 const storageResourceKeys = Object.keys(baseResourceLimits);
 
 const shipStorageLimitEffects = {
-  waterLoop: {
-    resources: ['water'],
+  [engineeringBaySystemKey]: {
+    resources: storageResourceKeys,
     stabilized: 10,
     improved: 20,
-    label: 'воды'
-  },
-  storage: {
-    resources: ['metal', 'components'],
-    stabilized: 10,
-    improved: 20,
-    label: 'металла и компонентов'
-  },
-  hydroponics: {
-    resources: ['food'],
-    stabilized: 10,
-    improved: 20,
-    label: 'еды'
+    label: 'ресурсов'
   }
 };
 
@@ -209,88 +284,40 @@ const shipRepairStages = {
 
 
 const shipSystemBlueprints = {
-  reactor: {
-    name: 'Реакторный отсек',
+  energyCircuit: {
+    name: 'Энергоконтур',
     status: 'damaged',
-    description: 'Повреждённый реактор даёт базовое питание корабля, но работает нестабильно.',
-    role: 'Производство энергии'
-  },
-  solarPanels: {
-    name: 'Солнечные панели',
-    status: 'damaged',
-    description: 'Часть панелей уцелела после падения. Их можно восстановить для дополнительной генерации.',
-    role: 'Дополнительная генерация энергии'
+    description: 'Объединяет реактор, солнечные панели и аварийные накопители. От него зависит доступный баланс энергии корабля.',
+    role: 'Баланс энергии'
   },
   lifeSupport: {
     name: 'Жизнеобеспечение',
     status: 'damaged',
-    description: 'Система поддерживает пригодную среду внутри корабля, но требует ремонта.',
-    role: 'Безопасность и пригодность корабля'
-  },
-  waterLoop: {
-    name: 'Водный контур',
-    status: 'damaged',
-    description: 'Повреждённый контур отвечает за хранение, очистку и распределение воды.',
-    role: 'Вода и очистка'
-  },
-  hydroponics: {
-    name: 'Гидропонный блок',
-    status: 'disabled',
-    description: 'Блок выращивания пищи выведен из строя и пока не может использоваться.',
-    role: 'Производство еды'
+    description: 'Отвечает за воду, еду, фильтрацию и базовую пригодность корабля для жизни.',
+    role: 'Вода, еда и выживание'
   },
   habitation: {
     name: 'Жилой блок',
     status: 'damaged',
-    description: 'Жилая зона частично доступна и может использоваться для отдыха.',
-    role: 'Отдых и восстановление'
+    description: 'Жилая зона позволяет Герою восстановить выносливость и прийти в себя после вылазок.',
+    role: 'Отдых'
   },
-  medical: {
-    name: 'Медицинский блок',
-    status: 'disabled',
-    description: 'Медицинский блок не работает. Для полноценного лечения его нужно восстановить.',
-    role: 'Восстановление здоровья'
-  },
-  hull: {
-    name: 'Обшивка / корпус',
+  engineeringBay: {
+    name: 'Инженерный отсек',
     status: 'damaged',
-    description: 'Корпус выдержал падение, но повреждён и плохо защищает от бурь и внешних угроз.',
-    role: 'Защита корабля'
+    description: 'Объединяет ремонтную зону и хранилища. Чем лучше отсек, тем больше ресурсов можно держать на корабле.',
+    role: 'Хранение ресурсов'
   },
-  repairWorkshop: {
-    name: 'Ремонтный цех',
+  navigationNode: {
+    name: 'Навигационный узел',
     status: 'disabled',
-    description: 'Цех выведен из строя. После восстановления поможет чинить сложные системы.',
-    role: 'Ремонт и переработка'
-  },
-  storage: {
-    name: 'Отсек хранения',
-    status: 'damaged',
-    description: 'Грузовой отсек повреждён, поэтому хранение ресурсов ограничено.',
-    role: 'Хранение металла и компонентов'
-  },
-  navigation: {
-    name: 'Навигационный модуль',
-    status: 'disabled',
-    description: 'Навигация не работает. Без неё опасно уходить далеко от корабля.',
-    role: 'Маршруты и экспедиции'
-  },
-  scanner: {
-    name: 'Сканерный модуль',
-    status: 'disabled',
-    description: 'Сканер не работает. Его восстановление поможет искать сигналы, ресурсы и угрозы.',
-    role: 'Поиск и исследование'
-  },
-  server: {
-    name: 'Серверный узел',
-    status: 'disabled',
-    description: 'Серверный узел повреждён. В нём могут быть данные корабля и доступ к старым системам.',
-    role: 'Данные и взлом'
+    description: 'Объединяет навигацию, сканеры и бортовые данные. Помогает исследовать пустоши и находить маршруты.',
+    role: 'Исследование'
   },
   engine: {
     name: 'Двигатель',
     status: 'disabled',
-    description: 'Двигатель критически повреждён. Его ремонт — главная долгосрочная цель героя.',
+    description: 'Двигатель критически повреждён. Его восстановление остаётся главной долгосрочной целью Героя.',
     role: 'Сюжетная цель'
   }
 };
@@ -802,6 +829,49 @@ function getResourceLimit(resourceKey, shipSystems) {
   return limit;
 }
 
+
+function getEnergyBalanceBonus(shipSystems) {
+  const systems = shipSystems || (state ? state.shipSystems : null);
+  const system = systems ? systems[energyCircuitSystemKey] : null;
+  const status = system ? system.status : shipSystemBlueprints[energyCircuitSystemKey].status;
+
+  return Math.max(0, savedNumber(energyCircuitBalanceEffects[status], 0));
+}
+
+function getAvailableEnergy(shipSystems) {
+  return Math.max(0, savedNumber(initialResources.energy, 0)) + getEnergyBalanceBonus(shipSystems);
+}
+
+function getEnergyCircuitEffectLine(systemKey, status) {
+  if (systemKey !== energyCircuitSystemKey) {
+    return '';
+  }
+
+  const bonus = Math.max(0, savedNumber(energyCircuitBalanceEffects[status], 0));
+  return bonus > 0 ? 'Эффект: баланс энергии +' + bonus : '';
+}
+
+function getLifeSupportDifficultyBonus(status) {
+  if (status === 'stabilized') return 1;
+  if (status === 'improved') return 2;
+  return 0;
+}
+
+function getLifeSupportEffectLine(systemKey, status) {
+  if (systemKey !== lifeSupportSystemKey) {
+    return '';
+  }
+
+  if (status === 'stabilized') return 'Эффект: проверки воды и еды проще на 1';
+  if (status === 'improved') return 'Эффект: проверки воды и еды проще на 2';
+  if (status === 'damaged') return 'Эффект: базовые действия воды';
+  return '';
+}
+
+function getEngineeringBayStorageLimitBonus(status) {
+  return Math.max(0, savedNumber(engineeringBayStorageLimitEffects[status], 0));
+}
+
 function normalizeResources(resources, shipSystems) {
   const normalized = { ...initialResources, ...(resources || {}) };
   const resourceKeys = Object.keys(initialResources);
@@ -810,6 +880,7 @@ function normalizeResources(resources, shipSystems) {
     const key = resourceKeys[i];
     normalized[key] = Math.max(0, savedNumber(normalized[key], initialResources[key]));
   }
+  normalized.energy = getAvailableEnergy(shipSystems);
 
   for (let i = 0; i < storageResourceKeys.length; i++) {
     const key = storageResourceKeys[i];
@@ -836,7 +907,7 @@ function getShipStorageLimitEffectLine(systemKey, status) {
     return '';
   }
 
-  return 'Эффект: лимит ' + effect.label + ' +' + bonus;
+  return systemKey === engineeringBaySystemKey ? 'Эффект: лимит ресурсов +' + bonus : 'Эффект: лимит ' + effect.label + ' +' + bonus;
 }
 
 function getLivingBlockStatus(shipSystems) {
@@ -858,17 +929,17 @@ function getRestNarrative() {
   return livingBlockRestNarratives[status] || livingBlockRestNarratives.damaged;
 }
 
-function getScannerStatus(shipSystems) {
+function getNavigationNodeStatus(shipSystems) {
   const systems = shipSystems || (state ? state.shipSystems : null);
-  const system = systems ? systems[scannerSystemKey] : null;
+  const system = systems ? systems[navigationNodeSystemKey] : null;
 
   return system ? system.status : '';
 }
 
-function getScannerResearchDifficultyBonus(shipSystems) {
-  const status = getScannerStatus(shipSystems);
+function getNavigationResearchDifficultyBonus(shipSystems) {
+  const status = getNavigationNodeStatus(shipSystems);
 
-  return Math.max(0, savedNumber(scannerResearchDifficultyEffects[status], 0));
+  return Math.max(0, savedNumber(navigationResearchDifficultyEffects[status], 0));
 }
 
 function getEffectiveDifficulty(baseDifficulty, bonus) {
@@ -876,7 +947,7 @@ function getEffectiveDifficulty(baseDifficulty, bonus) {
 }
 
 function getResearchEffectiveDifficulty(baseDifficulty, shipSystems) {
-  return getEffectiveDifficulty(baseDifficulty, getScannerResearchDifficultyBonus(shipSystems));
+  return getEffectiveDifficulty(baseDifficulty, getNavigationResearchDifficultyBonus(shipSystems));
 }
 
 function formatEffectiveDifficulty(baseDifficulty, effectiveDifficulty) {
@@ -900,20 +971,11 @@ function getLivingBlockRestEffectLine(systemKey, status) {
 }
 
 function getShipStorageLimitLog(systemKey) {
-  const effect = shipStorageLimitEffects[systemKey];
-  if (!effect) {
+  if (systemKey !== engineeringBaySystemKey) {
     return '';
   }
 
-  const limitParts = [];
-  for (let i = 0; i < effect.resources.length; i++) {
-    const resource = effect.resources[i];
-    limitParts.push(getResourceLimit(resource));
-  }
-
-  const sameLimit = limitParts.every(function (limit) { return limit === limitParts[0]; });
-  const limitText = sameLimit ? limitParts[0] : limitParts.join('/');
-  return 'Лимит ' + effect.label + ': ' + limitText;
+  return 'Лимит ресурсов увеличен: вода ' + getResourceLimit('water') + ', металл ' + getResourceLimit('metal') + ', компоненты ' + getResourceLimit('components') + ', еда ' + getResourceLimit('food') + '.';
 }
 
 function didGainHitResourceLimit(plannedGain, actualGain) {
@@ -1202,6 +1264,105 @@ function addResources(gain) {
   state.resources = normalizeResources(state.resources, state.shipSystems);
 
   return actualGain;
+}
+
+
+function getLifeSupportActions(status) {
+  const rank = savedNumber(shipStatusRanks[status], 0);
+  const keys = Object.keys(lifeSupportActionBlueprints);
+  const actions = [];
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const action = lifeSupportActionBlueprints[key];
+    if (rank >= action.minStatusRank) {
+      actions.push({ key, ...action });
+    }
+  }
+
+  return actions;
+}
+
+function getLifeSupportActionDifficulty(action, status) {
+  const bonus = action.usesLifeSupportBonus ? getLifeSupportDifficultyBonus(status) : 0;
+  return getEffectiveDifficulty(action.baseDifficulty, bonus);
+}
+
+function formatLifeSupportActionNote(action, status) {
+  const difficulty = getLifeSupportActionDifficulty(action, status);
+  const statLabel = heroStatLabels[action.statKey] || 'Характеристика';
+  return statLabel + ' · ' + formatEffectiveDifficulty(action.baseDifficulty, difficulty);
+}
+
+function resolveLifeSupportCheck(action, status) {
+  const roll = roll2d6();
+  const statKey = action.statKey || 'strength';
+  const statLabel = heroStatLabels[statKey] || 'Характеристика';
+  const statValue = getHeroStatValue(statKey);
+  const total = roll.total + statValue;
+  const difficulty = getLifeSupportActionDifficulty(action, status);
+  const result = getLifeSupportCheckResult(roll.total, total, difficulty);
+
+  return {
+    roll,
+    statKey,
+    statLabel,
+    statValue,
+    total,
+    difficulty,
+    resultLabel: result.label,
+    resultKey: result.key
+  };
+}
+
+function getLifeSupportCheckResult(naturalTotal, total, difficulty) {
+  if (naturalTotal === 2) return { label: 'Критический провал', key: 'criticalFailure' };
+  if (naturalTotal === 12) return { label: 'Критический успех', key: 'criticalSuccess' };
+  if (total < difficulty) return { label: 'Провал', key: 'failure' };
+  if (total === difficulty) return { label: 'Частичный успех', key: 'partial' };
+  return { label: 'Успех', key: 'success' };
+}
+
+function performLifeSupportAction(actionKey) {
+  const system = state.shipSystems[lifeSupportSystemKey];
+  if (!system) {
+    return;
+  }
+
+  normalizeShipSystem(system);
+  const actions = getLifeSupportActions(system.status);
+  const action = actions.find(function (item) { return item.key === actionKey; });
+  if (!action) {
+    return;
+  }
+
+  const selection = getCurrentSelection();
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
+  const missing = getMissingResources(action.cost);
+  if (missing.length > 0) {
+    clearNarrativeMessage();
+    addLog(formatMissingResourcesMessage(action.cost));
+    return;
+  }
+
+  spendStamina();
+  payCost(action.cost);
+  const check = resolveLifeSupportCheck(action, system.status);
+  const planned = Math.max(0, savedNumber(action.gains[check.resultKey], 0));
+  const plannedGain = { [action.resource]: planned };
+  const actualGain = addResources(plannedGain);
+  const limitReached = didGainHitResourceLimit(plannedGain, actualGain);
+  const currentSelection = getCurrentSelection();
+
+  state.actionPanelMode = 'actions';
+  if (currentSelection) {
+    setNarrativeMessage(currentSelection, action.title + ': ' + String(check.resultLabel).toLowerCase() + '. Получено: ' + formatCompactGain(actualGain) + (limitReached ? ' · лимит' : '') + '.');
+  }
+
+  addLog(action.title + ': ' + formatCompactCheckResult(check, formatCompactGain(actualGain)) + (limitReached ? ' · лимит' : ''));
 }
 
 function repairSystem(key) {
@@ -2038,6 +2199,8 @@ function getShipSelectionDescription(key, blueprint, system) {
   ];
   const effectLine = getShipStorageLimitEffectLine(key, system.status);
   const restEffectLine = getLivingBlockRestEffectLine(key, system.status);
+  const energyEffectLine = getEnergyCircuitEffectLine(key, system.status);
+  const lifeSupportEffectLine = getLifeSupportEffectLine(key, system.status);
 
   if (effectLine) {
     lines.push(effectLine);
@@ -2045,6 +2208,14 @@ function getShipSelectionDescription(key, blueprint, system) {
 
   if (restEffectLine) {
     lines.push(restEffectLine);
+  }
+
+  if (energyEffectLine) {
+    lines.push(energyEffectLine);
+  }
+
+  if (lifeSupportEffectLine) {
+    lines.push(lifeSupportEffectLine);
   }
 
   return lines.join('\n');
@@ -2401,10 +2572,21 @@ function renderObjectActionOptions(selection) {
   if (selection.kind === 'system') {
     const system = state.shipSystems[selection.key];
     normalizeShipSystem(system);
+
+    if (selection.key === lifeSupportSystemKey) {
+      const lifeSupportActions = getLifeSupportActions(system.status);
+      for (let i = 0; i < lifeSupportActions.length; i++) {
+        const action = lifeSupportActions[i];
+        appendActionOption(action.icon, formatActionTitle(action.title, action.cost), formatLifeSupportActionNote(action, system.status), 'lifeSupportActionKey', action.key, false);
+      }
+    }
+
     const stage = getShipRepairStage(system);
 
     if (!stage) {
-      addActionLead('Система улучшена и работает в усиленном режиме.');
+      if (selection.key !== lifeSupportSystemKey || getLifeSupportActions(system.status).length === 0) {
+        addActionLead('Система улучшена и работает в усиленном режиме.');
+      }
       return;
     }
 
@@ -3013,14 +3195,12 @@ function formatGain(gain) {
 
 function getGenitiveName(name) {
   const names = {
-    'Обшивка': 'Обшивки',
-    'Реакторный отсек': 'Реакторного отсека',
+    'Энергоконтур': 'Энергоконтура',
     'Жизнеобеспечение': 'Жизнеобеспечения',
-    'Водный контур': 'Водного контура',
-    'Ремонтный цех': 'Ремонтного цеха',
-    'Навигационный модуль': 'Навигационного модуля',
-    'Сканерный модуль': 'Сканерного модуля',
-    'Серверный узел': 'Серверного узла'
+    'Жилой блок': 'Жилого блока',
+    'Инженерный отсек': 'Инженерного отсека',
+    'Навигационный узел': 'Навигационного узла',
+    'Двигатель': 'Двигателя'
   };
 
   return names[name] || name;
@@ -3067,6 +3247,41 @@ function getLegacySave() {
   return '';
 }
 
+
+function getBetterShipStatus(firstStatus, secondStatus) {
+  const firstRank = savedNumber(shipStatusRanks[firstStatus], 0);
+  const secondRank = savedNumber(shipStatusRanks[secondStatus], 0);
+  return secondRank > firstRank ? secondStatus : firstStatus;
+}
+
+function getMigratedShipStatus(systemKey, savedSystems, fallbackStatus) {
+  let status = fallbackStatus;
+  let hasLegacyStatus = false;
+  const legacyKeys = legacyShipSystemGroups[systemKey] || [systemKey];
+
+  for (let i = 0; i < legacyKeys.length; i++) {
+    const legacyKey = legacyKeys[i];
+    const savedSystem = savedSystems[legacyKey];
+    if (savedSystem && shipStatusLabels[savedSystem.status]) {
+      if (!hasLegacyStatus) {
+        status = 'disabled';
+      }
+      hasLegacyStatus = true;
+      status = getBetterShipStatus(status, savedSystem.status);
+    }
+  }
+
+  return status;
+}
+
+function getMigratedSelectedSystemKey(savedKey) {
+  if (shipSystemBlueprints[savedKey]) {
+    return savedKey;
+  }
+
+  return legacySelectedSystemMap[savedKey] || '';
+}
+
 function mergeSavedState(saved) {
   const next = createInitialState();
   const savedResources = saved.resources || saved;
@@ -3091,7 +3306,7 @@ function mergeSavedState(saved) {
 
   next.turn = savedNumber(saved.turn, 1);
   next.mode = ['hero', 'territories', 'ship', 'city'].includes(saved.mode) ? saved.mode : (['recon', 'drones', 'map', 'research', 'Разведка', 'Дроны', 'Карта', 'карта'].includes(saved.mode) ? 'territories' : 'hero');
-  next.selectedSystemKey = shipSystemBlueprints[saved.selectedSystemKey] ? saved.selectedSystemKey : '';
+  next.selectedSystemKey = getMigratedSelectedSystemKey(saved.selectedSystemKey);
   next.selectedTerritoryKey = territoryBlueprints[saved.selectedTerritoryKey] ? saved.selectedTerritoryKey : '';
   next.selectedCityKey = saved.selectedCityKey || '';
   next.selectedCityType = saved.selectedCityType || '';
@@ -3111,10 +3326,8 @@ function mergeSavedState(saved) {
   const systemKeys = Object.keys(next.shipSystems);
   for (let i = 0; i < systemKeys.length; i++) {
     const key = systemKeys[i];
+    next.shipSystems[key].status = getMigratedShipStatus(key, savedSystems, next.shipSystems[key].status);
     if (savedSystems[key]) {
-      next.shipSystems[key].status = shipStatusLabels[savedSystems[key].status]
-        ? savedSystems[key].status
-        : next.shipSystems[key].status;
       next.shipSystems[key].progress = savedNumber(savedSystems[key].progress, next.shipSystems[key].progress);
       next.shipSystems[key].requiredProgress = savedNumber(savedSystems[key].requiredProgress, next.shipSystems[key].requiredProgress);
     }
@@ -3269,6 +3482,8 @@ document.addEventListener('click', function (event) {
     selectTerritory(target.dataset.territoryKey);
   } else if (target.dataset.repairKey) {
     repairSystem(target.dataset.repairKey);
+  } else if (target.dataset.lifeSupportActionKey) {
+    performLifeSupportAction(target.dataset.lifeSupportActionKey);
   } else if (target.dataset.gatherKey) {
     gatherTerritory(target.dataset.gatherKey);
   } else if (target.dataset.researchKey) {
