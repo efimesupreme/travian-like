@@ -181,6 +181,19 @@ const questStepCounts = {
   side: 3,
   extra: 1
 };
+const defaultQuestVisibleLevelOffset = 2;
+const questVisibilityModes = ['level', 'chain', 'world', 'secret'];
+const questFilterKeys = ['known', 'available', 'locked', 'completed', 'main', 'side', 'extra'];
+const legacyQuestFilterAliases = {
+  all: 'known',
+  active: 'known'
+};
+const territoryStatusRanks = {
+  hidden: 0,
+  discovered: 1,
+  open: 2,
+  depleted: 3
+};
 const questDistributionByLevel = [
   { level: 1, main: 1, side: 1, extra: 2 },
   { level: 2, main: 1, side: 1, extra: 2 },
@@ -255,7 +268,7 @@ function createQuestPlaceholder(type, number, level) {
   const stepCount = questStepCounts[type];
   const titlePrefix = questTypeTitlePrefixes[type];
 
-  return {
+  const quest = {
     id: type + '-' + paddedNumber,
     type,
     typeLabel: questTypeLabels[type],
@@ -263,7 +276,43 @@ function createQuestPlaceholder(type, number, level) {
     title: titlePrefix + ' №' + number + ' (ур. ' + level + ')',
     description: '',
     xpReward: getQuestXpReward(type, level),
-    steps: createQuestPlaceholderSteps(stepCount)
+    steps: createQuestPlaceholderSteps(stepCount),
+    visibility: createDefaultQuestVisibility()
+  };
+
+  if (type === 'main') {
+    quest.chain = {
+      id: 'main',
+      order: number
+    };
+    quest.visibility.mode = 'chain';
+    quest.visibility.unlock.requiredCompletedQuestIds = number > 1 ? ['main-' + String(number - 1).padStart(3, '0')] : [];
+  }
+
+  return quest;
+}
+
+function createDefaultQuestUnlockConditions() {
+  return {
+    minHeroLevel: null,
+    maxHeroLevel: null,
+    requiredCompletedQuestIds: [],
+    requiredStartedQuestIds: [],
+    requiredQuestStepIds: [],
+    requiredFlags: [],
+    requiredSystems: {},
+    requiredStats: {},
+    requiredTerritories: {},
+    requiredResources: {}
+  };
+}
+
+function createDefaultQuestVisibility() {
+  return {
+    mode: 'level',
+    hiddenUntilUnlocked: false,
+    visibleLevelOffset: defaultQuestVisibleLevelOffset,
+    unlock: createDefaultQuestUnlockConditions()
   };
 }
 
@@ -417,13 +466,19 @@ function getQuestStatus(quest) {
 
 function getQuestStatusLabel(quest) {
   const labels = {
-    notStarted: 'Не начато',
+    notStarted: 'Доступно',
     inProgress: 'В процессе',
     completed: 'Выполнено',
-    rewardClaimed: 'Награда получена'
+    rewardClaimed: 'Награда получена',
+    locked: 'Недоступно'
   };
+  const status = getQuestStatus(quest);
 
-  return labels[getQuestStatus(quest)] || labels.notStarted;
+  if (status === 'notStarted' && !isQuestAvailable(quest)) {
+    return labels.locked;
+  }
+
+  return labels[status] || labels.notStarted;
 }
 
 function calculateTotalQuestXp(type) {
@@ -463,16 +518,291 @@ function getQuestStepText(step, index) {
   return 'Шаг ' + (index + 1) + ' — условие будет добавлено позже';
 }
 
-function isQuestVisibleByFilter(quest, filter) {
-  const questFilter = filter || 'all';
-  const status = getQuestStatus(quest);
+function getQuestVisibility(quest) {
+  const defaults = createDefaultQuestVisibility();
+  const savedVisibility = quest && quest.visibility && typeof quest.visibility === 'object' ? quest.visibility : {};
+  const savedUnlock = savedVisibility.unlock && typeof savedVisibility.unlock === 'object' ? savedVisibility.unlock : {};
+  const visibility = {
+    ...defaults,
+    ...savedVisibility,
+    unlock: {
+      ...defaults.unlock,
+      ...savedUnlock
+    }
+  };
 
-  if (questFilter === 'all') return true;
+  if (!questVisibilityModes.includes(visibility.mode)) {
+    visibility.mode = defaults.mode;
+  }
+  visibility.hiddenUntilUnlocked = visibility.hiddenUntilUnlocked === true;
+  visibility.visibleLevelOffset = Math.max(0, Math.floor(savedNumber(visibility.visibleLevelOffset, defaultQuestVisibleLevelOffset)));
+  visibility.unlock.requiredCompletedQuestIds = Array.isArray(visibility.unlock.requiredCompletedQuestIds) ? visibility.unlock.requiredCompletedQuestIds : [];
+  visibility.unlock.requiredStartedQuestIds = Array.isArray(visibility.unlock.requiredStartedQuestIds) ? visibility.unlock.requiredStartedQuestIds : [];
+  visibility.unlock.requiredQuestStepIds = Array.isArray(visibility.unlock.requiredQuestStepIds) ? visibility.unlock.requiredQuestStepIds : [];
+  visibility.unlock.requiredFlags = Array.isArray(visibility.unlock.requiredFlags) ? visibility.unlock.requiredFlags : [];
+  visibility.unlock.requiredSystems = visibility.unlock.requiredSystems && typeof visibility.unlock.requiredSystems === 'object' ? visibility.unlock.requiredSystems : {};
+  visibility.unlock.requiredStats = visibility.unlock.requiredStats && typeof visibility.unlock.requiredStats === 'object' ? visibility.unlock.requiredStats : {};
+  visibility.unlock.requiredTerritories = visibility.unlock.requiredTerritories && typeof visibility.unlock.requiredTerritories === 'object' ? visibility.unlock.requiredTerritories : {};
+  visibility.unlock.requiredResources = visibility.unlock.requiredResources && typeof visibility.unlock.requiredResources === 'object' ? visibility.unlock.requiredResources : {};
+
+  return visibility;
+}
+
+function getHeroLevel() {
+  const hero = normalizeHeroProgression(state && state.hero ? state.hero : createHero());
+  return hero.level;
+}
+
+function isQuestWithinVisibleLevelRange(quest) {
+  if (!quest) {
+    return false;
+  }
+
+  const visibility = getQuestVisibility(quest);
+  return savedNumber(quest.level, 1) <= getHeroLevel() + visibility.visibleLevelOffset;
+}
+
+function setWorldFlag(flagKey, value) {
+  if (!state) {
+    return;
+  }
+  if (!state.worldFlags || typeof state.worldFlags !== 'object') {
+    state.worldFlags = {};
+  }
+  state.worldFlags[flagKey] = value === undefined ? true : value;
+  saveGame();
+}
+
+function hasWorldFlag(flagKey) {
+  return !!(state && state.worldFlags && state.worldFlags[flagKey] === true);
+}
+
+function isQuestStarted(questId) {
+  const progress = getQuestProgress(questId);
+  return progress.currentStep > 0 || progress.completedSteps.length > 0 || progress.completed || progress.rewardClaimed;
+}
+
+function isQuestStepCompleted(stepId) {
+  const parts = String(stepId || '').split(':');
+  if (parts.length !== 2) {
+    return false;
+  }
+
+  const quest = getQuestById(parts[0]);
+  const stepIndex = Math.floor(savedNumber(parts[1], 0));
+  return !!quest && getQuestProgress(quest.id).completedSteps.includes(stepIndex);
+}
+
+function isStatusAtLeast(status, requiredStatus, ranks) {
+  return savedNumber(ranks[status], -1) >= savedNumber(ranks[requiredStatus], 0);
+}
+
+function isQuestUnlockConditionMet(quest) {
+  if (!quest) {
+    return false;
+  }
+
+  const unlock = getQuestVisibility(quest).unlock;
+  const heroLevel = getHeroLevel();
+  if (unlock.minHeroLevel !== null && unlock.minHeroLevel !== undefined && heroLevel < savedNumber(unlock.minHeroLevel, heroLevel)) return false;
+  if (unlock.maxHeroLevel !== null && unlock.maxHeroLevel !== undefined && heroLevel > savedNumber(unlock.maxHeroLevel, heroLevel)) return false;
+
+  for (let i = 0; i < unlock.requiredCompletedQuestIds.length; i++) {
+    if (!getQuestProgress(unlock.requiredCompletedQuestIds[i]).completed) return false;
+  }
+
+  for (let i = 0; i < unlock.requiredStartedQuestIds.length; i++) {
+    if (!isQuestStarted(unlock.requiredStartedQuestIds[i])) return false;
+  }
+
+  for (let i = 0; i < unlock.requiredQuestStepIds.length; i++) {
+    if (!isQuestStepCompleted(unlock.requiredQuestStepIds[i])) return false;
+  }
+
+  for (let i = 0; i < unlock.requiredFlags.length; i++) {
+    if (!hasWorldFlag(unlock.requiredFlags[i])) return false;
+  }
+
+  const requiredSystems = Object.keys(unlock.requiredSystems);
+  for (let i = 0; i < requiredSystems.length; i++) {
+    const key = requiredSystems[i];
+    const system = state.shipSystems && state.shipSystems[key] ? state.shipSystems[key] : null;
+    const status = system ? system.status : (shipSystemBlueprints[key] ? shipSystemBlueprints[key].status : 'disabled');
+    if (!isStatusAtLeast(status, unlock.requiredSystems[key], shipStatusRanks)) return false;
+  }
+
+  const requiredStats = Object.keys(unlock.requiredStats);
+  const hero = normalizeHeroProgression(state.hero || createHero());
+  for (let i = 0; i < requiredStats.length; i++) {
+    const key = requiredStats[i];
+    if (savedNumber(hero.stats[key], 0) < savedNumber(unlock.requiredStats[key], 0)) return false;
+  }
+
+  const requiredTerritories = Object.keys(unlock.requiredTerritories);
+  for (let i = 0; i < requiredTerritories.length; i++) {
+    const key = requiredTerritories[i];
+    const territory = state.territories && state.territories[key] ? state.territories[key] : null;
+    const status = territory ? territory.status : 'hidden';
+    if (!isStatusAtLeast(status, unlock.requiredTerritories[key], territoryStatusRanks)) return false;
+  }
+
+  const requiredResources = Object.keys(unlock.requiredResources);
+  for (let i = 0; i < requiredResources.length; i++) {
+    const key = requiredResources[i];
+    if (savedNumber(state.resources[key], 0) < savedNumber(unlock.requiredResources[key], 0)) return false;
+  }
+
+  return true;
+}
+
+function isQuestVisible(quest) {
+  if (!quest) {
+    return false;
+  }
+
+  const visibility = getQuestVisibility(quest);
+  const withinLevel = isQuestWithinVisibleLevelRange(quest);
+  if (visibility.hiddenUntilUnlocked) {
+    return withinLevel && isQuestUnlockConditionMet(quest);
+  }
+
+  return withinLevel;
+}
+
+function isQuestKnown(quest) {
+  if (!quest || !quest.id) {
+    return false;
+  }
+
+  const progress = getQuestProgress(quest.id);
+  return isQuestVisible(quest) || progress.completed || progress.rewardClaimed;
+}
+
+function isQuestAvailable(quest) {
+  if (!quest || !quest.id) {
+    return false;
+  }
+
+  const progress = getQuestProgress(quest.id);
+  return isQuestVisible(quest) && isQuestUnlockConditionMet(quest) && !progress.completed && !progress.rewardClaimed;
+}
+
+function getQuestLockReasons(quest) {
+  const reasons = [];
+  if (!quest) {
+    return reasons;
+  }
+
+  const unlock = getQuestVisibility(quest).unlock;
+  const heroLevel = getHeroLevel();
+  if (unlock.minHeroLevel !== null && unlock.minHeroLevel !== undefined && heroLevel < savedNumber(unlock.minHeroLevel, heroLevel)) {
+    reasons.push('Требуется уровень Героя: ' + unlock.minHeroLevel);
+  }
+  if (unlock.maxHeroLevel !== null && unlock.maxHeroLevel !== undefined && heroLevel > savedNumber(unlock.maxHeroLevel, heroLevel)) {
+    reasons.push('Требуется уровень Героя не выше: ' + unlock.maxHeroLevel);
+  }
+
+  for (let i = 0; i < unlock.requiredCompletedQuestIds.length; i++) {
+    const requiredQuest = getQuestById(unlock.requiredCompletedQuestIds[i]);
+    if (!getQuestProgress(unlock.requiredCompletedQuestIds[i]).completed) {
+      reasons.push('Требуется завершить: ' + (requiredQuest ? requiredQuest.title : unlock.requiredCompletedQuestIds[i]));
+    }
+  }
+
+  for (let i = 0; i < unlock.requiredStartedQuestIds.length; i++) {
+    const requiredQuest = getQuestById(unlock.requiredStartedQuestIds[i]);
+    if (!isQuestStarted(unlock.requiredStartedQuestIds[i])) {
+      reasons.push('Требуется начать: ' + (requiredQuest ? requiredQuest.title : unlock.requiredStartedQuestIds[i]));
+    }
+  }
+
+  for (let i = 0; i < unlock.requiredQuestStepIds.length; i++) {
+    if (!isQuestStepCompleted(unlock.requiredQuestStepIds[i])) {
+      reasons.push('Требуется шаг задачи: ' + unlock.requiredQuestStepIds[i]);
+    }
+  }
+
+  for (let i = 0; i < unlock.requiredFlags.length; i++) {
+    if (!hasWorldFlag(unlock.requiredFlags[i])) {
+      reasons.push('Требуется флаг мира: ' + unlock.requiredFlags[i]);
+    }
+  }
+
+  const requiredSystems = Object.keys(unlock.requiredSystems);
+  for (let i = 0; i < requiredSystems.length; i++) {
+    const key = requiredSystems[i];
+    const blueprint = shipSystemBlueprints[key];
+    const system = state.shipSystems && state.shipSystems[key] ? state.shipSystems[key] : null;
+    const status = system ? system.status : (blueprint ? blueprint.status : 'disabled');
+    const requiredStatus = unlock.requiredSystems[key];
+    if (!isStatusAtLeast(status, requiredStatus, shipStatusRanks)) {
+      reasons.push('Требуется система: ' + (blueprint ? blueprint.name : key) + ' — ' + getShipStatusLabel(requiredStatus).toLowerCase());
+    }
+  }
+
+  const requiredStats = Object.keys(unlock.requiredStats);
+  const hero = normalizeHeroProgression(state.hero || createHero());
+  for (let i = 0; i < requiredStats.length; i++) {
+    const key = requiredStats[i];
+    const requiredValue = savedNumber(unlock.requiredStats[key], 0);
+    if (savedNumber(hero.stats[key], 0) < requiredValue) {
+      reasons.push('Требуется ' + (heroStatLabels[key] || key) + ': ' + requiredValue);
+    }
+  }
+
+  const requiredTerritories = Object.keys(unlock.requiredTerritories);
+  for (let i = 0; i < requiredTerritories.length; i++) {
+    const key = requiredTerritories[i];
+    const territory = state.territories && state.territories[key] ? state.territories[key] : null;
+    const requiredStatus = unlock.requiredTerritories[key];
+    const status = territory ? territory.status : 'hidden';
+    if (!isStatusAtLeast(status, requiredStatus, territoryStatusRanks)) {
+      reasons.push('Требуется зона: ' + (territory ? territory.name : key) + ' — ' + (territoryStatusLabels[requiredStatus] || requiredStatus).toLowerCase());
+    }
+  }
+
+  const requiredResources = Object.keys(unlock.requiredResources);
+  for (let i = 0; i < requiredResources.length; i++) {
+    const key = requiredResources[i];
+    const requiredValue = savedNumber(unlock.requiredResources[key], 0);
+    if (savedNumber(state.resources[key], 0) < requiredValue) {
+      reasons.push('Требуется ресурс: ' + (resourceLabels[key] || key) + ' ' + requiredValue);
+    }
+  }
+
+  return reasons;
+}
+
+function getVisibleQuests() {
+  return questRegistry.filter(isQuestVisible);
+}
+
+function getAvailableQuests() {
+  return questRegistry.filter(isQuestAvailable);
+}
+
+function getKnownQuests() {
+  return questRegistry.filter(isQuestKnown);
+}
+
+function normalizeTaskFilter(filter) {
+  const sourceFilter = legacyQuestFilterAliases[filter] || filter || 'known';
+  return questFilterKeys.includes(sourceFilter) ? sourceFilter : 'known';
+}
+
+function isQuestVisibleByFilter(quest, filter) {
+  const questFilter = normalizeTaskFilter(filter);
+  const known = isQuestKnown(quest);
+  const progress = getQuestProgress(quest.id);
+
+  if (!known) return false;
+  if (questFilter === 'known') return true;
+  if (questFilter === 'available') return isQuestAvailable(quest);
+  if (questFilter === 'locked') return isQuestVisible(quest) && !isQuestAvailable(quest) && !progress.completed && !progress.rewardClaimed;
+  if (questFilter === 'completed') return progress.completed || progress.rewardClaimed;
   if (questFilter === 'main') return quest.type === 'main';
   if (questFilter === 'side') return quest.type === 'side';
   if (questFilter === 'extra') return quest.type === 'extra';
-  if (questFilter === 'active') return status !== 'rewardClaimed';
-  if (questFilter === 'completed') return status === 'completed' || status === 'rewardClaimed';
   return true;
 }
 
@@ -1220,9 +1550,10 @@ function createInitialState() {
     narrativeObjectId: '',
     narrativeMessage: '',
     activeResearchEvent: null,
+    worldFlags: {},
     questProgress: {},
     selectedQuestId: '',
-    taskFilter: 'all',
+    taskFilter: 'known',
     hero: createHero(),
     shipSystems: createSystems(),
     territories: createTerritories(),
@@ -1640,14 +1971,15 @@ function selectCityUnique(key) {
 }
 
 function setTaskFilter(filter) {
-  const allowedFilters = ['all', 'main', 'side', 'extra', 'active', 'completed'];
-  state.taskFilter = allowedFilters.includes(filter) ? filter : 'all';
+  state.taskFilter = normalizeTaskFilter(filter);
   saveGame();
   render();
 }
 
 function selectQuest(id) {
-  if (!getQuestById(id)) {
+  const quest = getQuestById(id);
+  if (!quest || !isQuestKnown(quest)) {
+    state.selectedQuestId = '';
     return;
   }
 
@@ -1667,13 +1999,21 @@ function completeNextQuestStep(id) {
     return;
   }
 
+  if (!isQuestAvailable(quest)) {
+    state.mode = 'tasks';
+    state.selectedQuestId = isQuestKnown(quest) ? id : '';
+    const reasons = getQuestLockReasons(quest);
+    addLog(reasons.length > 0 ? 'Задача недоступна: ' + reasons.join('; ') + '.' : 'Задача недоступна: ' + quest.title + '.');
+    return;
+  }
+
   state.mode = 'tasks';
   state.selectedQuestId = id;
   const progress = getQuestProgress(id);
   const stepCount = getQuestStepCount(quest);
 
-  if (progress.completed && progress.rewardClaimed) {
-    addLog('Задача уже завершена: ' + quest.title + '. Награда уже получена.');
+  if (progress.completed || progress.rewardClaimed) {
+    addLog('Задача уже завершена: ' + quest.title + '. Повторное выполнение недоступно.');
     return;
   }
 
@@ -2944,7 +3284,7 @@ function renderTasks() {
   title.textContent = 'Реестр задач';
   const lead = document.createElement('p');
   lead.className = 'description';
-  lead.textContent = 'Временный реестр заглушек для проверки прогресса, опыта и уровней.';
+  lead.textContent = 'Временный реестр заглушек с фильтрами видимости по уровню Героя и условиям доступности.';
   titleBlock.appendChild(title);
   titleBlock.appendChild(lead);
   header.appendChild(titleBlock);
@@ -2952,18 +3292,23 @@ function renderTasks() {
   const summary = document.createElement('dl');
   summary.className = 'task-summary';
   const hero = normalizeHeroProgression(state.hero || createHero());
+  const knownQuests = getKnownQuests();
+  const availableQuests = getAvailableQuests();
+  const completedCount = questRegistry.reduce(function (total, quest) {
+    const progress = getQuestProgress(quest.id);
+    return total + (progress.completed || progress.rewardClaimed ? 1 : 0);
+  }, 0);
   appendTaskSummaryItem(summary, 'Уровень Героя', hero.level);
   appendTaskSummaryItem(summary, 'Опыт Героя', formatQuestNumber(hero.experience));
-  appendTaskSummaryItem(summary, 'Выполнено задач', countRewardedQuests() + ' / ' + questRegistry.length);
-  appendTaskSummaryItem(summary, 'Доступно опыта в реестре', formatQuestNumber(calculateTotalQuestXp()));
+  appendTaskSummaryItem(summary, 'Известно задач', knownQuests.length + ' / ' + questRegistry.length);
+  appendTaskSummaryItem(summary, 'Доступно задач', availableQuests.length);
+  appendTaskSummaryItem(summary, 'Завершено задач', completedCount);
+  appendTaskSummaryItem(summary, 'Скрыто задач', questRegistry.length - knownQuests.length);
   appendTaskSummaryItem(summary, 'Получено опыта из задач', formatQuestNumber(calculateClaimedQuestXp()));
   header.appendChild(summary);
   elements.tasksScreen.appendChild(header);
 
-  const totalLine = document.createElement('p');
-  totalLine.className = 'task-total-line';
-  totalLine.textContent = 'Всего опыта в реестре: ' + formatQuestNumber(calculateTotalQuestXp()) + '.';
-  elements.tasksScreen.appendChild(totalLine);
+  resetHiddenSelectedQuest();
 
   renderTaskFilters();
 
@@ -2991,12 +3336,13 @@ function appendTaskSummaryItem(summary, labelText, valueText) {
 
 function renderTaskFilters() {
   const filters = [
-    { key: 'all', label: 'Все' },
+    { key: 'known', label: 'Все известные' },
+    { key: 'available', label: 'Доступные' },
+    { key: 'locked', label: 'Недоступные' },
+    { key: 'completed', label: 'Завершённые' },
     { key: 'main', label: 'Основной квест' },
     { key: 'side', label: 'Задачи' },
-    { key: 'extra', label: 'Доп. задачи' },
-    { key: 'active', label: 'Не завершены' },
-    { key: 'completed', label: 'Завершены' }
+    { key: 'extra', label: 'Доп. задачи' }
   ];
   const filterBar = document.createElement('div');
   filterBar.className = 'task-filters';
@@ -3005,7 +3351,7 @@ function renderTaskFilters() {
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.taskFilter = filters[i].key;
-    button.classList.toggle('active', (state.taskFilter || 'all') === filters[i].key);
+    button.classList.toggle('active', normalizeTaskFilter(state.taskFilter) === filters[i].key);
     button.textContent = filters[i].label;
     filterBar.appendChild(button);
   }
@@ -3050,6 +3396,7 @@ function createTaskCard(quest) {
   card.className = 'task-card';
   card.classList.toggle('selected', state.selectedQuestId === quest.id);
   card.classList.toggle('completed', progress.completed);
+  card.classList.toggle('locked', isQuestVisible(quest) && !isQuestAvailable(quest) && !progress.completed && !progress.rewardClaimed);
 
   const button = document.createElement('button');
   button.type = 'button';
@@ -3081,6 +3428,8 @@ function createTaskCard(quest) {
   }
   button.appendChild(meta);
 
+  appendQuestLockReasons(button, quest);
+
   const description = document.createElement('p');
   description.textContent = getQuestDescription(quest);
   button.appendChild(description);
@@ -3094,6 +3443,40 @@ function createTaskCard(quest) {
   card.appendChild(button);
 
   return card;
+}
+
+function appendQuestLockReasons(parent, quest) {
+  const progress = getQuestProgress(quest.id);
+  const reasons = getQuestLockReasons(quest);
+
+  if (progress.completed || progress.rewardClaimed || isQuestAvailable(quest) || reasons.length === 0) {
+    return;
+  }
+
+  const lock = document.createElement('div');
+  lock.className = 'task-lock-reasons';
+  const title = document.createElement('small');
+  title.textContent = 'Недоступно:';
+  lock.appendChild(title);
+  const list = document.createElement('ul');
+  for (let i = 0; i < reasons.length; i++) {
+    const item = document.createElement('li');
+    item.textContent = reasons[i];
+    list.appendChild(item);
+  }
+  lock.appendChild(list);
+  parent.appendChild(lock);
+}
+
+function resetHiddenSelectedQuest() {
+  if (!state.selectedQuestId) {
+    return;
+  }
+
+  const selectedQuest = getQuestById(state.selectedQuestId);
+  if (!selectedQuest || !isQuestKnown(selectedQuest)) {
+    state.selectedQuestId = '';
+  }
 }
 
 function createTaskStepNode(quest, progress, index) {
@@ -3399,14 +3782,24 @@ function getCitySelection() {
 
 function getQuestPanelDescription(quest) {
   const progress = getQuestProgress(quest.id);
-  return [
+  const lines = [
     'Тип: ' + quest.typeLabel + '.',
     'Уровень: ' + quest.level + '.',
     'Награда опыта: ' + formatQuestNumber(quest.xpReward) + '.',
+    'Статус: ' + getQuestStatusLabel(quest) + '.',
     getQuestDescription(quest),
-    'Шаги: ' + progress.completedSteps.length + ' / ' + getQuestStepCount(quest) + '.',
-    'Статус: ' + getQuestStatusLabel(quest) + '.'
-  ].join('\n');
+    'Прогресс шагов: ' + progress.completedSteps.length + ' / ' + getQuestStepCount(quest) + '.'
+  ];
+  const reasons = getQuestLockReasons(quest);
+
+  if (!progress.completed && !progress.rewardClaimed && !isQuestAvailable(quest) && reasons.length > 0) {
+    lines.push('Недоступно:');
+    for (let i = 0; i < reasons.length; i++) {
+      lines.push('- ' + reasons[i]);
+    }
+  }
+
+  return lines.join('\n');
 }
 
 function getShipStatusLabel(status) {
@@ -3466,8 +3859,14 @@ function renderObjectActionOptions(selection) {
       addActionLead('Задача не найдена.');
       return;
     }
-    if (progress.completed && progress.rewardClaimed) {
-      addActionLead('Задача завершена. Награда уже получена.');
+    if (progress.completed || progress.rewardClaimed) {
+      addActionLead(progress.rewardClaimed ? 'Задача завершена. Награда уже получена.' : 'Задача выполнена. Повторное выполнение шагов недоступно.');
+      return;
+    }
+    if (!isQuestAvailable(quest)) {
+      const reasons = getQuestLockReasons(quest);
+      addActionLead(reasons.length > 0 ? 'Недоступно:\n- ' + reasons.join('\n- ') : 'Задача пока недоступна.');
+      appendActionOption('✓', 'Выполнить следующий шаг (заглушка)', 'Недоступно: условия не выполнены', 'completeQuestStep', quest.id, true);
       return;
     }
     appendActionOption('✓', 'Выполнить следующий шаг (заглушка)', 'Временная проверка реестра задач', 'completeQuestStep', quest.id, false);
@@ -4142,7 +4541,10 @@ function saveGame() {
   state.resources = normalizeResources(state.resources, state.shipSystems);
   state.hero = normalizeHeroProgression(state.hero);
   state.heroCondition = normalizeHeroCondition(state.heroCondition);
+  state.worldFlags = state.worldFlags && typeof state.worldFlags === 'object' ? { ...state.worldFlags } : {};
   state.questProgress = normalizeQuestProgressCollection(state.questProgress);
+  resetHiddenSelectedQuest();
+  state.taskFilter = normalizeTaskFilter(state.taskFilter);
   localStorage.setItem(saveKey, JSON.stringify(state));
 }
 
@@ -4249,9 +4651,10 @@ function mergeSavedState(saved) {
     };
   }
   next.hero = mergeSavedHero(saved.hero);
+  next.worldFlags = saved.worldFlags && typeof saved.worldFlags === 'object' ? { ...next.worldFlags, ...saved.worldFlags } : {};
   next.questProgress = mergeSavedQuestProgress(saved.questProgress);
   next.selectedQuestId = getQuestById(saved.selectedQuestId) ? saved.selectedQuestId : '';
-  next.taskFilter = ['all', 'main', 'side', 'extra', 'active', 'completed'].includes(saved.taskFilter) ? saved.taskFilter : 'all';
+  next.taskFilter = normalizeTaskFilter(saved.taskFilter);
 
 
   const savedSystems = saved.shipSystems || {};

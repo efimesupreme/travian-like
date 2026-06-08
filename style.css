@@ -6238,6 +6238,11 @@ button:focus-visible {
   background: rgba(8, 17, 29, 0.9);
 }
 
+.task-card.locked {
+  border-color: rgba(255, 204, 102, 0.25);
+  background: rgba(27, 22, 14, 0.78);
+}
+
 .task-card-select {
   display: grid;
   gap: 9px;
@@ -6271,6 +6276,28 @@ button:focus-visible {
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.task-lock-reasons {
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 204, 102, 0.2);
+  border-radius: 10px;
+  color: var(--muted);
+  background: rgba(255, 204, 102, 0.07);
+}
+
+.task-lock-reasons small {
+  display: block;
+  margin-bottom: 5px;
+  color: #ffd37a;
+  font-weight: 700;
+}
+
+.task-lock-reasons ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
 }
 
 .task-step-list {
