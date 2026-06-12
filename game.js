@@ -1,6 +1,6 @@
 // Аурелия-18: единая оболочка сцен «Герой», «Пустоши», «Корабль» и «Город».
-const saveKey = 'aurelia-18-save-v19';
-const legacySaveKeys = ['aurelia-18-save-v18', 'aurelia-18-save-v17', 'aurelia-18-save-v16', 'aurelia-18-save-v15', 'aurelia-18-save-v14', 'aurelia-18-save-v13', 'aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
+const saveKey = 'aurelia-18-save-v20';
+const legacySaveKeys = ['aurelia-18-save-v19', 'aurelia-18-save-v18', 'aurelia-18-save-v17', 'aurelia-18-save-v16', 'aurelia-18-save-v15', 'aurelia-18-save-v14', 'aurelia-18-save-v13', 'aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
 const typewriterDelay = 8;
@@ -35,6 +35,20 @@ const livingBlockRestNarratives = {
   damaged: 'Герой садится у переборки и выравнивает дыхание. Силы понемногу возвращаются.',
   stabilized: 'Жилая зона держит тепло и тишину. Отдых становится заметно глубже.',
   improved: 'Жилой блок работает почти как настоящий отсек восстановления. Тело быстро возвращает силы.'
+};
+
+const defaultStoryItems = {
+  engineRods: 0,
+  requiredEngineRods: 3,
+  signalAmplifierCore: 0
+};
+
+const storyItemLabels = {
+  signalAmplifierCore: 'Усилитель слабого сигнала'
+};
+
+const storyItemDescriptions = {
+  signalAmplifierCore: 'Уцелевший модуль старого сервисного узла. Может усилить сканирование и связь корабля, если установить его вместе с обычными компонентами.'
 };
 
 const researchApproaches = {
@@ -282,6 +296,62 @@ function applyEarlyQuestOverrides(quests) {
         createRealQuestStep(5, 'Наладить базовое выживание', 'Получить первую воду из Пустошей или через Жизнеобеспечение корабля.', 'foundWater')
       ]
     },
+    'main-002': {
+      type: 'main',
+      level: 1,
+      title: 'Деталь, которой нет',
+      description: 'Диагностика двигателя показывает, что обычного ремонта недостаточно. Для восстановления нужен комплект специальных стержней двигателя. Бортовой компьютер находит совпадение между материалами повреждённого узла и технологиями старого проекта терраформирования Аурелии-18.',
+      xpReward: 100,
+      steps: [
+        createRealQuestStep(1, 'Проверить двигатель', 'Выбрать модуль “Двигатель” на сцене “Корабль”.', 'inspectedEngine'),
+        createRealQuestStep(2, 'Провести диагностику поломки', 'Запустить диагностику двигателя и сверить повреждённый узел с аварийной схемой.', 'engineDamageDiagnosed'),
+        createRealQuestStep(3, 'Получить список недостающих стержней', 'После диагностики зафиксировать требование: стержни двигателя 0 / 3.', 'engineRodsRequirementKnown'),
+        createRealQuestStep(4, 'Проверить архив корабля', 'Проанализировать архивные данные корабля и старые технические сигнатуры Аурелии-18.', 'terraformingTechMatchFound'),
+        createRealQuestStep(5, 'Найти направление поиска', 'Установить направление слабого технического сигнала в пустошах.', 'weakSignalDirectionFound')
+      ]
+    },
+    'main-003': {
+      type: 'main',
+      level: 1,
+      title: 'Слабый сигнал',
+      description: 'Герой ловит слабый технический сигнал и предполагает, что он идёт от работающей части старого проекта терраформирования. Дальняя вылазка приводит к повреждённому сервисному дрону, застрявшему в опасной зоне. В его памяти остаются координаты сервисного узла.',
+      xpReward: 100,
+      steps: [
+        createRealQuestStep(1, 'Подготовить дальний выход', 'Иметь минимальный запас воды после первой стабилизации выживания.', 'foundWater'),
+        createRealQuestStep(2, 'Найти источник сигнала', 'Выбрать зону “Слабый сигнал” в Пустошах.', 'weakSignalReached'),
+        createRealQuestStep(3, 'Добраться до повреждённого дрона', 'Исследовать зону слабого сигнала и открыть доступ к упавшему сервисному дрону.', 'crashedDroneFound'),
+        createRealQuestStep(4, 'Подключиться к памяти дрона', 'Считать память повреждённого дрона через старый сервисный интерфейс.', 'droneMemoryDownloaded'),
+        createRealQuestStep(5, 'Получить координаты сервисного узла', 'Восстановить частичные координаты следующего узла обслуживания.', 'serviceNodeCoordinatesFound')
+      ]
+    },
+    'main-004': {
+      type: 'main',
+      level: 1,
+      title: 'Дорога под песком',
+      description: 'Герой идёт по маршруту из памяти дрона и находит старую дорогу к сервисному узлу. На песке остаётся странный рисунок протектора: слишком чёткий для техники, которая должна была исчезнуть десятки лет назад, но недостаточный для прямого вывода.',
+      xpReward: 100,
+      steps: [
+        createRealQuestStep(1, 'Выйти на маршрут дрона', 'Иметь координаты сервисного узла из памяти повреждённого дрона.', 'serviceNodeCoordinatesFound'),
+        createRealQuestStep(2, 'Найти старую дорогу', 'Выбрать или исследовать зону “Старая дорога”.', 'oldRoadFound'),
+        createRealQuestStep(3, 'Заметить следы шин', 'Зафиксировать неоднозначный рисунок протектора на песке.', 'freshTracksNoticed'),
+        createRealQuestStep(4, 'Проследить линию обслуживания', 'Проверить направление старой линии обслуживания.', 'serviceRouteConfirmed'),
+        createRealQuestStep(5, 'Найти вход к сервисному узлу', 'Открыть путь к старому сервисному узлу проекта терраформирования.', 'serviceNodeEntranceFound')
+      ]
+    },
+    'main-005': {
+      type: 'main',
+      level: 1,
+      title: 'Сервисный узел',
+      description: 'Герой добирается до старого сервисного узла проекта терраформирования. Расчёт на стержни двигателя не оправдывается: склад неполон. Вместо нужных стержней внутри остаётся уцелевший модуль усиления слабого сигнала.',
+      xpReward: 100,
+      steps: [
+        createRealQuestStep(1, 'Добраться до сервисного узла', 'Найти вход к сервисному узлу после проверки старой дороги.', 'serviceNodeEntranceFound'),
+        createAnyFlagQuestStep(2, 'Открыть вход', 'Открыть вход одним из подходов: силой, ловкостью или мудростью.', ['serviceDoorBroken', 'serviceLightsEnabled', 'serviceSystemHacked']),
+        createRealQuestStep(3, 'Проверить склад обслуживания', 'Осмотреть внутренний склад обслуживания сервисного узла.', 'serviceStorageChecked'),
+        createRealQuestStep(4, 'Убедиться, что стержней нет', 'Зафиксировать отсутствие стержней двигателя на складе.', 'engineRodsNotFoundAtServiceNode'),
+        createRealQuestStep(5, 'Найти усилитель слабого сигнала', 'Получить уникальный сюжетный компонент “Усилитель слабого сигнала”.', 'signalAmplifierCoreFound')
+      ]
+    },
     'side-001': {
       type: 'side',
       level: 1,
@@ -333,7 +403,11 @@ function applyEarlyQuestOverrides(quests) {
       visibility: createDefaultQuestVisibility()
     };
     if (override.type === 'main') {
-      quests[i].chain = { id: 'main', order: 1 };
+      const mainOrder = Number(quests[i].id.split('-')[1]) || 1;
+      quests[i].chain = { id: 'main', order: mainOrder };
+      quests[i].visibility.mode = 'chain';
+      quests[i].visibility.unlock.requiredCompletedQuestIds = mainOrder > 1 ? ['main-' + String(mainOrder - 1).padStart(3, '0')] : [];
+      quests[i].visibility.hiddenUntilUnlocked = mainOrder > 1;
     } else {
       delete quests[i].chain;
     }
@@ -348,6 +422,18 @@ function createRealQuestStep(index, title, description, flagKey) {
     condition: {
       type: 'flag',
       key: flagKey
+    }
+  };
+}
+
+function createAnyFlagQuestStep(index, title, description, flagKeys) {
+  return {
+    index,
+    title,
+    description,
+    condition: {
+      type: 'anyFlag',
+      keys: Array.isArray(flagKeys) ? flagKeys : []
     }
   };
 }
@@ -696,6 +782,15 @@ function isQuestStepConditionMet(step) {
 
   if (step.condition.type === 'flag') {
     return hasWorldFlag(step.condition.key);
+  }
+
+  if (step.condition.type === 'anyFlag') {
+    const keys = Array.isArray(step.condition.keys) ? step.condition.keys : [];
+    for (let i = 0; i < keys.length; i++) {
+      if (hasWorldFlag(keys[i])) {
+        return true;
+      }
+    }
   }
 
   return false;
@@ -1264,8 +1359,8 @@ const territoryBlueprints = {
   },
   weakSignal: {
     id: 'weakSignal',
-    name: 'Западные склоны',
-    status: 'discovered',
+    name: 'Слабый сигнал',
+    status: 'hidden',
     description: 'Покатые склоны уходят к зоне старых помех. Приборы ловят короткие всплески, похожие на работу повреждённой техники.',
     resourceNodes: [
       {
@@ -1286,9 +1381,9 @@ const territoryBlueprints = {
   },
   buriedServiceBlock: {
     id: 'buriedServiceBlock',
-    name: 'Южные равнины',
+    name: 'Старая дорога',
     status: 'hidden',
-    description: 'На юге тянется ровная пыльная поверхность. Она выглядит пустой, но следы ветра там обрываются слишком резко.',
+    description: 'Под песком лежит почти прямая полоса старого покрытия. Линия уходит к югу, где датчики теряют уверенность и начинают повторять одни и те же ошибки.',
     resourceNodes: [
       {
         key: 'components',
@@ -1306,6 +1401,21 @@ const territoryBlueprints = {
     },
     progress: 0,
     requiredProgress: 3
+  },
+  serviceNode: {
+    id: 'serviceNode',
+    name: 'Сервисный узел',
+    status: 'hidden',
+    description: 'Низкий технический объём под слоем песка и минерализованной корки. Старый проект терраформирования оставил здесь дверь, питающие кабели и слишком тихий терминал.',
+    resourceNodes: [],
+    discoverProgressRequired: 1,
+    approachDifficulties: {
+      direct: 9,
+      signals: 7,
+      careful: 8
+    },
+    progress: 0,
+    requiredProgress: 1
   },
   oldFallLine: {
     id: 'oldFallLine',
@@ -1740,6 +1850,7 @@ function createInitialState() {
     narrativeMessage: '',
     activeResearchEvent: null,
     worldFlags: {},
+    storyItems: normalizeStoryItems(),
     questProgress: {},
     selectedQuestId: '',
     taskFilter: 'known',
@@ -2114,6 +2225,10 @@ function selectTerritory(key) {
   state.selectedTerritoryKey = key;
   if (key === 'crashSite') {
     setWorldFlag('selectedCrashSite', true);
+  } else if (key === 'weakSignal') {
+    setWorldFlag('weakSignalReached', true);
+  } else if (key === 'buriedServiceBlock') {
+    setWorldFlag('oldRoadFound', true);
   }
   state.actionPanelMode = 'actions';
   state.inspectedObjectId = '';
@@ -2358,6 +2473,225 @@ function markResourceGainWorldFlags(actualGain) {
   }
 }
 
+
+
+function normalizeStoryItems(savedItems) {
+  const source = savedItems && typeof savedItems === 'object' ? savedItems : {};
+  return {
+    engineRods: clampSavedNumber(source.engineRods, defaultStoryItems.engineRods, 0, defaultStoryItems.requiredEngineRods),
+    requiredEngineRods: Math.max(3, Math.floor(savedNumber(source.requiredEngineRods, defaultStoryItems.requiredEngineRods))),
+    signalAmplifierCore: clampSavedNumber(source.signalAmplifierCore, defaultStoryItems.signalAmplifierCore, 0, 1)
+  };
+}
+
+function ensureStoryItems() {
+  if (!state) {
+    return normalizeStoryItems();
+  }
+  state.storyItems = normalizeStoryItems(state.storyItems);
+  return state.storyItems;
+}
+
+function getEngineRodsLine() {
+  const storyItems = ensureStoryItems();
+  return 'Стержни двигателя: ' + storyItems.engineRods + ' / ' + storyItems.requiredEngineRods;
+}
+
+function getEngineRodsSlotsLine() {
+  const storyItems = ensureStoryItems();
+  const slots = [];
+  for (let i = 0; i < storyItems.requiredEngineRods; i++) {
+    slots.push(i < storyItems.engineRods ? '■' : '□');
+  }
+  return 'Стержни: ' + slots.join(' ');
+}
+
+function revealTerritory(key, status, targetState) {
+  const target = targetState || state;
+  if (!target || !target.territories || !target.territories[key]) {
+    return;
+  }
+  const territory = target.territories[key];
+  const nextStatus = status || 'discovered';
+  if (territoryStatusRanks[nextStatus] > territoryStatusRanks[territory.status]) {
+    territory.status = nextStatus;
+    normalizeTerritoryProgress(territory);
+  }
+}
+
+
+function applyStoryStateConsistency(targetState) {
+  const target = targetState || state;
+  if (!target) {
+    return;
+  }
+  target.storyItems = normalizeStoryItems(target.storyItems);
+  const flags = target.worldFlags && typeof target.worldFlags === 'object' ? target.worldFlags : {};
+  if (flags.weakSignalDirectionFound === true) {
+    revealTerritory('weakSignal', 'discovered', target);
+  }
+  if (flags.serviceNodeCoordinatesFound === true) {
+    revealTerritory('buriedServiceBlock', 'discovered', target);
+  }
+  if (flags.serviceNodeEntranceFound === true) {
+    revealTerritory('serviceNode', 'open', target);
+  }
+  if (flags.signalAmplifierCoreFound === true) {
+    target.storyItems.signalAmplifierCore = 1;
+  }
+}
+
+function performShipStoryAction(actionKey) {
+  const selection = getCurrentSelection();
+  if (!selection || selection.kind !== 'system') {
+    return;
+  }
+
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
+  spendStamina();
+  ensureStoryItems();
+
+  if (actionKey === 'diagnoseEngineDamage') {
+    setWorldFlag('engineDamageDiagnosed', true);
+    setWorldFlag('engineRodsRequirementKnown', true);
+    const message = 'Диагностика двигателя завершена: обычного ремонта недостаточно. Повреждённый узел требует стержни двигателя 0 / 3.';
+    addLog(message);
+    return;
+  }
+
+  if (actionKey === 'analyzeShipArchive') {
+    setWorldFlag('terraformingTechMatchFound', true);
+    setWorldFlag('weakSignalDirectionFound', true);
+    revealTerritory('weakSignal', 'discovered');
+    const message = 'Архив корабля: материалы повреждённого узла совпадают со старыми решениями проекта терраформирования. В пустошах найдено направление слабого технического сигнала.';
+    addLog(message);
+  }
+}
+
+function isServiceNodeOpened() {
+  return hasWorldFlag('serviceDoorBroken') || hasWorldFlag('serviceLightsEnabled') || hasWorldFlag('serviceSystemHacked');
+}
+
+function getTerritoryStoryActions(key, territory) {
+  const actions = [];
+
+  if (key === 'weakSignal' && (territory.status === 'open' || territory.status === 'depleted') && !hasWorldFlag('droneMemoryDownloaded')) {
+    actions.push({
+      icon: '⌁',
+      title: 'Подключиться к памяти дрона',
+      note: 'Мудрость · технический интерфейс повреждён',
+      actionKey: 'downloadDroneMemory'
+    });
+  }
+
+  if (key === 'buriedServiceBlock' && (territory.status === 'open' || territory.status === 'depleted')) {
+    if (!hasWorldFlag('freshTracksNoticed')) {
+      actions.push({
+        icon: '▨',
+        title: 'Заметить следы шин',
+        note: 'Зафиксировать неоднозначный рисунок протектора на песке',
+        actionKey: 'noticeFreshTracks'
+      });
+    }
+    if (hasWorldFlag('freshTracksNoticed') && !hasWorldFlag('serviceRouteConfirmed')) {
+      actions.push({
+        icon: '⟶',
+        title: 'Проследить линию обслуживания',
+        note: 'Проверить старую трассу до входа сервисного узла',
+        actionKey: 'confirmServiceRoute'
+      });
+    }
+  }
+
+  if (key === 'serviceNode' && (territory.status === 'open' || territory.status === 'depleted')) {
+    if (!isServiceNodeOpened()) {
+      actions.push({ icon: '⚒', title: 'Вскрыть дверь', note: 'Сила · грубое вскрытие створки', actionKey: 'breakServiceDoor' });
+      actions.push({ icon: '◒', title: 'Запустить аварийное освещение', note: 'Ловкость · ручной щиток питания', actionKey: 'enableServiceLights' });
+      actions.push({ icon: '⌘', title: 'Взломать систему доступа', note: 'Мудрость · старый протокол обслуживания', actionKey: 'hackServiceSystem' });
+    } else if (!hasWorldFlag('serviceStorageChecked')) {
+      actions.push({ icon: '▣', title: 'Проверить склад обслуживания', note: 'Осмотреть неполный склад сервисного узла', actionKey: 'checkServiceStorage' });
+    } else if (!hasWorldFlag('signalAmplifierCoreFound')) {
+      actions.push({ icon: '◇', title: 'Найти усилитель слабого сигнала', note: 'Забрать уцелевший модуль старого узла', actionKey: 'findSignalAmplifierCore' });
+    }
+  }
+
+  return actions;
+}
+
+function performTerritoryStoryAction(payload) {
+  const parts = String(payload || '').split(':');
+  const key = parts[0];
+  const actionKey = parts[1];
+  const territory = state.territories[key];
+  if (!territory) {
+    return;
+  }
+
+  const selection = getCurrentSelection();
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
+  spendStamina();
+
+  if (actionKey === 'downloadDroneMemory') {
+    setWorldFlag('droneMemoryDownloaded', true);
+    setWorldFlag('serviceNodeCoordinatesFound', true);
+    revealTerritory('buriedServiceBlock', 'discovered');
+    addLog('Память дрона: «Возврат в сервисный узел невозможен». «Маршрут повреждён». «Последний известный узел обслуживания: координаты восстановлены частично».');
+    return;
+  }
+
+  if (actionKey === 'noticeFreshTracks') {
+    setWorldFlag('freshTracksNoticed', true);
+    addLog('Последняя техника проекта должна была пройти здесь десятки лет назад. Но песок держит рисунок протектора так чётко, будто время здесь остановилось не семьдесят лет назад, а вчера. Возможны минерализованная корка, странный ветер или старый проход, сохранившийся слишком хорошо.');
+    return;
+  }
+
+  if (actionKey === 'confirmServiceRoute') {
+    setWorldFlag('serviceRouteConfirmed', true);
+    setWorldFlag('serviceNodeEntranceFound', true);
+    revealTerritory('serviceNode', 'open');
+    addLog('Линия обслуживания подтверждена. Под песком найден вход к старому сервисному узлу. Объект молчит, но питание в контуре ещё не умерло.');
+    return;
+  }
+
+  if (actionKey === 'breakServiceDoor') {
+    setWorldFlag('serviceDoorBroken', true);
+    addLog('Вход вскрыт силой. Створка деформирована, крепления сорваны. Следы вмешательства останутся снаружи и внутри узла.');
+    return;
+  }
+
+  if (actionKey === 'enableServiceLights') {
+    setWorldFlag('serviceLightsEnabled', true);
+    addLog('Аварийное освещение запущено. Внутри стало проще различать маркировку склада, но слабый свет делает объект заметнее в пустыне.');
+    return;
+  }
+
+  if (actionKey === 'hackServiceSystem') {
+    setWorldFlag('serviceSystemHacked', true);
+    setWorldFlag('zeroProtocolNoticedIntervention', true);
+    addLog('Система доступа взломана через протокол обслуживания. Нулевой Протокол фиксирует вмешательство, но прямого ответа нет.');
+    return;
+  }
+
+  if (actionKey === 'checkServiceStorage') {
+    setWorldFlag('serviceStorageChecked', true);
+    setWorldFlag('engineRodsNotFoundAtServiceNode', true);
+    addLog('Склад обслуживания проверен. Ячейки под стержни двигателя пусты. Нужных стержней здесь нет: двигатель по-прежнему требует 0 / 3.');
+    return;
+  }
+
+  if (actionKey === 'findSignalAmplifierCore') {
+    const storyItems = ensureStoryItems();
+    storyItems.signalAmplifierCore = 1;
+    setWorldFlag('signalAmplifierCoreFound', true);
+    addLog('Найден сюжетный компонент: Усилитель слабого сигнала. Уцелевший модуль старого сервисного узла снят без выдачи стержней двигателя.');
+  }
+}
 
 function getLifeSupportActions(status) {
   const rank = savedNumber(shipStatusRanks[status], 0);
@@ -2679,6 +3013,11 @@ function researchTerritory(key, approachKey) {
   addLog(formatCompactCheckResult(check, 'прогресс +' + progressGain));
 
   if (opened) {
+    if (key === 'weakSignal') {
+      setWorldFlag('crashedDroneFound', true);
+    } else if (key === 'buriedServiceBlock') {
+      setWorldFlag('oldRoadFound', true);
+    }
     addLog('Зона открыта: ' + territory.name + '.');
   }
 }
@@ -3340,10 +3679,34 @@ function renderHeroScreen() {
           renderHeroStats(hero.stats) +
           renderHeroSlots('Мысли', hero.thoughts, null, 'thoughts') +
           renderHeroSlots('Предметы', hero.items, null, 'items') +
+          renderStoryItems() +
         '</div>' +
         renderHeroEquipment(hero.equipment) +
       '</div>' +
     '</article>';
+}
+
+
+function renderStoryItems() {
+  const storyItems = ensureStoryItems();
+  const entries = [];
+
+  if (storyItems.signalAmplifierCore > 0) {
+    entries.push({
+      title: storyItemLabels.signalAmplifierCore,
+      description: storyItemDescriptions.signalAmplifierCore
+    });
+  }
+
+  if (entries.length === 0) {
+    return '';
+  }
+
+  let html = '<section class="hero-section hero-slots hero-story-items" aria-label="Сюжетные предметы"><h4>Сюжетные предметы</h4><div class="hero-mini-slot-list">';
+  for (let i = 0; i < entries.length; i++) {
+    html += '<div class="hero-slot"><strong>' + entries[i].title + '</strong><span>' + entries[i].description + '</span></div>';
+  }
+  return html + '</div></section>';
 }
 
 function renderHeroDevelopment(hero) {
@@ -3432,6 +3795,7 @@ function renderShipSystems() {
       '<strong>' + blueprint.name + '</strong>' +
       '<small>Статус: ' + getShipStatusLabel(system.status) + '</small>' +
       '<small>' + getShipProgressText(system) + '</small>' +
+      (key === 'engine' ? '<small>' + getEngineRodsLine() + '</small><small>' + getEngineRodsSlotsLine() + '</small>' : '') +
       '<em>Роль: ' + blueprint.role + '</em>' +
       '<p>' + blueprint.description + '</p>' +
       '</button>';
@@ -3445,6 +3809,11 @@ function getShipSelectionDescription(key, blueprint, system) {
     blueprint.description,
     getShipProgressText(system) + '.'
   ];
+
+  if (key === 'engine') {
+    lines.push(getEngineRodsLine() + '.');
+    lines.push(getEngineRodsSlotsLine() + '.');
+  }
   const effectLine = getShipStorageLimitEffectLine(key, system.status);
   const restEffectLine = getLivingBlockRestEffectLine(key, system.status);
   const energyEffectLine = getEnergyCircuitEffectLine(key, system.status);
@@ -4042,7 +4411,7 @@ function getCurrentSelection() {
       name: blueprint.name,
       type: 'система корабля',
       description: getShipSelectionDescription(key, blueprint, system),
-      inspectDescription: 'Статус: ' + getShipStatusLabel(system.status) + '. ' + blueprint.description + ' ' + getShipProgressText(system) + '.'
+      inspectDescription: 'Статус: ' + getShipStatusLabel(system.status) + '. ' + blueprint.description + ' ' + getShipProgressText(system) + (key === 'engine' ? '. ' + getEngineRodsLine() + '. ' + getEngineRodsSlotsLine() : '') + '.'
     };
   }
 
@@ -4228,6 +4597,14 @@ function renderObjectActionOptions(selection) {
       }
     }
 
+    if (selection.key === 'engine' && getQuestProgress('main-001').completed) {
+      if (!hasWorldFlag('engineDamageDiagnosed')) {
+        appendActionOption('▧', formatActionTitle('Провести диагностику поломки', {}), 'Проверить повреждённый узел двигателя', 'shipStoryActionKey', 'diagnoseEngineDamage', false);
+      } else if (!hasWorldFlag('terraformingTechMatchFound')) {
+        appendActionOption('▤', formatActionTitle('Проверить архив корабля', {}), 'Сверить материалы узла с архивом Аурелии-18', 'shipStoryActionKey', 'analyzeShipArchive', false);
+      }
+    }
+
     const stage = getShipRepairStage(system);
 
     if (!stage) {
@@ -4249,6 +4626,11 @@ function renderObjectActionOptions(selection) {
       appendResearchApproachOptions(selection.key, territory);
     } else if (territory.status === 'hidden') {
       appendDiscoverApproachOptions(selection.key, territory);
+    }
+    const storyActions = getTerritoryStoryActions(selection.key, territory);
+    for (let i = 0; i < storyActions.length; i++) {
+      const storyAction = storyActions[i];
+      appendActionOption(storyAction.icon, formatActionTitle(storyAction.title, {}), storyAction.note, 'territoryStoryActionKey', selection.key + ':' + storyAction.actionKey, false);
     }
     appendBackOption();
     return;
@@ -4313,6 +4695,19 @@ function appendDiscoverApproachOptions(key, territory) {
   }
 }
 
+
+function getHeroItemsNarrative() {
+  const storyItems = ensureStoryItems();
+  if (storyItems.signalAmplifierCore > 0) {
+    return 'Сюжетные предметы: Усилитель слабого сигнала. Уцелевший модуль старого сервисного узла ждёт установки вместе с обычными компонентами. Стержней двигателя среди находок нет.';
+  }
+  return 'Личные карманы проверены один за другим. Предметные слоты ждут будущих находок.';
+}
+
+function getHeroItemsLogMessage() {
+  return ensureStoryItems().signalAmplifierCore > 0 ? 'Сюжетный предмет в наличии: Усилитель слабого сигнала.' : 'Слоты предметов пусты.';
+}
+
 function performHeroAction(action) {
   state.mode = 'hero';
   state.actionPanelMode = 'actions';
@@ -4332,12 +4727,12 @@ function performHeroAction(action) {
   const narratives = {
     equipment: 'Пальцы проходят по креплениям и пустым слотам. Снаряжение держится, но список экипировки всё ещё почти пуст.',
     thoughts: 'Герой пытается разложить мысли по ячейкам. Внутри только шум аварии, молчание планеты и необходимость двигаться дальше.',
-    items: 'Личные карманы проверены один за другим. Предметные слоты ждут будущих находок.'
+    items: getHeroItemsNarrative()
   };
   const messages = {
     equipment: 'Слоты экипировки осмотрены.',
     thoughts: 'Слоты мыслей пусты.',
-    items: 'Слоты предметов пусты.'
+    items: getHeroItemsLogMessage()
   };
 
   if (selection) {
@@ -4885,6 +5280,8 @@ function saveGame() {
   state.hero = normalizeHeroProgression(state.hero);
   state.heroCondition = normalizeHeroCondition(state.heroCondition);
   state.worldFlags = state.worldFlags && typeof state.worldFlags === 'object' ? { ...state.worldFlags } : {};
+  state.storyItems = normalizeStoryItems(state.storyItems);
+  applyStoryStateConsistency();
   state.questProgress = normalizeQuestProgressCollection(state.questProgress);
   resetHiddenSelectedQuest();
   state.taskFilter = normalizeTaskFilter(state.taskFilter);
@@ -4996,6 +5393,7 @@ function mergeSavedState(saved) {
   }
   next.hero = mergeSavedHero(saved.hero);
   next.worldFlags = saved.worldFlags && typeof saved.worldFlags === 'object' ? { ...next.worldFlags, ...saved.worldFlags } : {};
+  next.storyItems = normalizeStoryItems(saved.storyItems);
   next.questProgress = mergeSavedQuestProgress(saved.questProgress);
   next.selectedQuestId = getQuestById(saved.selectedQuestId) ? saved.selectedQuestId : '';
   next.taskFilter = normalizeTaskFilter(saved.taskFilter);
@@ -5042,6 +5440,8 @@ function mergeSavedState(saved) {
       normalizeTerritoryProgress(nextTerritory);
     }
   }
+
+  applyStoryStateConsistency(next);
 
   if (next.activeResearchEvent && next.territories[next.activeResearchEvent.territoryKey].status !== 'discovered') {
     next.activeResearchEvent = null;
@@ -5202,6 +5602,10 @@ document.addEventListener('click', function (event) {
     selectSystem(target.dataset.systemKey);
   } else if (target.dataset.territoryKey) {
     selectTerritory(target.dataset.territoryKey);
+  } else if (target.dataset.shipStoryActionKey) {
+    performShipStoryAction(target.dataset.shipStoryActionKey);
+  } else if (target.dataset.territoryStoryActionKey) {
+    performTerritoryStoryAction(target.dataset.territoryStoryActionKey);
   } else if (target.dataset.repairKey) {
     repairSystem(target.dataset.repairKey);
   } else if (target.dataset.lifeSupportActionKey) {
