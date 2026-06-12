@@ -6544,3 +6544,177 @@ body[data-scene="tasks"] .scene-frame {
     grid-template-columns: 1fr;
   }
 }
+
+/* Mobile selected action panel layout: description + future preview + scrollable actions. */
+.selected-object-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(72px, 24%, 96px);
+  gap: 12px;
+  align-items: stretch;
+  min-width: 0;
+  margin-bottom: 12px;
+}
+
+.selected-object-copy {
+  min-width: 0;
+}
+
+.selected-object-preview {
+  position: relative;
+  display: grid;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(116, 215, 255, 0.28);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 24%, rgba(116, 215, 255, 0.22), transparent 42%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 9px),
+    linear-gradient(180deg, rgba(9, 22, 35, 0.92), rgba(3, 8, 14, 0.94));
+  box-shadow: inset 0 0 18px rgba(116, 215, 255, 0.08), 0 0 18px rgba(31, 199, 255, 0.08);
+}
+
+.selected-object-preview::before {
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(221, 194, 155, 0.18);
+  border-radius: 9px;
+  content: '';
+}
+
+.selected-object-preview span {
+  position: relative;
+  width: 44%;
+  height: 56%;
+  border: 1px solid rgba(221, 194, 155, 0.34);
+  border-radius: 999px 999px 12px 12px;
+  background:
+    radial-gradient(circle at 50% 22%, rgba(221, 194, 155, 0.62) 0 18%, transparent 19%),
+    linear-gradient(180deg, rgba(103, 196, 221, 0.28), rgba(137, 111, 76, 0.18));
+  opacity: 0.72;
+}
+
+@media (max-width: 767px) {
+  .info-panel {
+    flex: 0 0 clamp(310px, 44dvh, 370px);
+    height: clamp(310px, 44dvh, 370px);
+    max-height: none;
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  .info-panel > h2 {
+    display: block;
+    flex: 0 0 auto;
+    margin: 0 0 7px;
+    padding: 6px 10px 7px;
+    overflow: hidden;
+    border: 1px solid rgba(137, 111, 76, 0.32);
+    border-radius: 3px;
+    color: #ddc29b;
+    font-size: 15px;
+    line-height: 1.15;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: rgba(5, 8, 10, 0.58);
+  }
+
+  .selected-object,
+  .selected-object.system-selection,
+  .selected-object.territory-selection {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  .selected-object-summary {
+    grid-template-columns: minmax(0, 1fr) clamp(68px, 22vw, 88px);
+    gap: 9px;
+    flex: 0 0 auto;
+    min-height: clamp(76px, 21vw, 96px);
+    margin-bottom: 8px;
+  }
+
+  .selected-object-copy {
+    min-height: 0;
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+  }
+
+  .selected-object h2,
+  .selected-object .description,
+  .selected-object.system-selection h2,
+  .selected-object.system-selection .description,
+  .selected-object.territory-selection h2,
+  .selected-object.territory-selection .description {
+    display: block;
+  }
+
+  .selected-object h2,
+  .selected-object.system-selection h2,
+  .selected-object.territory-selection h2 {
+    margin: 0 0 4px;
+    overflow: visible;
+    color: #ddc29b;
+    font-size: clamp(12.5px, 3.5vw, 14px);
+    line-height: 1.18;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .selected-object .description,
+  .selected-object.system-selection .description,
+  .selected-object.territory-selection .description {
+    max-height: none;
+    margin: 0;
+    overflow: visible;
+    color: #aeb2aa;
+    font-size: clamp(11px, 3.05vw, 12.5px);
+    line-height: 1.27;
+    white-space: pre-line;
+    -webkit-line-clamp: unset;
+  }
+
+  .selected-object-preview {
+    width: 100%;
+    max-width: 88px;
+    min-height: 0;
+    align-self: start;
+    border-radius: 3px;
+  }
+
+  .narrative-feed .panel-actions {
+    display: grid;
+    flex: 1 1 auto;
+    gap: 0;
+    min-height: 150px;
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+    padding-right: 2px;
+  }
+
+  .narrative-feed .panel-actions .action-choice,
+  .narrative-feed .panel-actions button,
+  .narrative-feed .panel-actions button.action-choice {
+    width: 100%;
+    min-height: 50px;
+    padding: 7px 0 !important;
+  }
+}
+
+@media (max-width: 340px) {
+  .selected-object-summary {
+    grid-template-columns: minmax(0, 1fr) 64px;
+    gap: 7px;
+  }
+
+  .info-panel > h2 {
+    font-size: 14px;
+  }
+}
