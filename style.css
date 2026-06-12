@@ -6718,3 +6718,94 @@ body[data-scene="tasks"] .scene-frame {
     font-size: 14px;
   }
 }
+
+/* Mobile action panel adjustment: no visible panel title, taller summary, fixed action rows. */
+@media (max-width: 767px) {
+  .info-panel {
+    flex: 0 0 clamp(330px, 46dvh, 390px);
+    height: clamp(330px, 46dvh, 390px);
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  .info-panel > h2 {
+    display: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .selected-object,
+  .selected-object.system-selection,
+  .selected-object.territory-selection {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .selected-object-summary {
+    grid-template-columns: minmax(0, 1fr) clamp(72px, 21vw, 92px);
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: clamp(104px, 25vw, 132px);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  .selected-object-copy {
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+  }
+
+  .selected-object-preview {
+    align-self: stretch;
+    width: 100%;
+    max-width: 92px;
+    min-height: 100%;
+    aspect-ratio: auto;
+  }
+
+  #selectedActions.panel-actions,
+  .narrative-feed #selectedActions.panel-actions,
+  .narrative-feed .panel-actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 8px;
+    min-height: 184px;
+    max-height: 196px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 2px;
+  }
+
+  #selectedActions.panel-actions .action-choice,
+  #selectedActions.panel-actions button,
+  .narrative-feed #selectedActions.panel-actions .action-choice,
+  .narrative-feed #selectedActions.panel-actions button,
+  .narrative-feed .panel-actions .action-choice,
+  .narrative-feed .panel-actions button,
+  .narrative-feed .panel-actions button.action-choice {
+    flex: 0 0 56px;
+    width: 100%;
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 340px) {
+  .selected-object-summary {
+    grid-template-columns: minmax(0, 1fr) 68px;
+    min-height: 98px;
+  }
+}
