@@ -4116,9 +4116,8 @@ function createTaskCard(quest) {
   const completed = progress.completed || progress.rewardClaimed;
   const card = document.createElement('article');
   card.className = 'task-card compact-task-card';
-  const expanded = state.selectedQuestId === quest.id;
-  card.classList.toggle('selected', expanded);
-  card.classList.toggle('expanded', expanded);
+  const selected = state.selectedQuestId === quest.id;
+  card.classList.toggle('selected', selected);
   card.classList.toggle('completed', completed);
   card.classList.toggle('locked', isQuestVisible(quest) && !isQuestAvailable(quest) && !completed);
 
@@ -4153,10 +4152,6 @@ function createTaskCard(quest) {
 
   button.appendChild(meta);
   card.appendChild(button);
-
-  if (expanded) {
-    card.appendChild(createTaskExpandedBody(quest, progress));
-  }
 
   return card;
 }
@@ -4453,7 +4448,7 @@ function stopTypewriter(nextKey) {
 function renderEmptyHeroActions() {
   elements.selectedName.textContent = 'Объект не выбран';
   elements.selectedDescription.textContent = state.mode === 'tasks'
-    ? 'Выберите задачу в центральной сцене.'
+    ? 'Выберите задачу в списке, чтобы увидеть описание, шаги и условия.'
     : 'Выберите объект в центральной сцене, чтобы увидеть описание и доступные действия.';
   updateSelectedObjectClass(null);
 }
@@ -4508,16 +4503,26 @@ function getCurrentSelection() {
 
   if (state.mode === 'tasks') {
     const quest = getQuestById(state.selectedQuestId);
-    const selectedLine = quest && isQuestVisibleByFilter(quest, state.taskFilter)
-      ? '\n\nВыбрана задача: ' + quest.title + '. Подробности раскрыты в центральной карточке.'
-      : '';
+
+    if (quest && isQuestKnown(quest) && isQuestVisibleByFilter(quest, state.taskFilter)) {
+      return {
+        id: 'task:' + quest.id,
+        kind: 'quest',
+        key: quest.id,
+        name: quest.title,
+        type: quest.typeLabel,
+        description: getQuestPanelDescription(quest),
+        inspectDescription: getQuestPanelDescription(quest)
+      };
+    }
+
     return {
-      id: 'tasks:guide:' + (quest ? quest.id : 'none'),
+      id: 'tasks:guide:none',
       kind: 'taskGuide',
       name: 'Задачи',
       type: 'реестр задач',
-      description: 'Выберите задачу в центральном списке, чтобы раскрыть описание, шаги и условия выполнения.' + selectedLine,
-      inspectDescription: 'Выберите задачу в центральном списке, чтобы раскрыть описание, шаги и условия выполнения.' + selectedLine
+      description: 'Выберите задачу в списке, чтобы увидеть описание, шаги и условия.',
+      inspectDescription: 'Выберите задачу в списке, чтобы увидеть описание, шаги и условия.'
     };
   }
 
@@ -4653,7 +4658,15 @@ function renderObjectActionOptions(selection) {
   }
 
   if (selection.kind === 'taskGuide') {
-    addActionLead('Подробности задачи, шаги, награда и условия теперь отображаются в раскрытой центральной карточке.');
+    addActionLead('Выберите задачу в списке, чтобы увидеть описание, шаги и условия.');
+    return;
+  }
+
+  if (selection.kind === 'quest') {
+    const quest = getQuestById(selection.key);
+    if (quest) {
+      appendQuestPlaceholderAction(elements.selectedActions, quest, getQuestProgress(quest.id));
+    }
     return;
   }
 
