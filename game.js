@@ -1,6 +1,6 @@
 // Аурелия-18: единая оболочка сцен «Герой», «Пустоши», «Корабль» и «Город».
-const saveKey = 'aurelia-18-save-v20';
-const legacySaveKeys = ['aurelia-18-save-v19', 'aurelia-18-save-v18', 'aurelia-18-save-v17', 'aurelia-18-save-v16', 'aurelia-18-save-v15', 'aurelia-18-save-v14', 'aurelia-18-save-v13', 'aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
+const saveKey = 'aurelia-18-save-v21';
+const legacySaveKeys = ['aurelia-18-save-v20', 'aurelia-18-save-v19', 'aurelia-18-save-v18', 'aurelia-18-save-v17', 'aurelia-18-save-v16', 'aurelia-18-save-v15', 'aurelia-18-save-v14', 'aurelia-18-save-v13', 'aurelia-18-save-v12', 'aurelia-18-save-v11', 'aurelia-18-save-v10', 'aurelia-18-save-v9', 'aurelia-18-save-v8', 'aurelia-18-save-v7', 'aurelia-18-save-v6', 'aurelia-18-save-v5', 'aurelia-18-save-v4', 'aurelia-18-save-v3', 'aurelia-18-save-v2'];
 const maxLogMessages = 10;
 const maxTurns = 20;
 const typewriterDelay = 8;
@@ -350,6 +350,20 @@ function applyEarlyQuestOverrides(quests) {
         createRealQuestStep(3, 'Проверить склад обслуживания', 'Осмотреть внутренний склад обслуживания сервисного узла.', 'serviceStorageChecked'),
         createRealQuestStep(4, 'Убедиться, что стержней нет', 'Зафиксировать отсутствие стержней двигателя на складе.', 'engineRodsNotFoundAtServiceNode'),
         createRealQuestStep(5, 'Найти усилитель слабого сигнала', 'Получить уникальный сюжетный компонент “Усилитель слабого сигнала”.', 'signalAmplifierCoreFound')
+      ]
+    },
+    'main-006': {
+      type: 'main',
+      level: 1,
+      title: 'Чужой канал',
+      description: 'Герой возвращается к кораблю с усилителем слабого сигнала и встраивает его в навигационный узел. Вместо человеческих голосов корабль ловит служебные пакеты старой инфраструктуры: давление в магистралях, аварийные заявки и команды водного контура. Один объект отвечает чаще других — активный водный конденсатор старого проекта терраформирования в стороне от места крушения. Нулевой Протокол всё ещё обрабатывает его сигналы, и это становится вероятной следующей целью маршрута.',
+      xpReward: 100,
+      steps: [
+        createRealQuestStep(1, 'Вернуться к кораблю', 'Выбрать сцену “Корабль” после получения усилителя слабого сигнала.', 'signalModuleUpgradeUnlocked'),
+        createRealQuestStep(2, 'Установить усилитель сигнала', 'Встроить усилитель слабого сигнала в модуль сканирования и связи корабля.', 'signalModuleAmplified'),
+        createRealQuestStep(3, 'Поймать служебный канал', 'После установки усилителя принять не голоса, а технические пакеты старой инфраструктуры.', 'serviceChannelDetected'),
+        createRealQuestStep(4, 'Расшифровать данные водного конденсатора', 'Выделить в канале активный водный конденсатор старого проекта терраформирования.', 'waterCondenserSignalFound'),
+        createRealQuestStep(5, 'Подготовиться к новому маршруту', 'Зафиксировать направление к следующей инфраструктуре Нулевого Протокола.', 'waterCondenserRouteKnown')
       ]
     },
     'side-001': {
@@ -773,6 +787,16 @@ function setWorldFlag(flagKey, value) {
 
 function hasWorldFlag(flagKey) {
   return !!(state && state.worldFlags && state.worldFlags[flagKey] === true);
+}
+
+function updateSignalModuleUpgradeUnlockFromShipScene() {
+  if (!state || state.mode !== 'ship' || hasWorldFlag('signalModuleAmplified')) {
+    return;
+  }
+  const storyItems = ensureStoryItems();
+  if (storyItems.signalAmplifierCore > 0 || hasWorldFlag('signalAmplifierCoreFound')) {
+    setWorldFlag('signalModuleUpgradeUnlocked', true);
+  }
 }
 
 function isQuestStepConditionMet(step) {
@@ -2189,6 +2213,8 @@ function switchMode(mode) {
   state.activeResearchEvent = null;
   if (mode === 'hero') {
     setWorldFlag('visitedHero', true);
+  } else if (mode === 'ship') {
+    updateSignalModuleUpgradeUnlockFromShipScene();
   }
   saveGame();
   render();
@@ -2202,6 +2228,7 @@ function selectSystem(key) {
   state.mode = 'ship';
   state.selectedSystemKey = key;
   setWorldFlag('inspectedAnyShipSystem', true);
+  updateSignalModuleUpgradeUnlockFromShipScene();
   if (key === energyCircuitSystemKey) {
     setWorldFlag('inspectedEnergyCircuit', true);
   } else if (key === lifeSupportSystemKey) {
@@ -2536,7 +2563,13 @@ function applyStoryStateConsistency(targetState) {
   if (flags.serviceNodeEntranceFound === true) {
     revealTerritory('serviceNode', 'open', target);
   }
-  if (flags.signalAmplifierCoreFound === true) {
+  if (flags.signalModuleAmplified === true) {
+    target.storyItems.signalAmplifierCore = 0;
+    flags.signalModuleUpgradeUnlocked = true;
+    flags.serviceChannelDetected = true;
+    flags.waterCondenserSignalFound = true;
+    flags.waterCondenserRouteKnown = true;
+  } else if (flags.signalAmplifierCoreFound === true) {
     target.storyItems.signalAmplifierCore = 1;
   }
 }
@@ -2547,12 +2580,18 @@ function performShipStoryAction(actionKey) {
     return;
   }
 
+  ensureStoryItems();
+
+  if (actionKey === 'installSignalAmplifier') {
+    installSignalAmplifier(selection);
+    return;
+  }
+
   if (!hasEnoughStamina(selection)) {
     return;
   }
 
   spendStamina();
-  ensureStoryItems();
 
   if (actionKey === 'diagnoseEngineDamage') {
     setWorldFlag('engineDamageDiagnosed', true);
@@ -2569,6 +2608,68 @@ function performShipStoryAction(actionKey) {
     const message = 'Архив корабля: материалы повреждённого узла совпадают со старыми решениями проекта терраформирования. В пустошах найдено направление слабого технического сигнала.';
     addLog(message);
   }
+}
+
+function shouldShowSignalAmplifierInstallAction() {
+  const storyItems = ensureStoryItems();
+  return storyItems.signalAmplifierCore > 0 || hasWorldFlag('signalModuleAmplified');
+}
+
+function getSignalAmplifierInstallCost() {
+  return { metal: 4, components: 2 };
+}
+
+function canInstallSignalAmplifier() {
+  const storyItems = ensureStoryItems();
+  return storyItems.signalAmplifierCore > 0 && !hasWorldFlag('signalModuleAmplified') && canPay(getSignalAmplifierInstallCost());
+}
+
+function getSignalAmplifierInstallNote() {
+  const storyItems = ensureStoryItems();
+  if (hasWorldFlag('signalModuleAmplified')) {
+    return 'Усилитель уже установлен в контур сканирования и связи';
+  }
+  if (storyItems.signalAmplifierCore <= 0) {
+    return 'Требуется сюжетный компонент: усилитель слабого сигнала';
+  }
+  if (!canPay(getSignalAmplifierInstallCost())) {
+    return formatMissingResourcesMessage(getSignalAmplifierInstallCost());
+  }
+  return 'Стоимость: 1 усилитель слабого сигнала; встроить модуль в сканеры и связной контур';
+}
+
+function installSignalAmplifier(selection) {
+  if (selection.key !== navigationNodeSystemKey || hasWorldFlag('signalModuleAmplified')) {
+    return;
+  }
+
+  const storyItems = ensureStoryItems();
+  const cost = getSignalAmplifierInstallCost();
+  if (storyItems.signalAmplifierCore <= 0) {
+    addLog('Установка невозможна: усилитель слабого сигнала отсутствует.');
+    return;
+  }
+  if (!canPay(cost)) {
+    addLog('Установка невозможна. ' + formatMissingResourcesMessage(cost) + '.');
+    return;
+  }
+  if (!hasEnoughStamina(selection)) {
+    return;
+  }
+
+  spendStamina();
+  payCost(cost);
+  storyItems.signalAmplifierCore = 0;
+  setWorldFlag('signalModuleUpgradeUnlocked', true);
+  setWorldFlag('signalModuleAmplified', true);
+  setWorldFlag('serviceChannelDetected', true);
+  setWorldFlag('waterCondenserSignalFound', true);
+  setWorldFlag('waterCondenserRouteKnown', true);
+  syncQuestProgress();
+
+  const message = 'Шум рассыпается на слои. За ним нет голосов — только служебные пакеты старого проекта: давление в магистрали, аварийные заявки, маршруты обслуживания, повторяющиеся команды водного контура. Один объект отвечает чаще других: активный водный конденсатор на восточном плече сети. Нулевой Протокол продолжает обрабатывать его сигналы, и маршрут уходит в сторону от места крушения.';
+  setNarrativeMessage(selection, message);
+  addLog(message);
 }
 
 function isServiceNodeOpened() {
@@ -3797,7 +3898,7 @@ function renderShipSystems() {
       '<small>' + getShipProgressText(system) + '</small>' +
       (key === 'engine' ? '<small>' + getEngineRodsLine() + '</small><small>' + getEngineRodsSlotsLine() + '</small>' : '') +
       '<em>Роль: ' + blueprint.role + '</em>' +
-      '<p>' + blueprint.description + '</p>' +
+      '<p>' + blueprint.description + (key === navigationNodeSystemKey && hasWorldFlag('signalModuleAmplified') ? ' Усилитель слабого сигнала установлен.' : '') + '</p>' +
       '</button>';
     elements.shipSystemsGrid.appendChild(card);
   }
@@ -3813,6 +3914,10 @@ function getShipSelectionDescription(key, blueprint, system) {
   if (key === 'engine') {
     lines.push(getEngineRodsLine() + '.');
     lines.push(getEngineRodsSlotsLine() + '.');
+  }
+
+  if (key === navigationNodeSystemKey && hasWorldFlag('signalModuleAmplified')) {
+    lines.push('Усилитель слабого сигнала установлен: сканеры и связной контур слышат дальние служебные пакеты старой инфраструктуры.');
   }
   const effectLine = getShipStorageLimitEffectLine(key, system.status);
   const restEffectLine = getLivingBlockRestEffectLine(key, system.status);
@@ -4595,6 +4700,10 @@ function renderObjectActionOptions(selection) {
         const action = lifeSupportActions[i];
         appendActionOption(action.icon, formatActionTitle(action.title, action.cost), formatLifeSupportActionNote(action, system.status), 'lifeSupportActionKey', action.key, false);
       }
+    }
+
+    if (selection.key === navigationNodeSystemKey && shouldShowSignalAmplifierInstallAction()) {
+      appendActionOption('◇', formatActionTitle('Установить усилитель слабого сигнала', getSignalAmplifierInstallCost()), getSignalAmplifierInstallNote(), 'shipStoryActionKey', 'installSignalAmplifier', !canInstallSignalAmplifier());
     }
 
     if (selection.key === 'engine' && getQuestProgress('main-001').completed) {
