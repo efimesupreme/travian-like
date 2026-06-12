@@ -6204,7 +6204,8 @@ body[data-scene="tasks"] .scene-frame {
 .task-card-grid,
 .compact-task-list {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: 50px;
   gap: 8px;
 }
 
@@ -6223,6 +6224,9 @@ body[data-scene="tasks"] .scene-frame {
 
 .task-card,
 .compact-task-card {
+  height: 50px;
+  min-height: 50px;
+  max-height: 50px;
   overflow: hidden;
   border: 1px solid rgba(116, 215, 255, 0.16);
   border-radius: 12px;
@@ -6242,9 +6246,6 @@ body[data-scene="tasks"] .scene-frame {
   background: rgba(8, 17, 29, 0.9);
 }
 
-.compact-task-card.expanded {
-  background: linear-gradient(180deg, rgba(11, 27, 45, 0.98), rgba(8, 18, 31, 0.96));
-}
 
 .task-card.locked,
 .compact-task-card.locked {
@@ -6259,16 +6260,14 @@ body[data-scene="tasks"] .scene-frame {
   justify-content: space-between;
   gap: 10px;
   width: 100%;
-  min-height: 42px;
-  padding: 7px 10px;
+  height: 100%;
+  min-height: 0;
+  padding: 0 10px;
+  overflow: hidden;
   color: var(--text);
   text-align: left;
   background: transparent;
   cursor: pointer;
-}
-
-.compact-task-card.expanded .task-card-select {
-  border-bottom: 1px solid rgba(116, 215, 255, 0.14);
 }
 
 .task-card-select strong,
@@ -6515,6 +6514,7 @@ body[data-scene="tasks"] .scene-frame {
   .task-card-select {
     flex-direction: row;
     gap: 8px;
+    padding: 0 9px;
   }
 
   .task-card-meta {
