@@ -6125,8 +6125,12 @@ button:focus-visible {
 }
 
 .tasks-screen {
-  min-height: 610px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
   padding: 18px;
+  overflow: hidden;
   border: 1px solid rgba(116, 215, 255, 0.22);
   border-radius: 20px;
   background:
@@ -6153,11 +6157,13 @@ button:focus-visible {
 
 .task-filter-button,
 .task-filters button {
-  padding: 8px 12px;
+  padding: 7px 11px;
   border: 1px solid rgba(116, 215, 255, 0.18);
   border-radius: 999px;
   color: var(--muted);
   background: rgba(8, 18, 31, 0.82);
+  font-size: 0.7rem;
+  line-height: 1.15;
   cursor: pointer;
 }
 
@@ -6171,8 +6177,13 @@ button:focus-visible {
 }
 
 .task-section {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
   margin-top: 14px;
   padding: 14px;
+  overflow: hidden;
   border: 1px solid rgba(116, 215, 255, 0.14);
   border-radius: 16px;
   background: rgba(6, 15, 27, 0.45);
@@ -6183,6 +6194,15 @@ button:focus-visible {
   display: grid;
   grid-template-columns: 1fr;
   gap: 8px;
+}
+
+.task-section-compact .compact-task-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-right: 4px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .task-card,
@@ -6221,10 +6241,10 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  min-height: 58px;
-  padding: 10px 12px;
+  min-height: 42px;
+  padding: 7px 10px;
   color: var(--text);
   text-align: left;
   background: transparent;
@@ -6249,8 +6269,9 @@ button:focus-visible {
 
 .task-card-main {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   min-width: 0;
 }
 
@@ -6295,11 +6316,13 @@ button:focus-visible {
 }
 
 .task-type-icon-extra {
-  width: 10px;
-  height: 10px;
-  margin: 0 3px;
-  border: 1px solid rgba(116, 215, 255, 0.7);
-  background: rgba(116, 215, 255, 0.18);
+  width: 15px;
+  height: 15px;
+  margin: 0 1px;
+  border: 1px solid rgba(255, 211, 84, 0.92);
+  color: transparent;
+  background: transparent;
+  box-shadow: 0 0 8px rgba(255, 211, 84, 0.18);
 }
 
 .task-title {
@@ -6310,10 +6333,12 @@ button:focus-visible {
 
 .task-card-meta {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  flex: 0 0 auto;
+  min-width: max-content;
+  margin-left: auto;
 }
 
 .task-card-meta small,
@@ -6468,11 +6493,21 @@ button:focus-visible {
   .task-card-select,
   .task-card-main,
   .task-card-meta {
-    align-items: flex-start;
+    align-items: center;
   }
 
   .task-card-select {
-    flex-direction: column;
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .task-card-meta {
+    gap: 6px;
+  }
+
+  .task-level,
+  .task-progress {
+    font-size: 0.68rem;
   }
 
   .task-expanded-meta {
