@@ -6124,10 +6124,18 @@ button:focus-visible {
   background: rgba(116, 215, 255, 0.1);
 }
 
-.tasks-screen {
+body[data-scene="tasks"] .scene-frame {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 0;
+}
+
+.tasks-screen {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  flex: 1 1 auto;
+  height: auto;
   min-height: 0;
   padding: 18px;
   overflow: hidden;
@@ -6150,9 +6158,10 @@ button:focus-visible {
 
 .task-filters {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 
 .task-filter-button,
@@ -6162,7 +6171,7 @@ button:focus-visible {
   border-radius: 999px;
   color: var(--muted);
   background: rgba(8, 18, 31, 0.82);
-  font-size: 0.7rem;
+  font-size: 0.805rem;
   line-height: 1.15;
   cursor: pointer;
 }
@@ -6181,7 +6190,7 @@ button:focus-visible {
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
-  margin-top: 14px;
+  margin-top: 0;
   padding: 14px;
   overflow: hidden;
   border: 1px solid rgba(116, 215, 255, 0.14);
@@ -6200,8 +6209,11 @@ button:focus-visible {
   flex: 1 1 auto;
   min-height: 0;
   padding-right: 4px;
+  padding-bottom: 8px;
   overflow-x: hidden;
   overflow-y: auto;
+  align-content: start;
+  overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
 
